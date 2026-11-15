@@ -440,8 +440,17 @@ static void powerLatch() {
   }
   gpio_deep_sleep_hold_dis();
   for (int pin : {PIN_POWER_HOLD, PIN_POWER_LOCK, PIN_BTN_OK, PIN_EPD_EN, PIN_TOUCH_EN,
-                  PIN_TOUCH_RST, PIN_SD_EN, PIN_BUZZER})
+                  PIN_TOUCH_RST, PIN_SD_EN, PIN_BUZZER, PIN_BAT_CHG_EN})
     gpio_hold_dis((gpio_num_t)pin);
+}
+
+// The BQ25616 charger's enable pin is active low. Seeed's own firmware drives it low at boot; if
+// nothing does, the board sees USB power (PIN_EXTERNAL_POWER high) but never charges: the gauge
+// reads 0 mA. Input and output both, so the level can be read back and logged.
+static void chargerEnable() {
+  gpio_hold_dis((gpio_num_t)PIN_BAT_CHG_EN);
+  gpio_set_direction((gpio_num_t)PIN_BAT_CHG_EN, GPIO_MODE_INPUT_OUTPUT);
+  gpio_set_level((gpio_num_t)PIN_BAT_CHG_EN, 0);
 }
 
 static void holdAt(int pin, int level) {
@@ -681,9 +690,20 @@ static void readSensors() {
     now.cycles = gaugeWord(0x2A, v) ? v : -1;
     now.health = gaugeWord(0x2E, v) ? v : -1;
   }
-  Serial.printf("sensors: climate %s %.1f C %.0f %%, battery %s %d mV %d %% %d mA, usb power %d\n",
+  Serial.printf("sensors: climate %s %.1f C %.0f %%, battery %s %d mV %d %% %d mA, usb power %d, charger enable %d (0 = on)\n",
                 now.climate ? "ok" : "MISSING", now.tempC, now.humidity,
-                now.battery ? "ok" : "MISSING", now.millivolts, now.percent, now.milliamps, now.usb);
+                now.battery ? "ok" : "MISSING", now.millivolts, now.percent, now.milliamps, now.usb,
+                gpio_get_level((gpio_num_t)PIN_BAT_CHG_EN));
+  // Say when charging starts or stops, and when USB power is there but no current flows.
+  static int chargeState = -1;  // -1 unknown, 0 not charging, 1 charging
+  if (now.battery) {
+    int state = now.usb && now.milliamps > 0;
+    if (state != chargeState) {
+      Serial.printf("power: %s (%d mA, %d mV, %d %%, usb power %d)\n", state ? "charging" : "not charging",
+                    now.milliamps, now.millivolts, now.percent, now.usb);
+      chargeState = state;
+    }
+  }
 }
 
 // ---------------------------------------------------------------- touch
@@ -5199,6 +5219,7 @@ static void deepSleep() {
 
   holdAt(PIN_POWER_HOLD, 1);
   holdAt(PIN_POWER_LOCK, 1);
+  holdAt(PIN_BAT_CHG_EN, 0);  // keep charging while asleep, if USB power is there
   for (int pin : {PIN_EPD_EN, PIN_TOUCH_EN, PIN_TOUCH_RST, PIN_SD_EN, PIN_BUZZER}) holdAt(pin, 0);
   gpio_hold_dis((gpio_num_t)PIN_BTN_OK);
   gpio_set_direction((gpio_num_t)PIN_BTN_OK, GPIO_MODE_INPUT);
@@ -6216,10 +6237,13 @@ static void wifiUnlockForSetup() { netUnlockWifi(); }
 
 void setup() {
   powerLatch();
+  chargerEnable();
   // A setup app request line must fit while the loop waits on a refresh (provserial.h).
   Serial.setRxBufferSize(PROV_SERIAL_LINE + 256);
   Serial.begin(115200);
   Serial.println("\nsticky: starting");
+  Serial.printf("power: charger enable GPIO %d driven low, reads %d\n", PIN_BAT_CHG_EN,
+                gpio_get_level((gpio_num_t)PIN_BAT_CHG_EN));
   updBegin();  // which slot, and whether this firmware is new and on trial
   cfg::begin();
   cfgSeedFromBuild();  // the author's board: its values, once, from an optional git-ignored header
