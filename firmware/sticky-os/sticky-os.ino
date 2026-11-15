@@ -485,6 +485,9 @@ static void rotateCanvas() {
 static const char *listenHint;  // set while the microphone records: the card's small line
 static int voiceCardDemo;       // serial "listen show|think|off": the card on its own, for screenshots
 static void drawVoiceCard();
+static bool sleepingNow;  // deepSleep(): the screen stays, with a moon (fullScreenOn(), drawBar())
+static bool fullScreenOn();
+static void moonIcon(int x, int y, uint16_t ink, uint16_t paper);
 
 // A full refresh flashes and leaves no ghosts; a partial one is quick.
 // Ghosting budget, in fifths of a partial refresh: one the user caused
@@ -501,6 +504,11 @@ static void show(bool full) {
   partials = full ? 0 : partials + (idle ? 1 : 5);
   (full ? fullRefreshes : partialRefreshes)++;
   drawVoiceCard();
+  if (sleepingNow && fullScreenOn()) {  // no status bar: the moon in a small badge, top right
+    canvas->fillRoundRect(W - 52, 8, 44, 36, 10, PAPER);
+    canvas->drawRoundRect(W - 52, 8, 44, 36, 10, INK);
+    moonIcon(W - 40, 17, INK, PAPER);
+  }
   uint32_t t = millis();
   rotateCanvas();
   esp_err_t err;
@@ -935,8 +943,18 @@ static int timerSecondsLeft() { return timerRunning ? max(0L, ((long)(timerRings
 // brings them back. Kept per app (settings.fullScreen). Home is still a
 // swipe up from the bottom edge, or UP and DOWN together.
 static bool fullScreenApp(int a) { return a == APP_PHOTOS || a == APP_QUOTE; }
+// Going to sleep: the screen stays as it was, with a small moon to say the
+// board is asleep (see deepSleep()). A full-screen photo gets its status bar
+// back for that: the four-grey picture would cover a badge.
 static bool fullScreenOn() {
-  return screen == SCREEN_APP && fullScreenApp(app) && (settings.fullScreen >> app & 1) && !setupMode && !updScreen && !revertNotice;
+  return screen == SCREEN_APP && fullScreenApp(app) && (settings.fullScreen >> app & 1) && !setupMode && !updScreen && !revertNotice &&
+         !(sleepingNow && app == APP_PHOTOS);
+}
+
+// A crescent moon, about 18 px: the board is asleep and the screen is frozen.
+static void moonIcon(int x, int y, uint16_t ink, uint16_t paper) {
+  canvas->fillCircle(x + 9, y + 9, 9, ink);
+  canvas->fillCircle(x + 14, y + 5, 8, paper);
 }
 
 // Inside an app: the house (tap the bar to go home), the time and the app's
@@ -965,6 +983,10 @@ static void drawBar() {
   right -= 32;
   if (photosCardIn()) {
     cardIcon(right - 16, 11);
+    right -= 32;
+  }
+  if (sleepingNow) {
+    moonIcon(right - 20, 10, INK, PAPER);
     right -= 32;
   }
 
@@ -5210,9 +5232,10 @@ static void logHeap(const char *step) {
 
 static void deepSleep() {
   updMarkGood("deep sleep");  // waking is a restart: it mustn't go back to the old firmware
-  canvas->fillScreen(PAPER);
-  textCentre(W / 2, H / 2, TALL ? &FreeSansBold18pt7b : &FreeSansBold24pt7b, T(S_ASLEEP));
-  show(true);
+  // The screen stays as it was (e-paper keeps a picture with no power), drawn
+  // once more with a full refresh and the moon that says it's asleep.
+  sleepingNow = true;
+  render(true);
   seeed_epaper_panel_sleep(panel);
   while (digitalRead(PIN_BTN_OK) == LOW) delay(20);  // or the held button wakes it at once
   delay(60);
@@ -6171,6 +6194,12 @@ static void devCommands() {
       openApp(line.substring(4).toInt());
     } else if (line == "ok") {
       action();
+    } else if (line == "sleep") {  // what the quick settings' Sleep now does: the screen stays, with the moon
+      deepSleep();
+    } else if (line == "sleep preview") {  // the screen deepSleep() leaves, without sleeping (for `shot`)
+      sleepingNow = true;
+      render(true);
+      sleepingNow = false;
     } else if (line == "demo on" || line == "demo off") {
       setDemo(line == "demo on");
     } else if (line.startsWith("lang ")) {  // lang <code>: Settings -> Language

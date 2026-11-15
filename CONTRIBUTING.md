@@ -28,6 +28,7 @@ without touching the board:
 | `tap <x> <y>`, `dtap <x> <y>`, `swipe <x0> <y0> <dx> <dy>` | touch, in the picture's own coordinates; `dtap` a double tap (Photos and Quote: full screen on or off). In Photos and Quote a single tap acts 0.35 s later, once no second one came |
 | `full` | which apps are full screen: `full: photos on/off, quote on/off, on screen yes/no` |
 | `turn <0-4>` | rotation: 0 automatic, 1 landscape, 2 landscape flipped, 3 portrait, 4 portrait flipped |
+| `sleep`, `sleep preview` | deep sleep now, as Quick settings → Sleep now (the screen stays as it was, with a moon in the status bar); or draw that screen without sleeping, for `shot` |
 | `demo on` / `demo off` | made-up events, notes, town and network, for screenshots |
 | `shot` | the screen as drawn, as hex: `SHOT 800 480 <rotation>`, 480 rows, `END` |
 | `shot4` | the four-grey frame last sent to the panel (a photo with its status bar): `SHOT4 800 480 <rotation> <on screen 0/1>`, 480 rows of 2 bits a pixel (0 black), `END` |

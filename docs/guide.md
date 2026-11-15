@@ -331,7 +331,10 @@ Controls inside an app:
   Buttons: Back, Done / Not done (or Make task), Make note, Delete (tap twice).
   Swipe left or right, or UP / DOWN, for the previous or next item; swipe down
   or OK to go back to the list.
-- **Hold UP and DOWN for 2 seconds:** deep sleep. OK wakes it.
+- **Hold UP and DOWN for 2 seconds:** deep sleep. OK wakes it. The screen
+  stays as it was (a quote, a photo, your list), with a small moon in the
+  status bar, or in the top corner in full screen, to say the board is asleep
+  and the screen isn't updating.
 
 ## Games
 
