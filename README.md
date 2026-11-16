@@ -1,6 +1,10 @@
-# Sticky OS
+# Sticky OS: open-source firmware for the Seeed reTerminal Sticky
 
-Sticky OS is a firmware for the [Seeed reTerminal Sticky](https://www.seeedstudio.com/sticky/), the 3.97" magnetic
+[![Latest release](https://img.shields.io/github/v/release/ovidiul/sticky-os)](https://github.com/ovidiul/sticky-os/releases/latest)
+[![Build](https://github.com/ovidiul/sticky-os/actions/workflows/build.yml/badge.svg)](https://github.com/ovidiul/sticky-os/actions/workflows/build.yml)
+[![MIT licence](https://img.shields.io/github/license/ovidiul/sticky-os)](LICENSE)
+
+Sticky OS is a free, open-source ESP32-S3 e-ink firmware for the [Seeed reTerminal Sticky](https://www.seeedstudio.com/sticky/), the 3.97" magnetic
 touch e-paper board. It turns the board into a small app device: a home
 screen of app icons, a status bar, quick settings, and thirteen apps (clock,
 weather, calendar, notes with voice, timer, photos, quote of the day,
@@ -13,7 +17,19 @@ firmware.
 > An independent, open-source firmware for the Seeed reTerminal Sticky. Not
 > made by or affiliated with Seeed Studio.
 
+- **Weather station**: now, five days and each day's hours (Open-Meteo, no key)
+- **E-ink calendar**: Google, iCloud or Outlook through an iCal link; day and week views
+- **Notes and voice notes**: typed or spoken, sorted by AI (your own OpenAI key)
+- **E-reader**: EPUB, MOBI, AZW3 (without DRM), FB2, PDF (as text) and plain text from a microSD card
+- **E-paper photo frame**: photos in four greys, sent from the browser or read from microSD
+- **Clock, timer, quote of the day, recipes, and eight games** (2048, Memory, Quiz and more)
+- **Ten languages**; no account and no cloud; updates over WiFi that roll back if they fail
+
+It runs on the reTerminal Sticky (3.97", 800 x 480, ESP32-S3) only, not on
+Seeed's 7.5" reTerminal E1001 or E1002.
+
 Website and setup app: **<https://sticky-os.space.fast/>**
+Download: **[latest release](https://github.com/ovidiul/sticky-os/releases/latest)**, then see [Install](#install)
 The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 
 <a href="https://www.youtube.com/watch?v=w9eOCHewkCY"><img src="docs/video-tour.jpg" width="640" alt="Watch the Sticky OS tour on YouTube (1 min 23 s)"></a>

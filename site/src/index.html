@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{NAME}}: calm apps for the reTerminal Sticky e-paper board</title>
-<meta name="description" content="{{NAME}} is independent, open firmware for the Seeed reTerminal Sticky: a home screen of glanceable e-paper apps (weather, calendar, notes, photos, books, recipes, games) with touch, three buttons and voice. No account, no cloud required.">
+<title>{{NAME}}: free custom firmware for the reTerminal Sticky</title>
+<meta name="description" content="Free, open-source firmware for the Seeed reTerminal Sticky: weather, calendar, notes, photos, books and games on e-paper. Set up in your browser.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
 <link rel="canonical" href="https://sticky-os.space.fast/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{NAME}}">
-<meta property="og:title" content="{{NAME}}: calm apps for the reTerminal Sticky">
+<meta property="og:title" content="{{NAME}}: free custom firmware for the reTerminal Sticky">
 <meta property="og:description" content="Free, open-source firmware for the Seeed reTerminal Sticky e-paper board: weather, calendar, notes, photos, books, recipes and games, set up from your browser.">
 <meta property="og:url" content="https://sticky-os.space.fast/">
 <meta property="og:image" content="https://sticky-os.space.fast/shots/social-home.jpg">
@@ -28,6 +28,123 @@
 <link rel="preload" href="fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/atkinson.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="site.css">
+<link rel="alternate" type="application/atom+xml" title="{{NAME}} blog" href="https://sticky-os.space.fast/blog/feed.xml">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebSite",
+   "@id": "https://sticky-os.space.fast/#site",
+   "name": "Sticky OS",
+   "url": "https://sticky-os.space.fast/",
+   "publisher": {
+    "@id": "https://sticky-os.space.fast/#org"
+   }
+  },
+  {
+   "@type": "Organization",
+   "@id": "https://sticky-os.space.fast/#org",
+   "name": "Sticky OS",
+   "url": "https://sticky-os.space.fast/",
+   "logo": "https://sticky-os.space.fast/favicon.svg",
+   "sameAs": [
+    "https://github.com/ovidiul/sticky-os"
+   ]
+  },
+  {
+   "@type": "SoftwareApplication",
+   "name": "Sticky OS",
+   "url": "https://sticky-os.space.fast/",
+   "description": "Free, open-source firmware for the Seeed reTerminal Sticky e-paper board: weather, calendar, notes, photos, books, recipes and games, set up from the browser.",
+   "applicationCategory": "UtilitiesApplication",
+   "operatingSystem": "ESP32-S3 (Seeed reTerminal Sticky)",
+   "softwareVersion": "1.5",
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+   },
+   "license": "https://github.com/ovidiul/sticky-os/blob/main/LICENSE",
+   "downloadUrl": "https://github.com/ovidiul/sticky-os/releases/latest",
+   "codeRepository": "https://github.com/ovidiul/sticky-os",
+   "screenshot": "https://sticky-os.space.fast/shots/social-home.jpg",
+   "publisher": {
+    "@id": "https://sticky-os.space.fast/#org"
+   }
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Which boards does Sticky OS run on?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Only the Seeed reTerminal Sticky, the 3.97-inch 800 x 480 touch e-paper board with an ESP32-S3. It does not run on Seeed’s larger reTerminal E1001 or E1002."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Is it free?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes. Sticky OS is free and open source under the MIT licence: the firmware, this website and the setup app are all on GitHub."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Do I need an account or a cloud service?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. There is nothing to sign up for and no company server in the middle. The board fetches the time and the weather itself, from public services that need no key."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Can it show my Google Calendar?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes. Paste your calendar’s secret iCal link (Google, iCloud or Outlook, up to three) in the setup app, and the board reads it every 30 minutes."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Which e-book formats does the e-reader open?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "EPUB, MOBI and AZW3 without DRM, FB2, PDF (as text), plain text and HTML, from a microSD card."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "How long does flashing take?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "3 to 4 minutes over USB at 115200 baud, the only speed the board’s USB chip handles reliably. After that it updates itself over WiFi when you say so."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Can I go back to the original firmware?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes. Seeed’s official web flasher restores the stock firmware at any time."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Which languages does it speak?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Ten: English, Spanish, Portuguese, French, German, Italian, Russian, Turkish, Polish and Romanian."
+     }
+    }
+   ]
+  }
+ ]
+}
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -55,7 +172,7 @@
 <div class="hero">
   <div class="wrap">
     <div>
-      <h1>A quiet home screen for the fridge door</h1>
+      <h1><span class="eyebrow">Free, open-source firmware for the reTerminal Sticky</span> <span class="h1-main">A quiet home screen for the fridge door</span></h1>
       <p class="lede">{{NAME}} is independent firmware for the <a href="https://www.seeedstudio.com/sticky/" target="_blank" rel="noopener noreferrer">Seeed reTerminal Sticky</a>, the 3.97-inch magnetic e-paper board. It gives the board a home screen of apps you read in passing: the time, the weather, your next event, the shopping list, a quote for the day.</p>
       <p>E-paper keeps its picture without power, so the screen is always showing something useful and never asks for your attention.</p>
       <div class="actions">
@@ -63,7 +180,7 @@
         <a href="#tour">Take the tour</a>
         <a href="https://github.com/ovidiul/sticky-os" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
       </div>
-      <p class="note">Version 1.3 is out, now in ten languages: a free download, open source under the MIT licence. Once it is on the board, set it up from the <a href="setup/">setup app</a> in your browser. <a href="blog/introducing-sticky-os/">Read the launch post</a>.</p>
+      <p class="note">Version 1.5 is out, in ten languages: a free download, open source under the MIT licence. Once it is on the board, set it up from the <a href="setup/">setup app</a> in your browser. What’s new: <a href="blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/">1.5, Tutor</a> and <a href="blog/sticky-os-1-4-books-app-fridge-door/">1.4, Books</a>. Or <a href="blog/introducing-sticky-os/">read the launch post</a>.</p>
     </div>
     <figure class="device">
       <div class="screen">
@@ -123,7 +240,7 @@
         <figure class="device portrait">
           <div class="screen">
             <div class="slot"><strong>Screenshot coming</strong>Home, held upright</div>
-            <img src="shots/home-portrait.png" width="480" height="800" alt="Home held upright: the time, the weather and the next event above a grid of app icons, three across, ending with Quote, Recipes and Games"
+            <img loading="lazy" decoding="async" src="shots/home-portrait.png" width="480" height="800" alt="Home held upright: the time, the weather and the next event above a grid of app icons, three across, ending with Quote, Recipes and Games"
                  data-slot>
           </div>
           <figcaption>Upright: three icons across</figcaption>
@@ -131,7 +248,7 @@
         <figure class="device">
           <div class="screen">
             <div class="slot"><strong>Screenshot coming</strong>Home, landscape</div>
-            <img src="shots/home-landscape.png" width="800" height="480" alt="Home in landscape: the widget above two rows of four app icons"
+            <img loading="lazy" decoding="async" src="shots/home-landscape.png" width="800" height="480" alt="Home in landscape: the widget above two rows of four app icons"
                  data-slot>
           </div>
           <figcaption>Landscape: four across</figcaption>
@@ -149,7 +266,7 @@
         <figure class="device portrait">
           <div class="screen">
             <div class="slot"><strong>Screenshot coming</strong>Quick settings</div>
-            <img src="shots/quick.png" width="480" height="800" alt="Quick settings: a row of tiles for rotation, sound, WiFi, clean screen, sleep and all settings"
+            <img loading="lazy" decoding="async" src="shots/quick.png" width="480" height="800" alt="Quick settings: a row of tiles for rotation, sound, WiFi, clean screen, sleep and all settings"
                  data-slot>
           </div>
           <figcaption>Swipe down from the status bar</figcaption>
@@ -197,7 +314,7 @@
         <figure class="device portrait">
           <div class="screen">
             <div class="slot"><strong>Screenshot coming</strong>Calendar, Now and Next</div>
-            <img src="shots/calendar-day.png" width="480" height="800" alt="Calendar: a Now and Next card with a countdown, above the coming events"
+            <img loading="lazy" decoding="async" src="shots/calendar-day.png" width="480" height="800" alt="Calendar: a Now and Next card with a countdown, above the coming events"
                  data-slot>
           </div>
           <figcaption>Now and Next, with a countdown</figcaption>
@@ -205,7 +322,7 @@
         <figure class="device">
           <div class="screen">
             <div class="slot"><strong>Screenshot coming</strong>Calendar, the week</div>
-            <img src="shots/calendar-week.png" width="800" height="480" alt="Calendar: a strip of the week with dots on busy days, and the events under a heading for each day"
+            <img loading="lazy" decoding="async" src="shots/calendar-week.png" width="800" height="480" alt="Calendar: a strip of the week with dots on busy days, and the events under a heading for each day"
                  data-slot>
           </div>
           <figcaption>The week at a glance</figcaption>
@@ -308,7 +425,7 @@
         <figure class="device portrait">
           <div class="screen">
             <div class="slot"><strong>Screenshot coming</strong>Notes</div>
-            <img src="shots/notes.png" width="480" height="800" alt="Notes: a list of tasks with tick boxes and a microphone button"
+            <img loading="lazy" decoding="async" src="shots/notes.png" width="480" height="800" alt="Notes: a list of tasks with tick boxes and a microphone button"
                  data-slot>
           </div>
           <figcaption>Tasks with tick boxes</figcaption>
@@ -316,7 +433,7 @@
         <figure class="device portrait">
           <div class="screen">
             <div class="slot"><strong>Screenshot coming</strong>On-screen keyboard</div>
-            <img src="shots/keyboard.png" width="480" height="800" alt="The on-screen keyboard, typing a new note"
+            <img loading="lazy" decoding="async" src="shots/keyboard.png" width="480" height="800" alt="The on-screen keyboard, typing a new note"
                  data-slot>
           </div>
           <figcaption>Or type it</figcaption>
@@ -430,13 +547,13 @@
       <div class="shots">
         <figure class="device portrait">
           <div class="screen">
-            <img src="shots/timer.png" width="480" height="800" alt="Timer held upright: 05:00 in large digits and buttons for 1, 3, 5, 10 and 25 minutes and 1 hour">
+            <img loading="lazy" decoding="async" src="shots/timer.png" width="480" height="800" alt="Timer held upright: 05:00 in large digits and buttons for 1, 3, 5, 10 and 25 minutes and 1 hour">
           </div>
           <figcaption>Pick a length</figcaption>
         </figure>
         <figure class="device">
           <div class="screen">
-            <img src="shots/timer-landscape.png" width="800" height="480" alt="Timer in landscape: 10:00 left, rings at 20:30, with +1 min, +5 min and Stop">
+            <img loading="lazy" decoding="async" src="shots/timer-landscape.png" width="800" height="480" alt="Timer in landscape: 10:00 left, rings at 20:30, with +1 min, +5 min and Stop">
           </div>
           <figcaption>Running, with the time it rings</figcaption>
         </figure>
@@ -452,13 +569,13 @@
       <div class="shots">
         <figure class="device portrait">
           <div class="screen">
-            <img src="shots/rotation.png" width="480" height="800" alt="The screen rotation page: Automatic is chosen, with Landscape, Landscape flipped, Portrait and Portrait flipped below">
+            <img loading="lazy" decoding="async" src="shots/rotation.png" width="480" height="800" alt="The screen rotation page: Automatic is chosen, with Landscape, Landscape flipped, Portrait and Portrait flipped below">
           </div>
           <figcaption>Automatic, or fixed four ways</figcaption>
         </figure>
         <figure class="device">
           <div class="screen">
-            <img src="shots/settings-landscape.png" width="800" height="480" alt="Settings in landscape: Display with screen rotation and temperature, then Sound and power with a switch for button sounds">
+            <img loading="lazy" decoding="async" src="shots/settings-landscape.png" width="800" height="480" alt="Settings in landscape: Display with screen rotation and temperature, then Sound and power with a switch for button sounds">
           </div>
           <figcaption>The same settings, turned sideways</figcaption>
         </figure>
@@ -478,13 +595,13 @@
       <div class="shots two-portrait">
         <figure class="device portrait">
           <div class="screen">
-            <img src="shots/sleep.png" width="480" height="800" alt="Sleep on battery: Never is chosen, with after 5 minutes or after 30 minutes without a touch">
+            <img loading="lazy" decoding="async" src="shots/sleep.png" width="480" height="800" alt="Sleep on battery: Never is chosen, with after 5 minutes or after 30 minutes without a touch">
           </div>
           <figcaption>A page of choices</figcaption>
         </figure>
         <figure class="device portrait">
           <div class="screen">
-            <img src="shots/settings-system.png" width="480" height="800" alt="The last page of Settings: System, About this device">
+            <img loading="lazy" decoding="async" src="shots/settings-system.png" width="480" height="800" alt="The last page of Settings: System, About this device">
           </div>
           <figcaption>Page 2 of 2</figcaption>
         </figure>
@@ -541,7 +658,7 @@
 <section id="apps" aria-labelledby="apps-h">
   <div class="wrap">
     <div class="split">
-      <h2 id="apps-h">Twelve apps, all made for e-paper</h2>
+      <h2 id="apps-h">Thirteen apps, all made for e-paper</h2>
       <p class="intro">Each one shows a single thing clearly and redraws only when something changed.</p>
     </div>
     <ul class="apps">
@@ -560,11 +677,11 @@
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7c-3 1-5 3.5-5 7a3 3 0 1 0 3-3"/><path d="M20 7c-3 1-5 3.5-5 7a3 3 0 1 0 3-3"/></svg></span>
         <h3>Quote <span class="tag">New</span></h3><p>Quote of the Day in large italic type, and another whenever you ask. Works offline from its own list.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5z"/><path d="M12 6.5v13"/></svg></span>
-        <h3>Books <span class="tag">New</span></h3><p>An e-reader for the books on a microSD card: EPUB, MOBI, AZW3, FB2, PDF and text, with contents, bookmarks and reading statistics.</p></li>
+        <h3>Books <span class="tag">New</span></h3><p>An e-reader for the books on a microSD card: EPUB, MOBI, AZW3, FB2, PDF and text, with contents, bookmarks and reading statistics. <a href="blog/sticky-os-1-4-books-app-fridge-door/">More about Books</a>.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5a4 4 0 0 1-.6-7.9 5 5 0 0 1 9.2-1 4 4 0 0 1 2.4 7.6"/><path d="M7 12.5v7h10v-7M7 16.5h10"/></svg></span>
         <h3>Recipes <span class="tag">New</span></h3><p>Say or type a dish and get a recipe with ingredients to tick. Needs your own OpenAI key.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg></span>
-        <h3>Games <span class="tag">New</span></h3><p>A folder of eight: 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, and Tutor, geometry lessons in Romanian.</p></li>
+        <h3>Games <span class="tag">New</span></h3><p>A folder of eight: 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, and <a href="blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/">Tutor</a>, geometry lessons in Romanian.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 17a8.5 8.5 0 0 1 17 0"/><path d="M12 17l4.5-5.5"/><circle cx="12" cy="17" r="1.3"/></svg></span>
         <h3>Claude Code usage</h3><p>This week’s usage as a gauge, read from an MQTT feed you publish.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.3"/><circle cx="15" cy="17" r="2.3"/></svg></span>
@@ -578,8 +695,8 @@
 <section id="install" aria-labelledby="install-h">
   <div class="wrap">
     <div class="split">
-      <h2 id="install-h">Install it</h2>
-      <p class="intro">{{NAME}} is a free download (version 1.3 now). You flash it once over a USB cable; after that it updates itself over WiFi when you say so.</p>
+      <h2 id="install-h">Install it on your reTerminal Sticky</h2>
+      <p class="intro">{{NAME}} is a free download (version 1.5 now). You flash it once over a USB cable; after that it updates itself over WiFi when you say so.</p>
     </div>
     <ol class="stickies steps">
       <li><h3>1. Download</h3><p>Get <code>sticky-os-full.bin</code> from the latest release on GitHub.</p>
@@ -628,6 +745,22 @@
   </div>
 </section>
 
+<section id="faq" aria-labelledby="faq-h">
+  <div class="wrap">
+    <h2 id="faq-h">Questions</h2>
+    <dl class="faq">
+      <div><dt>Which boards does Sticky OS run on?</dt><dd>Only the Seeed reTerminal Sticky, the 3.97-inch 800 x 480 touch e-paper board with an ESP32-S3. It does not run on Seeed’s larger reTerminal E1001 or E1002.</dd></div>
+      <div><dt>Is it free?</dt><dd>Yes. {{NAME}} is free and open source under the MIT licence: the firmware, this website and the setup app are all on GitHub.</dd></div>
+      <div><dt>Do I need an account or a cloud service?</dt><dd>No. There is nothing to sign up for and no company server in the middle. The board fetches the time and the weather itself, from public services that need no key.</dd></div>
+      <div><dt>Can it show my Google Calendar?</dt><dd>Yes. Paste your calendar’s secret iCal link (Google, iCloud or Outlook, up to three) in the setup app, and the board reads it every 30 minutes.</dd></div>
+      <div><dt>Which e-book formats does the e-reader open?</dt><dd>EPUB, MOBI and AZW3 without DRM, FB2, PDF (as text), plain text and HTML, from a microSD card.</dd></div>
+      <div><dt>How long does flashing take?</dt><dd>3 to 4 minutes over USB at 115200 baud, the only speed the board’s USB chip handles reliably. After that it updates itself over WiFi when you say so.</dd></div>
+      <div><dt>Can I go back to the original firmware?</dt><dd>Yes. Seeed’s official web flasher restores the stock firmware at any time.</dd></div>
+      <div><dt>Which languages does it speak?</dt><dd>Ten: English, Spanish, Portuguese, French, German, Italian, Russian, Turkish, Polish and Romanian.</dd></div>
+    </dl>
+  </div>
+</section>
+
 <section id="contribute" aria-labelledby="contribute-h">
   <div class="wrap">
     <div class="split">
@@ -657,5 +790,6 @@
 </footer>
 <script src="site.js" defer></script>
 <script src="lightbox.js" defer></script>
+<script type="module" src="menu.js"></script>
 </body>
 </html>
