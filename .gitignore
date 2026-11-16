@@ -11,3 +11,4 @@ firmware/sticky-os/secrets.h
 firmware/sticky-os/private_seed.h
 
 .DS_Store
+__pycache__/
