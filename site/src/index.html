@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{NAME}}: calm apps for the reTerminal Sticky e-paper board</title>
-<meta name="description" content="{{NAME}} is independent, open firmware for the Seeed reTerminal Sticky: a home screen of glanceable e-paper apps (weather, calendar, notes, photos, recipes, games) with touch, three buttons and voice. No account, no cloud required.">
+<meta name="description" content="{{NAME}} is independent, open firmware for the Seeed reTerminal Sticky: a home screen of glanceable e-paper apps (weather, calendar, notes, photos, books, recipes, games) with touch, three buttons and voice. No account, no cloud required.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
@@ -236,6 +236,34 @@
         <figure class="browser">
           <img src="shots/setup-photos.webp" width="740" height="910" loading="lazy" alt="The setup app’s Photos page: the photograph with a yellow crop frame, a choice of landscape or portrait, and sliders for zoom, brightness and contrast">
           <figcaption>Cropping it in the setup app</figcaption>
+        </figure>
+      </div>
+    </article>
+
+    <article class="feature">
+      <div class="copy">
+        <h3>Books, from a microSD card <span class="tag">New</span></h3>
+        <p>Put your books in a <code>books</code> folder on a microSD card and the board becomes a small e-reader: justified pages in a serif typeface, the book’s cover in four greys, and your place kept in every book.</p>
+        <ul>
+          <li>EPUB, MOBI and AZW3 without DRM, FB2, plain text, HTML, and PDF as reflowed text.</li>
+          <li>Seven text sizes, line spacing, margins, contents, bookmarks, and a progress bar to jump with.</li>
+          <li>Each book has a page with its cover, description, chapters, how far you are and the time left at your pace, and there are reading statistics with your streak.</li>
+          <li>Tap or swipe to turn the page, or press UP and DOWN. A turn is one quick refresh, about 0.6 s.</li>
+        </ul>
+        <p>Free books without DRM come from Project Gutenberg and Standard Ebooks.</p>
+      </div>
+      <div class="shots two-portrait">
+        <figure class="device portrait">
+          <div class="screen">
+            <img src="shots/books-page.png" width="480" height="800" loading="lazy" alt="A page of Siddhartha by Hermann Hesse in justified serif type, with the chapter and the time at the top">
+          </div>
+          <figcaption>A page of <cite>Siddhartha</cite></figcaption>
+        </figure>
+        <figure class="device portrait">
+          <div class="screen">
+            <img src="shots/books-library.png" width="480" height="800" loading="lazy" alt="The Books library: a line of reading statistics, a Continue reading card for Siddhartha, then the books by Tagore, Kafka and Shaw">
+          </div>
+          <figcaption>The library, with your place in each</figcaption>
         </figure>
       </div>
     </article>
@@ -515,6 +543,8 @@
         <h3>Photos <span class="tag">New</span></h3><p>Up to 100 photos you send from the setup app, cropped and turned into four greys in your browser, then pictures from a microSD card. A new one every ten minutes.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7c-3 1-5 3.5-5 7a3 3 0 1 0 3-3"/><path d="M20 7c-3 1-5 3.5-5 7a3 3 0 1 0 3-3"/></svg></span>
         <h3>Quote <span class="tag">New</span></h3><p>Quote of the Day in large italic type, and another whenever you ask. Works offline from its own list.</p></li>
+      <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5z"/><path d="M12 6.5v13"/></svg></span>
+        <h3>Books <span class="tag">New</span></h3><p>An e-reader for the books on a microSD card: EPUB, MOBI, AZW3, FB2, PDF and text, with contents, bookmarks and reading statistics.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5a4 4 0 0 1-.6-7.9 5 5 0 0 1 9.2-1 4 4 0 0 1 2.4 7.6"/><path d="M7 12.5v7h10v-7M7 16.5h10"/></svg></span>
         <h3>Recipes <span class="tag">New</span></h3><p>Say or type a dish and get a recipe with ingredients to tick. Needs your own OpenAI key.</p></li>
       <li><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg></span>
@@ -561,7 +591,7 @@
       <dt>Microphone</dt><dd>One PDM microphone, for voice notes, dictation and recipes</dd>
       <dt>Sound</dt><dd>A buzzer for the timer and button clicks. There is no speaker</dd>
       <dt>Sensors</dt><dd>Temperature and humidity, motion (for rotation), battery gauge</dd>
-      <dt>Storage</dt><dd>About 20 MB of the flash for notes and about 90 photos (each with its full-screen copy); a microSD card slot for more photos</dd>
+      <dt>Storage</dt><dd>About 20 MB of the flash for notes and about 90 photos (each with its full-screen copy); a microSD card slot for more photos and your books</dd>
       <dt>Power</dt><dd>750 mAh battery, USB-C for charging and flashing</dd>
       <dt>Mounting</dt><dd>Magnetic back: the fridge door, a whiteboard, or flat on a desk</dd>
     </dl>

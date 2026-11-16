@@ -23,6 +23,7 @@ S(S_APP_ABOUT, "About")
 S(S_APP_QUOTE, "Quote")
 S(S_APP_RECIPES, "Recipes")
 S(S_APP_GAMES, "Games")
+S(S_APP_BOOKS, "Books")
 S(S_TURN_AUTO, "Automatic")  // screen rotation choices
 S(S_TURN_LANDSCAPE, "Landscape")
 S(S_TURN_LANDSCAPE_FLIPPED, "Landscape, flipped")
@@ -482,3 +483,4 @@ S(S_BT_DIDNT_START, "Bluetooth didn't start")
 S(S_KB_ABC, "ABC")  // the key back to the letters, ~110 px, bold 12pt (Russian: the Cyrillic letters, АБВ)
 #include "strings_games.h"  // the Games folder
 #include "strings_net.h"  // the network side: errors, statuses, the AI's own replies
+#include "strings_books.h"  // the Books app

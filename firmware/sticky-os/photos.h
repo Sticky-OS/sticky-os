@@ -12,3 +12,7 @@ int photosCount();
 // `name` gets the file name. False if the file can't be shown; `why` says why.
 bool photoRender(int index, uint8_t *out, int w, int h, char *name, size_t nameSize,
                  const char **why);
+
+// The same for any JPEG file on the card (a book's cover): `fit` keeps all of
+// it, with white bars, whichever way it is shaped.
+bool jpegRender(const char *path, uint8_t *out, int w, int h, bool fit, const char **why);
