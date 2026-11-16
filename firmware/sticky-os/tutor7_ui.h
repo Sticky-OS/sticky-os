@@ -1,4 +1,4 @@
-// Two small types of tutor7.ino. They are here, not in the tab, because Arduino
+// Three small types of tutor7.ino. They are here, not in the tab, because Arduino
 // writes its function prototypes above the first function of the sketch, and a
 // type a prototype uses has to be declared before that (see sticky-os.ino).
 #pragma once
@@ -15,4 +15,9 @@ struct T7Piece {
 struct T7Block {
   const GFXfont *f;
   int line, gap;
+};
+
+// A vertex of a Unit 4 figure, in a unit box, y down (t7Poly takes them).
+struct T7Pt {
+  float x, y;
 };

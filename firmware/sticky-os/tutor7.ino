@@ -214,6 +214,15 @@ static void t7FigRight(const t7::Figure &fg, bool named, int bx, int by, int bw,
   t7Tag(ax - 12 - acw / 2, ay - h / 2 + 5, sAC);
   int bcw = t7TextW(&FreeSans9pt7b, sBC);
   t7Tag(ax + w / 2 + 14 + bcw / 2, cy + h / 2 - 4, sBC);
+  if (named) return;
+  if (fg.v[3] == 2) {  // the height from A to BC is asked: dashed, to its foot on BC
+    float t = (float)w * w / max(1, w * w + h * h);
+    int fx = bxp - (int)(t * w), fy = ay - (int)(t * h);
+    t7Dashed(ax, ay, fx, fy);
+    t7Tag((ax + fx) / 2, (ay + fy) / 2 + 6, "h = ?", true);
+  } else if (fg.v[3] == 4) {  // the area is asked
+    t7Tag(ax + w / 3, ay - h / 3 + 6, "Aria = ?", true);
+  }
 }
 
 static void t7FigTriangle(const t7::Figure &fg, int bx, int by, int bw, int bh) {
@@ -275,8 +284,6 @@ static void t7FigEquilateral(const t7::Figure &fg, int bx, int by, int bw, int b
 
 
 // ---- Unit 4 figures: the vertices are named, the numbers are in the question
-
-struct T7Pt { float x, y; };  // in a unit box, y down
 
 static void t7Poly(const T7Pt *p, int n, int bx, int by, int bw, int bh, const char *names, bool diagonals, int inset = 34) {
   int ix = bx + inset, iy = by + 22, iw = bw - 2 * inset, ih = bh - 52;
@@ -396,12 +403,13 @@ enum : int {
   T7_SHOW_BTN = 11,  // Arată rezolvarea
   T7_AGAIN_BTN = 12, // back to the exercise
   T7_MORE_CLUE = 13, // another clue
+  T7_LIST_BTN = 14,  // the result's Lecții: the lesson list
   T7_CLASS0 = 25,    // the class buttons
   T7_PART0 = 20,     // 20 summary, 21 examples, 22 practice
   T7_SUBJECT0 = 30,
   T7_LESSON0 = 40,
   T7_PREV = 50,
-  T7_RESET = 60,   // clear the lesson's progress, start from the summary
+  T7_RESET = 60,   // clear the lesson's progress, start from the summary (a second tap confirms)
 };
 
 static const t7::Lesson &t7L() { return t7::lesson(gs->t7Lesson); }
@@ -414,12 +422,14 @@ static uint32_t t7Hash(const char *s) {
 
 // Makes exercise gs->t7Index of the practice: a fresh seed until the exercise exists, verifies and
 // has not been asked in this practice. False only if nothing works (it is then skipped).
+// It is made in place, in gs (PSRAM): an Exercise is 3.9 KB and the loop task's stack 8 KB. The exercise
+// it overwrites is the one just finished, and nothing shows it while this runs.
 static bool t7Make() {
   const t7::Step &st = t7L().steps[gs->t7Index];
+  t7::Exercise &ex = gs->t7Ex;
   for (int tries = 0; tries < 400; tries++) {
     uint32_t seed = (uint32_t)gameRnd(1, 2000000000);
     t7::Rng rng(seed);
-    t7::Exercise ex;
     char err[120];
     if (!t7::generate(st.kind, st.level, rng, ex)) continue;
     if (!t7::verify(ex, err, sizeof err)) {
@@ -431,7 +441,6 @@ static bool t7Make() {
     for (int i = 0; i < gs->t7Index; i++) seen |= gs->t7Seen[i] == h;
     if (seen && tries < 300) continue;
     gs->t7Seen[gs->t7Index] = h;
-    gs->t7Ex = ex;
     Serial.printf("games: tutor7 exercise %d of %d: kind %d level %d seed %lu, right option %d (%s)\n", gs->t7Index + 1, t7L().nSteps, (int)ex.kind,
                   (int)ex.level, (unsigned long)seed, ex.correct, ex.opt[ex.correct]);
     return true;
@@ -468,6 +477,7 @@ static void t7StartPractice() {
 
 static void tutor7Open() {
   if (gs->t7Screen == T7_RESULT) gs->t7Screen = T7_LESSONS;
+  gs->t7ResetArmed = false;
   gs->gFocusId = -1;
 }
 
@@ -506,6 +516,8 @@ static void t7Answer(int i) {
 static void actTutor7(int id) {
   int &sc = gs->t7Screen;
   gs->gFocusId = -1;
+  bool resetArmed = gs->t7ResetArmed;
+  gs->t7ResetArmed = false;  // any tap but a second one on Reset disarms it
   if (id == ID_BACK) {
     switch (sc) {
       case T7_CLASSES: gs->gGame = -1; break;
@@ -533,6 +545,10 @@ static void actTutor7(int id) {
       } else if (id == T7_PART0 + 2) {
         return t7StartPractice(), render(true);
       } else if (id == T7_RESET) {
+        if (!resetArmed) {
+          gs->t7ResetArmed = true;
+          return render(false);
+        }
         gameProgress().tutor7Best[t7L().slot] = 0;
         gamesChanged();
         gs->t7Part = 0, gs->t7Page = 0, gs->t7Index = 0, gs->t7Right = 0, sc = T7_PAGE;
@@ -577,6 +593,7 @@ static void actTutor7(int id) {
       break;
     case T7_RESULT:
       if (id == ID_AGAIN) return t7StartPractice(), render(true);
+      if (id == T7_LIST_BTN) sc = T7_LESSONS;
       break;
   }
   render(false);
@@ -670,9 +687,10 @@ static void drawT7Question() {
   int qy = top + 22, qEnd = t7BlockDraw({qf, 30, 8}, 16, qy, ex.text, leftW);
   // the figure: under the question; in portrait it gets what the answers and buttons leave
   int figY = qEnd - 4, figH = land ? H - 16 - figY : H - 16 - figY - 8 - optsH - 10 - btnH;
-  if (ex.fig.kind == t7::FIG_NONE) {}
-  else if (figH > 60) t7Figure(ex.fig, 16, figY, leftW, min(figH, 230));
-  else Serial.printf("games: tutor7 no room for the figure (%d px)\n", figH);
+  if (ex.fig.kind != t7::FIG_NONE) {
+    if (figH > 60) t7Figure(ex.fig, 16, figY, leftW, min(figH, 230));
+    else Serial.printf("games: tutor7 no room for the figure (%d px)\n", figH);
+  }
   // the answers: from the top on the right (landscape), or just above the buttons (portrait)
   int oy = land ? top + 6 : H - 16 - btnH - 10 - optsH;
   for (int i = 0; i < ex.nopt; i++) {
@@ -744,7 +762,7 @@ static void drawT7Result() {
     y += 8;
   }
   int btnH = 56, btnY = H - 16 - btnH, bw = (W - 32 - 14) / 2;
-  t7Button(16, btnY, bw, btnH, "Lecții", ID_BACK);
+  t7Button(16, btnY, bw, btnH, "Lecții", T7_LIST_BTN);
   t7Button(W - 16 - bw, btnY, bw, btnH, "Încă o dată", ID_AGAIN, true);
 }
 
@@ -770,7 +788,10 @@ static void drawTutor7() {
         t7Button(x, y, w, h, labels[i], T7_PART0 + i, i == 2);
         y += h + 16;
       }
-      if (best) t7Button(x, y, w, t7ButtonH("Reset", w, 60), "Reset", T7_RESET);
+      if (best) {  // Recipes' Delete works the same way: the first tap asks, the second clears
+        const char *label = gs->t7ResetArmed ? "Sigur? Încă o dată" : "Șterge progresul";
+        t7Button(x, y, w, t7ButtonH(label, w, 60), label, T7_RESET, gs->t7ResetArmed);
+      }
       return;
     }
     case T7_PAGE: return drawT7Page();

@@ -52,6 +52,8 @@ S(S_G_STORIES, "1 story|%ld stories")  // stories played to the end; also the Ad
 S(S_G_L_CHOOSE_WAY, "Choose your way")
 S(S_G_L_WON_DRAWN, "Won %d, drawn %d")
 S(S_G_L_BEAT_BOARD, "Beat the board")
+S(S_G_L_LESSONS, "Lessons: %d/%d")  // Tutor: lessons practised, of all
+S(S_G_L_GRADE7_MATHS, "7th grade, maths")  // Tutor, before any lesson is practised
 
 // ---- AI: why the board's own questions or story are used (12pt, up to 3 lines)
 S(S_G_AI_OFF, "AI in games is off (Settings), so this is the board's own.")

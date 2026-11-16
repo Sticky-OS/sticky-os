@@ -77,35 +77,40 @@ int exactFormat(const Exact &e, char *out, int cap) {
 // The right answer plus three of the slips, in a random order. False when
 // there are not three distinct slips (then the caller tries another seed).
 bool setOptions(Exercise &ex, Rng &rng, const Exact &right, Cand *c, int nc, const char *unit) {
-  if (PR(ex.unit, "%s", unit)) return false;
+  if (PR(ex.unit, "%s", unit) || nc > MAX_SLIPS) return false;
+  if (c == ex.slip) ex.nslip = nc;
   // shuffle the slips, keep the first three that differ from the answer and each other
+  // (their indexes, not the slips: a slip is 212 bytes, and every byte here is on the loop task's stack)
+  uint8_t ix[MAX_SLIPS];
+  for (int i = 0; i < nc; i++) ix[i] = (uint8_t)i;
   for (int i = nc - 1; i > 0; i--) {
     int j = rng.range(0, i);
-    Cand t = c[i];
-    c[i] = c[j];
-    c[j] = t;
+    uint8_t t = ix[i];
+    ix[i] = ix[j];
+    ix[j] = t;
   }
   // A radical answer must not be the only radical on screen, or it could be found by its look alone:
   // keep at least one radical among the wrong options when there is one.
   if (right.r != 1) {
     for (int i = 0; i < nc; i++)
-      if (c[i].v.r != 1 && fabs(exactValue(c[i].v) - exactValue(right)) >= 1e-9) {
-        Cand t = c[0];
-        c[0] = c[i];
-        c[i] = t;
+      if (c[ix[i]].v.r != 1 && fabs(exactValue(c[ix[i]].v) - exactValue(right)) >= 1e-9) {
+        uint8_t t = ix[0];
+        ix[0] = ix[i];
+        ix[i] = t;
         break;
       }
   }
-  Cand pick[3];
+  int pick[3];
   int np = 0;
   for (int i = 0; i < nc && np < 3; i++) {
-    bool dup = c[i].v.p <= 0 || fabs(exactValue(c[i].v) - exactValue(right)) < 1e-9;  // a length or an angle is positive
-    for (int k = 0; k < np && !dup; k++) dup = fabs(exactValue(c[i].v) - exactValue(pick[k].v)) < 1e-9;
-    if (!dup) pick[np++] = c[i];
+    const Exact &v = c[ix[i]].v;
+    bool dup = v.p <= 0 || fabs(exactValue(v) - exactValue(right)) < 1e-9;  // a length or an angle is positive
+    for (int k = 0; k < np && !dup; k++) dup = fabs(exactValue(v) - exactValue(c[pick[k]].v)) < 1e-9;
+    if (!dup) pick[np++] = ix[i];
   }
   if (np < 3) return false;
-  Exact val[4] = {right, pick[0].v, pick[1].v, pick[2].v};
-  const char *why[4] = {"", pick[0].why, pick[1].why, pick[2].why};
+  Exact val[4] = {right, c[pick[0]].v, c[pick[1]].v, c[pick[2]].v};
+  const char *why[4] = {"", c[pick[0]].why, c[pick[1]].why, c[pick[2]].why};
   int order[4] = {0, 1, 2, 3};
   for (int i = 3; i > 0; i--) {
     int j = rng.range(0, i);
@@ -170,7 +175,7 @@ static bool genHypotenuse(int level, Rng &rng, Exercise &ex) {
   ex.fig = Figure{FIG_RIGHT_TRIANGLE, {ab, ac, 0}};
   bad |= PR(ex.text, "Î" "ntr-un triunghi dreptunghic ABC, cu unghiul A = 90°, avem AB = %d cm și AC = %d cm. "
                      "Cât este lungimea ipotenuzei BC?", ab, ac);
-  Cand c[7];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactSqrt(ab + ac),
        "Ai adunat lungimile catetelor și ai extras rădăcina. Teorema lui Pitagora adună pătratele catetelor, nu lungimile lor: BC" SQ " = AB" SQ " + AC" SQ ".");
@@ -219,7 +224,7 @@ static bool genLeg(int level, Rng &rng, Exercise &ex) {
   ex.fig = Figure{FIG_RIGHT_TRIANGLE, {ab, 0, bc}};
   bad |= PR(ex.text, "Î" "ntr-un triunghi dreptunghic ABC, cu unghiul A = 90°, ipotenuza BC = %d cm și cateta AB = %d cm. "
                      "Cât este lungimea catetei AC?", bc, ab);
-  Cand c[7];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactSqrt(bc - ab),
        "Ai scăzut lungimile și ai extras rădăcina. Teorema lui Pitagora lucrează cu pătratele: AC" SQ " = BC" SQ " - AB" SQ ".");
@@ -329,7 +334,7 @@ static bool genSquareDiagonal(Rng &rng, Exercise &ex) {
   ex.level = 3;
   ex.fig = Figure{FIG_SQUARE_DIAGONAL, {l, 0, 0}};
   bad |= PR(ex.text, "Latura unui pătrat este de %d cm. Cât este lungimea diagonalei pătratului?", l);
-  Cand c[4];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(2 * l),
        "Ai dublat latura. Diagonala este ipotenuza unui triunghi dreptunghic isoscel cu catetele de %d cm: d" SQ " = %d" SQ " + %d" SQ ", deci nu se obține prin dublarea laturii.", l, l, l);
@@ -360,7 +365,7 @@ static bool genEquilateralHeight(Rng &rng, Exercise &ex) {
   ex.level = 3;
   ex.fig = Figure{FIG_EQUILATERAL_HEIGHT, {l, 0, 0}};
   bad |= PR(ex.text, "Un triunghi echilateral ABC are latura de %d cm. Cât este lungimea înălțimii AD?", l);
-  Cand c[4];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, norm(l, 3, 1),
        "Ai uitat să împarți latura la 2. În triunghiul dreptunghic ABD, cateta BD este jumătate din BC: BD = %d cm, apoi AD" SQ " = AB" SQ " - BD" SQ ".", h2);

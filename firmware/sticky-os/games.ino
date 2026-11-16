@@ -72,8 +72,9 @@ struct GState {
   int t7Screen = T7_CLASSES, t7Lesson = 0, t7Part = 0, t7Page = 0;  // t7Part: 0 the summary, 1 the worked examples
   int t7Index = 0, t7Right = 0, t7Tries = 0, t7Clues = 0, t7Picked = -1;  // the exercise; right first time; wrong tries and clues on it
   bool t7Crossed[4] = {}, t7GaveUp = false, t7NewBest = false;
+  bool t7ResetArmed = false;  // the lesson's Reset was tapped once: the next tap on it clears the progress
   uint32_t t7Seen[t7::MAX_STEPS] = {};  // what this practice has asked, so nothing comes twice
-  t7::Exercise t7Ex;
+  t7::Exercise t7Ex;              // made in place by t7Make(), here in PSRAM: it is 3.9 KB
 };
 static GState *gs;
 
@@ -1641,7 +1642,7 @@ static String launcherLine(int g) {
     case GAME_TUTOR7: {
       int done = 0;
       for (int i = 0; i < t7::LESSON_COUNT; i++) done += p.tutor7Best[t7::lesson(i).slot] > 0;
-      return done ? String("Lecții: ") + done + "/" + t7::LESSON_COUNT : String("Clasa a VII-a, matematică");
+      return done ? TF(S_G_L_LESSONS, done, t7::LESSON_COUNT) : String(T(S_G_L_GRADE7_MATHS));
     }
   }
   return "";
@@ -1722,7 +1723,10 @@ static void drawGames() {
 }
 
 static void gamesActivate(int id) {
-  if (id < 0) return;
+  if (id < 0) {
+    if (gs->gGame == GAME_TUTOR7 && gs->t7ResetArmed) gs->t7ResetArmed = false, render(false);  // a tap beside an armed Reset disarms it
+    return;
+  }
   switch (gs->gGame) {
     case GAME_2048: return act2048(id);
     case GAME_MEMORY: return actMemory(id);

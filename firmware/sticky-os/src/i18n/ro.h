@@ -492,6 +492,8 @@
 {S_G_L_CHOOSE_WAY, "Alegeți drumul"},
 {S_G_L_WON_DRAWN, "Câștigate %d, egale %d"},
 {S_G_L_BEAT_BOARD, "Bateți dispozitivul"},
+{S_G_L_LESSONS, "Lecții: %d/%d"},
+{S_G_L_GRADE7_MATHS, "Clasa a VII-a, matematică"},
 {S_G_AI_OFF, "IA în jocuri e oprită (Setări), așa că se folosește varianta proprie."},
 {S_G_AI_NO_KEY, "Nu există o cheie OpenAI pe dispozitiv, așa că se folosește varianta proprie. Adăugați una în aplicația de configurare pentru orice temă."},
 {S_G_AI_NO_WIFI, "Fără WiFi acum, așa că se folosește varianta proprie."},

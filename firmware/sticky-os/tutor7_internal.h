@@ -19,17 +19,19 @@ namespace t7 {
 
 inline int64_t sq(int64_t x) { return x * x; }
 
-struct Cand {
-  Exact v;
-  char why[200];
-};
+// A generator gathers its slips in ex.slip (Cand *c = ex.slip), never in a local array: see Exercise.
+typedef Slip Cand;
 
 // Adds a typical slip: its value, and why it is wrong.
-#define SLIP(list, n, value, ...)                    \
-  do {                                               \
-    (list)[n].v = (value);                           \
-    if (PR((list)[n].why, __VA_ARGS__)) bad = true;  \
-    (n)++;                                           \
+#define SLIP(list, n, value, ...)                      \
+  do {                                                 \
+    if ((n) >= MAX_SLIPS) {                            \
+      bad = true;                                      \
+      break;                                           \
+    }                                                  \
+    (list)[n].v = (value);                             \
+    if (PR((list)[n].why, __VA_ARGS__)) bad = true;    \
+    (n)++;                                             \
   } while (0)
 
 Exact exactNorm(int64_t p, int64_t r, int64_t q);

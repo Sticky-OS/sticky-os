@@ -76,7 +76,8 @@ enum Kind : uint8_t {
 };
 
 // What the screen draws, from the exercise's own numbers. 0: the length is
-// the unknown (drawn as ?). Right triangle: A = 90 degrees, v = AB, AC, BC.
+// the unknown (drawn as ?). Right triangle: A = 90 degrees, v = AB, AC, BC, and v[3] what else is
+// asked: 0 nothing (a side is), 2 the height from A to BC (K_HEIGHT_FROM_AREA), 4 the area (K_AREA).
 // FIG_RIGHT_NAMED is for the theory pages: the sides are named (AB, AC, BC), not measured.
 enum FigureKind : uint8_t {
   FIG_RIGHT_TRIANGLE, FIG_TRIANGLE, FIG_SQUARE_DIAGONAL, FIG_EQUILATERAL_HEIGHT, FIG_RIGHT_NAMED,
@@ -90,6 +91,12 @@ struct Figure {
 };
 
 static const int MAX_OPTIONS = 4;
+static const int MAX_SLIPS = 8;
+// A typical slip: the number it gives, and why it is wrong.
+struct Slip {
+  Exact v;
+  char why[200];
+};
 struct Exercise {
   Kind kind;
   uint8_t level;  // 1 integers, 2 radicals, 3 the converse and special cases
@@ -103,6 +110,11 @@ struct Exercise {
   char why[MAX_OPTIONS][200];  // why an option is wrong (empty for the right one)
   char clue[2][200];           // a nudge, then a stronger one; never the answer
   char solution[400];          // the worked solution, shown after the answer or on "give up"
+  // The generator's scratch: every slip it thought of, three of which become the wrong options. They
+  // are here and not on the stack because they take 1.7 KB and the board's loop task has 8 KB: the
+  // board keeps its Exercise in PSRAM and makes it there.
+  int nslip;
+  Slip slip[MAX_SLIPS];
 };
 
 // Fills ex for the kind and level; false when it could not make a valid one

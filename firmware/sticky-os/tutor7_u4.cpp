@@ -52,7 +52,7 @@ static bool genFourthAngle(Rng &rng, Exercise &ex) {
   ex.fig = Figure{FIG_QUAD, {g[0], g[1], g[2], 0}};
   bad |= PR(ex.text, "Un patrulater convex ABCD are unghiul %s = %d" ANG ", unghiul %s = %d" ANG " și unghiul %s = %d" ANG ". Cât măsoară unghiul %s?", gl[0],
             g[0], gl[1], g[1], gl[2], g[2], V4[u]);
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(S), "Ai adunat cele trei unghiuri, dar suma lor nu este răspunsul. Cele patru unghiuri împreună au suma de 360" ANG ", deci unghiul cerut completează suma până la 360" ANG ".");
   SLIP(c, nc, exactInt(abs(180 - S)), "Ai folosit suma de 180" ANG ", cea de la triunghi. Într-un patrulater convex suma unghiurilor este 360" ANG ".");
@@ -86,10 +86,11 @@ static bool genProportional(Rng &rng, Exercise &ex) {
   ex.level = 2;
   ex.fig = Figure{FIG_QUAD, {r[0], r[1], r[2], r[3]}};
   bad |= PR(ex.text, "Unghiurile unui patrulater convex sunt direct proporționale cu numerele %d, %d, %d și %d. Cât măsoară cel mai mare unghi?", r[0], r[1], r[2], r[3]);
-  Cand c[5];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(90), "Ai împărțit suma în patru părți egale, dar unghiurile nu sunt egale: ele sunt proporționale cu numerele date.");
-  SLIP(c, nc, exactInt(180 / S * m + (180 % S ? 0 : 0)), "Ai folosit suma de 180" ANG " în loc de suma unghiurilor unui patrulater convex.");
+  if (180 * m % S == 0)  // the angle "with 180°" is a whole number of degrees, or the slip is not offered
+    SLIP(c, nc, exactInt(180 * m / S), "Ai folosit suma de 180" ANG " în loc de suma unghiurilor unui patrulater convex.");
   SLIP(c, nc, exactInt(m), "Numerele date sunt doar proporțiile, nu măsurile în grade. Află mai întâi cât valorează o parte.");
   SLIP(c, nc, exactInt(part), "Aceasta este măsura unei singure părți. Cel mai mare unghi este format din mai multe astfel de părți.");
   SLIP(c, nc, exactInt(360 - big), "Aceasta este suma celorlalte trei unghiuri, nu măsura celui mai mare.");
@@ -112,11 +113,12 @@ static bool genParAngle(Rng &rng, Exercise &ex) {
   ex.level = 1;
   ex.fig = Figure{FIG_PARALLELOGRAM, {A, which, 0, 0}};
   bad |= PR(ex.text, "În paralelogramul ABCD, unghiul A măsoară %d" ANG ". Cât măsoară unghiul %s?", A, name[which]);
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   if (which == 1) {
     SLIP(c, nc, exactInt(180 - A), "Unghiul C este opus unghiului A, nu consecutiv cu el. Unghiurile opuse ale paralelogramului sunt congruente.");
-    SLIP(c, nc, exactInt(90 - A > 0 ? 90 - A : 180 - 2 * A + A), "Ai scăzut din 90" ANG ". Nu există o astfel de relație între unghiurile paralelogramului.");
+    if (A < 90)  // only an acute angle can be taken from 90°
+      SLIP(c, nc, exactInt(90 - A), "Ai scăzut din 90" ANG ". Nu există o astfel de relație între unghiurile paralelogramului.");
     SLIP(c, nc, exactInt(360 - A), "Ai scăzut din 360" ANG ". Suma de 360" ANG " este a tuturor celor patru unghiuri, iar unghiul C este opus lui A.");
     SLIP(c, nc, exactInt(360 - 2 * A), "Aceasta este suma dintre unghiul B și unghiul D, nu măsura unui singur unghi.");
   } else {
@@ -139,7 +141,7 @@ static bool genParPerimeter(Rng &rng, Exercise &ex) {
   ex.kind = K_PAR_PERIMETER;
   ex.level = 1;
   ex.fig = Figure{FIG_PARALLELOGRAM, {0, 0, 0, 0}};
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   if (rng.range(0, 1)) {  // the sides are given: the perimeter
     int a = rng.range(3, 15), b = rng.range(3, 15);
@@ -182,7 +184,7 @@ static bool genParDiagonal(Rng &rng, Exercise &ex) {
   ex.level = 1;
   ex.fig = Figure{FIG_PARALLELOGRAM, {ao, bo, ask, 0}};
   bad |= PR(ex.text, "Diagonalele paralelogramului ABCD se intersectează în punctul O. Se știe că AO = %d cm și BO = %d cm. Cât este %s?", ao, bo, ask == 0 ? "AC" : "BD");
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   int mine = ask == 0 ? ao : bo, other = ask == 0 ? bo : ao;
   SLIP(c, nc, exactInt(mine), "Aceasta este doar jumătate din diagonală. Diagonala întreagă are două astfel de segmente.");
@@ -313,7 +315,8 @@ static bool genClassify(Rng &rng, Exercise &ex) {
   bad |= PR(ex.clue[0], "Mai întâi află dacă proprietățile garantează că laturile opuse sunt paralele. Apoi vezi ce adaugă celelalte: unghiuri, diagonale, laturi.");
   bad |= PR(ex.clue[1], "Alege doar ce rezultă sigur din toate proprietățile luate împreună, nu ce ar putea fi uneori adevărat.");
   static const char *SOL[5] = {
-      "Proprietățile date nu garantează nici măcar că laturile opuse sunt paralele (există și trapeze care le respectă), deci rămâne doar denumirea de patrulater convex.",
+      // every case of answer 0, the two with a pair of parallel sides included: some trapezoid has them all
+      "Proprietățile date nu garantează că ambele perechi de laturi opuse sunt paralele (le respectă și unele trapeze), deci ABCD poate să nu fie paralelogram: rămâne doar denumirea de patrulater convex.",
       "Proprietățile date garantează că ABCD este paralelogram, dar nu mai mult: nu rezultă nici unghi drept, nici laturi consecutive congruente.",
       "ABCD este paralelogram, iar un paralelogram cu un unghi drept sau cu diagonalele congruente este dreptunghi (trei unghiuri drepte duc tot la dreptunghi).",
       "ABCD este paralelogram, iar un paralelogram cu două laturi consecutive congruente sau cu diagonalele perpendiculare este romb (toate laturile congruente duc tot la romb).",
@@ -329,7 +332,7 @@ static bool genMidline(Rng &rng, Exercise &ex) {
   bool bad = false;
   ex.kind = K_MIDLINE;
   ex.level = 1;
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   int ans;
   if (mode == 0) {
@@ -354,7 +357,7 @@ static bool genMidline(Rng &rng, Exercise &ex) {
     bad |= PR(ex.solution, "MN este linia mijlocie, deci MN = BC : 2. Atunci BC = 2 · MN = 2 · %d = %d cm.", mn, ans);
   }
   bad |= PR(ex.clue[0], "Gândește-te la teorema liniei mijlocii: linia mijlocie este paralelă cu a treia latură și lungimea ei se leagă simplu de lungimea laturii.");
-  bad |= PR(ex.clue[1], "Linia mijlocie are jumătate din lungimea laturii paralele cu ea. Alege între a înjumătăți și a dubla, după ce cunoști.");
+  bad |= PR(ex.clue[1], "Linia mijlocie are jumătate din lungimea laturii paralele cu ea. Alege între a înjumătăți și a dubla, în funcție de ce știi.");
   return finish(ex, rng, bad, exactInt(ans), c, nc, " cm");
 }
 
@@ -367,7 +370,7 @@ static bool genMedianTriangle(Rng &rng, Exercise &ex) {
   ex.level = 2;
   ex.fig = Figure{FIG_MIDLINE, {a, b, cc, 0}};
   bad |= PR(ex.text, "Triunghiul ABC are laturile AB = %d cm, BC = %d cm și AC = %d cm. Se unesc mijloacele laturilor și se obține triunghiul format de cele trei linii mijlocii. Care este perimetrul lui?", a, b, cc);
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(P), "Acesta este perimetrul triunghiului ABC. Liniile mijlocii sunt mai scurte decât laturile.");
   SLIP(c, nc, exactFrac(P, 4), "Ai împărțit perimetrul la patru. Fiecare linie mijlocie este jumătate din latura ei, deci perimetrul se înjumătățește.");
@@ -385,7 +388,7 @@ static bool genCentroid(Rng &rng, Exercise &ex) {
   bool bad = false;
   ex.kind = K_CENTROID;
   ex.level = 2;
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   int ans, given;
   if (mode <= 1) {
@@ -404,7 +407,7 @@ static bool genCentroid(Rng &rng, Exercise &ex) {
       SLIP(c, nc, exactFrac(given, 2), "Ai luat G drept mijlocul medianei. Centrul de greutate nu înjumătățește mediana.");
       SLIP(c, nc, exactInt(given), "Aceasta este lungimea întregii mediane AM, iar GM este doar o parte din ea.");
       SLIP(c, nc, exactInt(given / 3 + 2), "Ai adăugat un număr la o treime din mediană, fără nicio regulă din teoremă. GM este exact o parte din mediană.");
-      bad |= PR(ex.solution, "Centrul de greutate se află la o treime de latură: GM = (1/3) · AM = (1/3) · %d = %d cm.", given, ans);
+      bad |= PR(ex.solution, "Centrul de greutate împarte mediana în raportul 2 : 1 de la vârf, deci GM este o treime din mediană: GM = (1/3) · AM = (1/3) · %d = %d cm.", given, ans);
     }
   } else {
     given = rng.range(2, 10);
@@ -437,7 +440,7 @@ static bool genRectDiagonal(Rng &rng, Exercise &ex) {
   bool bad = false;
   ex.kind = K_RECT_DIAGONAL;
   ex.level = 1;
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   int ans, x;
   if (mode == 0) {
@@ -484,7 +487,7 @@ static bool genRectAngle(Rng &rng, Exercise &ex) {
   ex.level = 2;
   ex.fig = Figure{FIG_RECTANGLE, {al, 0, 0, 0}};
   bad |= PR(ex.text, "ABCD este dreptunghi, iar diagonalele lui se intersectează în O. Unghiul ascuțit dintre diagonale, adică unghiul AOB, măsoară %d" ANG ". Cât măsoară unghiul OAB?", al);
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(90 - al), "Ai scăzut unghiul AOB din 90" ANG ". Triunghiul AOB nu este dreptunghic; suma unghiurilor lui este alta.");
   SLIP(c, nc, exactInt(al / 2), "Acesta este unghiul dintre diagonală și latura AD, nu unghiul OAB. Cele două unghiuri împreună formează unghiul drept din A.");
@@ -510,7 +513,7 @@ static bool genRhombusAngle(Rng &rng, Exercise &ex) {
   ex.level = 2;
   ex.fig = Figure{FIG_RHOMBUS, {x, mode, 0, 0}};
   bad |= PR(ex.text, "ABCD este romb, iar diagonala AC formează cu latura AB un unghi de %d" ANG ". Cât măsoară unghiul %s?", x, mode == 0 ? "BAD" : "ABC");
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   if (mode == 0) {
     SLIP(c, nc, exactInt(x), "Acesta este doar unghiul dintre diagonală și latura AB. Diagonala este bisectoarea unghiului BAD, deci unghiul BAD cuprinde două astfel de unghiuri.");
@@ -549,7 +552,7 @@ static bool genRhombusSide(int level, Rng &rng, Exercise &ex) {
   int64_t n = sq(a) + sq(b);
   Exact side = exactSqrt(n);
   if (level <= 1 ? side.r != 1 : side.r == 1) return false;
-  int mode = level <= 1 ? rng.range(0, 1) : rng.range(0, 1);
+  int mode = rng.range(0, 1);  // 0 the side, 1 the perimeter
   int d1 = 2 * a, d2 = 2 * b;
   Exact right = mode == 0 ? side : exactNorm(4LL * side.p, side.r, side.q);
   bool bad = false;
@@ -557,7 +560,7 @@ static bool genRhombusSide(int level, Rng &rng, Exercise &ex) {
   ex.level = level <= 1 ? 1 : 2;
   ex.fig = Figure{FIG_RHOMBUS, {d1, d2, mode, 0}};
   bad |= PR(ex.text, "Diagonalele rombului ABCD măsoară %d cm și %d cm. Cât este %s?", d1, d2, mode == 0 ? "latura rombului" : "perimetrul rombului");
-  Cand c[7];
+  Cand *c = ex.slip;
   int nc = 0;
   char f[32];
   if (mode == 0) {
@@ -596,7 +599,7 @@ static bool genSquareSide(Rng &rng, Exercise &ex) {
   ex.level = 3;
   ex.fig = Figure{FIG_SQUARE_DIAGONAL, {d, 1, 0, 0}};
   bad |= PR(ex.text, "Diagonala unui pătrat măsoară %d cm. Cât este latura pătratului?", d);
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(d), "Latura pătratului este mai scurtă decât diagonala: diagonala este ipotenuza unui triunghi dreptunghic isoscel, iar latura este una dintre catete.");
   SLIP(c, nc, exactFrac(d, 2), "Ai înjumătățit diagonala. Din teorema lui Pitagora, pătratul diagonalei este dublul pătratului laturii, nu de patru ori mai mare.");
@@ -624,7 +627,7 @@ static bool genTrapAngle(Rng &rng, Exercise &ex) {
   ex.level = 1;
   ex.fig = Figure{iso ? FIG_TRAPEZOID_ISOSCELES : FIG_TRAPEZOID, {x, mode, 0, 0}};
   bad |= PR(ex.text, "ABCD este un trapez%s, cu laturile AB și CD paralele, iar unghiul %s măsoară %d" ANG ". Cât măsoară unghiul %s?", iso ? " isoscel" : "", given[mode], x, ask[mode]);
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   if (mode <= 1) {
     SLIP(c, nc, exactInt(x), "Unghiul %s și unghiul %s sunt alăturate aceleiași laturi neparalele, deci sunt suplementare, nu egale.", given[mode], ask[mode]);
@@ -661,7 +664,7 @@ static bool genTrapMidline(Rng &rng, Exercise &ex) {
   bool bad = false;
   ex.kind = K_TRAP_MIDLINE;
   ex.level = 2;
-  Cand c[6];
+  Cand *c = ex.slip;
   int nc = 0;
   int ans;
   if (mode == 0) {
@@ -723,7 +726,7 @@ static bool genTrapHeight(int level, Rng &rng, Exercise &ex) {
   ex.level = level <= 1 ? 1 : 2;
   ex.fig = Figure{FIG_TRAPEZOID_ISOSCELES, {B, b, c0, 0}};
   bad |= PR(ex.text, "Trapezul isoscel ABCD, cu bazele AB = %d cm și CD = %d cm, are laturile neparalele AD = BC = %d cm. Cât este înălțimea trapezului?", B, b, c0);
-  Cand c[7];
+  Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(c0), "Aceasta este lungimea laturii neparalele, care este oblică. Înălțimea este perpendiculară pe baze, deci este mai scurtă decât latura.");
   SLIP(c, nc, exactSqrt(sq(c0) + sq(p)), "Ai adunat pătratele. Latura neparalelă este ipotenuza triunghiului dreptunghic format de înălțime, deci pătratul înălțimii este o diferență.");
@@ -746,14 +749,13 @@ static bool genArea(Rng &rng, Exercise &ex) {
   bool bad = false;
   ex.kind = K_AREA;
   ex.level = 2;
-  Cand c[7];
+  Cand *c = ex.slip;
   int nc = 0;
   int ans;
   if (type == 0) {  // parallelogram: base, side, height
     int a = rng.range(6, 14), h = rng.range(3, 9), s = h + rng.range(1, 6);
     ans = a * h;
     ex.fig = Figure{FIG_PARALLELOGRAM, {0, a, h, s}};
-    ex.fig.v[0] = 0;
     bad |= PR(ex.text, "Paralelogramul ABCD are baza AB = %d cm, latura BC = %d cm și înălțimea corespunzătoare bazei AB egală cu %d cm. Care este aria lui?", a, s, h);
     SLIP(c, nc, exactInt(a * s), "Ai înmulțit baza cu latura alăturată. Aria este baza înmulțită cu înălțimea, iar înălțimea este perpendiculară pe bază, nu oblică.");
     SLIP(c, nc, exactFrac(a * h, 2), "Ai împărțit la doi, ca la triunghi. Aria paralelogramului este baza înmulțită cu înălțimea, fără împărțire.");
@@ -762,7 +764,6 @@ static bool genArea(Rng &rng, Exercise &ex) {
     bad |= PR(ex.clue[0], "Aria unui paralelogram se calculează cu o bază și cu înălțimea corespunzătoare ei. Care dintre numerele date sunt acestea?");
     bad |= PR(ex.clue[1], "Înmulțește baza cu înălțimea corespunzătoare. Latura oblică nu intră în formulă.");
     bad |= PR(ex.solution, "A = AB · h = %d · %d = %d cm" SQ ".", a, h, ans);
-    ex.fig.v[0] = 0;
   } else if (type == 1) {  // triangle
     int b = rng.range(6, 16), h = rng.range(4, 12);
     if ((b * h) % 2) return false;
@@ -812,7 +813,7 @@ static bool genArea(Rng &rng, Exercise &ex) {
       c2 = tmp;
     }
     ans = c1 * c2 / 2;
-    ex.fig = Figure{FIG_RIGHT_TRIANGLE, {c1, c2, 0, 4}};
+    ex.fig = Figure{FIG_RIGHT_TRIANGLE, {c1, c2, hy, 4}};  // v[3] 4: the area is asked (t7FigRight marks it)
     bad |= PR(ex.text, "Triunghiul ABC are unghiul A = 90°, cateta AB = %d cm și cateta AC = %d cm. Ipotenuza BC are %d cm. Care este aria triunghiului?", c1, c2, hy);
     SLIP(c, nc, exactInt(c1 * c2), "Ai uitat să împarți la doi. Aria triunghiului dreptunghic este jumătate din produsul catetelor.");
     SLIP(c, nc, exactInt(c1 + c2), "Ai adunat catetele. Aria se obține prin înmulțire și împărțire la doi.");
@@ -830,7 +831,7 @@ static bool genPerimeter(Rng &rng, Exercise &ex) {
   bool bad = false;
   ex.kind = K_PERIMETER;
   ex.level = 1;
-  Cand c[7];
+  Cand *c = ex.slip;
   int nc = 0;
   int ans;
   if (type == 0 || type == 3) {
@@ -838,7 +839,6 @@ static bool genPerimeter(Rng &rng, Exercise &ex) {
     if (a == b) return false;
     ans = 2 * (a + b);
     ex.fig = Figure{type == 0 ? FIG_RECTANGLE : FIG_PARALLELOGRAM, {type, a, b, 0}};
-    ex.fig.v[0] = type;
     if (type == 0) bad |= PR(ex.text, "Un dreptunghi are lungimea de %d cm și lățimea de %d cm. Care este perimetrul lui?", a, b);
     else bad |= PR(ex.text, "Un paralelogram are două laturi consecutive de %d cm și de %d cm. Care este perimetrul lui?", a, b);
     SLIP(c, nc, exactInt(a + b), "Aceasta este suma a două laturi consecutive. Perimetrul însumează toate cele patru laturi.");
@@ -868,7 +868,8 @@ static bool genPerimeter(Rng &rng, Exercise &ex) {
     else snprintf(dm, sizeof dm, "%d", y / 10);
     ex.fig = Figure{FIG_RECTANGLE, {4, a, y, 0}};
     bad |= PR(ex.text, "Un dreptunghi are lungimea de %d cm și lățimea de %s dm. Care este perimetrul lui, în centimetri?", a, dm);
-    SLIP(c, nc, exactInt(2 * (a + y / 10)), "Ai adunat centimetri cu decimetri fără să transformi unitățile. Mai întâi exprimă lățimea în centimetri (1 dm = 10 cm).");
+    // the width's dm number taken as cm: 2 · (a + y/10) = 2a + y/5, a whole number since y is a multiple of 5
+    SLIP(c, nc, exactInt(2 * a + y / 5), "Ai adunat centimetri cu decimetri fără să transformi unitățile. Mai întâi exprimă lățimea în centimetri (1 dm = 10 cm).");
     SLIP(c, nc, exactInt(a + y), "Aceasta este suma a două laturi consecutive. Perimetrul însumează toate cele patru laturi.");
     SLIP(c, nc, exactInt(a * y), "Aceasta este produsul lungimilor, nu perimetrul.");
     SLIP(c, nc, exactInt(2 * a + y), "Ai socotit lățimea o singură dată. Laturile opuse sunt congruente, deci fiecare lungime apare de două ori.");
@@ -884,7 +885,7 @@ static bool genHeightFromArea(int level, Rng &rng, Exercise &ex) {
   bool bad = false;
   ex.kind = K_HEIGHT_FROM_AREA;
   ex.level = level <= 1 ? 1 : 2;
-  Cand c[7];
+  Cand *c = ex.slip;
   int nc = 0;
   Exact right;
   if (type == 0) {
@@ -896,7 +897,7 @@ static bool genHeightFromArea(int level, Rng &rng, Exercise &ex) {
     SLIP(c, nc, exactInt(A - a), "Ai scăzut latura din arie. Aria este produsul dintre latură și înălțime, deci înălțimea se află prin împărțire.");
     SLIP(c, nc, exactInt(A * a), "Ai înmulțit aria cu latura. Din A = latura · înălțimea, înălțimea se obține împărțind aria la latură.");
     SLIP(c, nc, exactFrac(A, 2 * a), "Ai împărțit și la doi, ca la triunghi. La paralelogram aria este baza înmulțită cu înălțimea, fără împărțire.");
-    SLIP(c, nc, exactFrac(2 * A, a), "Ai înmulțit cu doi, ca la triunghi. La paralelogram aria este baza înmulțită cu înălțimea, fără alte factori.");
+    SLIP(c, nc, exactFrac(2 * A, a), "Ai înmulțit cu doi, ca la triunghi. La paralelogram aria este baza înmulțită cu înălțimea, fără alți factori.");
     bad |= PR(ex.clue[0], "Aria unui paralelogram este produsul dintre o latură și înălțimea corespunzătoare ei. Care factor lipsește?");
     bad |= PR(ex.clue[1], "Împarte aria la latura dată.");
     bad |= PR(ex.solution, "A = latura · h, deci h = A : latura = %d : %d = %d cm.", A, a, h);
@@ -920,7 +921,7 @@ static bool genHeightFromArea(int level, Rng &rng, Exercise &ex) {
     int c1 = t[0], c2 = t[1], hy = t[2];
     right = exactFrac(c1 * c2, hy);
     if (right.q == 1) return false;
-    ex.fig = Figure{FIG_RIGHT_TRIANGLE, {c1, c2, 0, 2}};
+    ex.fig = Figure{FIG_RIGHT_TRIANGLE, {c1, c2, hy, 2}};  // v[3] 2: the height from A is asked (t7FigRight draws it)
     bad |= PR(ex.text, "Triunghiul ABC are unghiul A = 90°, cateta AB = %d cm, cateta AC = %d cm și ipotenuza BC = %d cm. Care este înălțimea dusă din A pe ipotenuză?", c1, c2, hy);
     SLIP(c, nc, exactFrac(c1 * c2, 2), "Aceasta este aria triunghiului, nu înălțimea.");
     SLIP(c, nc, exactFrac(hy, 2), "Aceasta este lungimea medianei duse din A (jumătate din ipotenuză), nu a înălțimii.");

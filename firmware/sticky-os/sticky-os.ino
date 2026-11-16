@@ -367,7 +367,6 @@ static int listPage;                 // the page of a long list (Settings, About
 static const uint32_t DTAP_MS = 350;
 static const int DTAP_PX = 40;
 static struct { bool on; int x, y; uint32_t at; } tapWait;  // a tap held back: it may be the first of two
-static uint32_t shownAt;     // millis() when the panel last finished a refresh: the refresh's electrical noise can fake a touch
 static uint32_t touchDownAt;  // millis() when the finger last went down (a serial tap: when it came)
 
 // Bluetooth setup mode (Settings -> Connect to the setup app): the board
@@ -533,7 +532,6 @@ static void show(bool full) {
   }
   Serial.printf("screen: %s refresh in %lu ms: %s\n", full ? "full" : "partial",
                 (unsigned long)(millis() - t), esp_err_to_name(err));
-  shownAt = millis();
 }
 
 // Shows the canvas with `photo` (H - top rows of four-grey pixels) from row
@@ -6517,19 +6515,14 @@ void loop() {
     if (count < 0 && count != GT911::kNoUpdate) touchFails++;
     if (count > 0) {
       touchToScreen(points[0], lastX, lastY);
-      if (!wasTouching && (int32_t)(millis() - shownAt) < 450) {
-        // Reports in the first moments after a refresh are the panel's noise, not a finger: dropped.
-        Serial.printf("touch: ignored, %lu ms after a refresh (sensor %u, %u)\n", (unsigned long)(millis() - shownAt), points[0].x, points[0].y);
-      } else if (!wasTouching) {
+      if (!wasTouching) {
         downX = lastX, downY = lastY;
         touchDownAt = millis();
         touchDowns++;
         Serial.printf("touch: down at %d, %d (sensor %u, %u)\n", lastX, lastY, points[0].x, points[0].y);
       }
-      if (wasTouching || (int32_t)(millis() - shownAt) >= 450) {
-        wasTouching = true;
-        lastSeen = lastActivity = millis();
-      }
+      wasTouching = true;
+      lastSeen = lastActivity = millis();
     } else if (wasTouching && (count == 0 || millis() - lastSeen > 150)) {  // 0: lifted; kNoUpdate: no new report yet
       wasTouching = false;
       int dx = lastX - downX, dy = lastY - downY;
@@ -6587,7 +6580,7 @@ void loop() {
     ok = digitalRead(PIN_BTN_OK) == LOW;
   }
   if (!ok) {
-    if (okPresses && !okHeld) { beep(2600, 30); okPresses = 0; Serial.println("button: OK"); action(); }
+    if (okPresses && !okHeld) { beep(2600, 30); okPresses = 0; action(); }
     okPresses = 0;
     okHeld = false;
   }

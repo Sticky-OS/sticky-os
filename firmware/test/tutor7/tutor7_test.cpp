@@ -77,6 +77,7 @@ static void testKind(const Run &r, FILE *samples) {
     char err[120] = "";
     bool ok = verify(ex, err, sizeof err);
     CHECK(ok, "%s seed %d: %s | %s", r.name, seed, err, ex.text);
+    CHECK(ex.nslip >= 0 && ex.nslip <= MAX_SLIPS, "%s seed %d: %d slips", r.name, seed, ex.nslip);
     distinct.insert(ex.text);
     if (ex.correct >= 0 && ex.correct < 4) correctAt[ex.correct]++;
     if (samples && shown < 3 && seed > shown * 997) {
@@ -161,6 +162,36 @@ static void testVerifyCatches() {
   cv.fig.v[0] = 1000;  // sides no longer form a triangle
   CHECK(!verify(cv, err, sizeof err), "sides that do not make a triangle must be caught");
   cv = ex;  // reset
+}
+
+// A wrong option's explanation must describe how its number is reached. Two slips giving the same number
+// are often both right ("2 · 2 = 2²"), so this can't be checked in general: these are the slips that once
+// carried a number their reason does not give.
+static void testSlipReasons() {
+  auto withReason = [](const Exercise &ex, const char *words) {
+    for (int i = 0; i < ex.nopt; i++)
+      if (i != ex.correct && strstr(ex.why[i], words)) return i;
+    return -1;
+  };
+  for (int seed = 1; seed <= 20000; seed++) {
+    Exercise ex;
+    Rng r1(seed * 2654435761u);
+    if (generate(K_PAR_ANGLE, 1, r1, ex)) {  // "taken from 90°" is 90 - A, so only for an acute A
+      int A = ex.fig.v[0], i = withReason(ex, "Ai scăzut din 90");
+      if (ex.fig.v[1] == 1 && i >= 0) CHECK(A < 90 && ex.value[i].p == 90 - A, "parallelogram angle seed %d: A = %d, \"from 90\" on %s", seed, A, ex.opt[i]);
+    }
+    Rng r2(seed * 2654435761u);
+    if (generate(K_Q_PROPORTIONAL, 2, r2, ex)) {  // "with 180°": 180 · m / S exactly, never truncated
+      int S = 0, m = 0, i = withReason(ex, "Ai folosit suma de 180");
+      for (int k = 0; k < 4; k++) S += ex.fig.v[k], m = ex.fig.v[k] > m ? ex.fig.v[k] : m;
+      if (i >= 0) CHECK(ex.value[i].q == 1 && ex.value[i].p * S == 180 * m, "proportional seed %d: \"180°\" on %s", seed, ex.opt[i]);
+    }
+    Rng r3(seed * 2654435761u);
+    if (generate(K_PERIMETER, 1, r3, ex) && ex.fig.v[0] == 4) {  // dm not converted: 2 · (a + y/10), y in cm
+      int a = ex.fig.v[1], y = ex.fig.v[2], i = withReason(ex, "fără să transformi");
+      if (i >= 0) CHECK(fabs(exactValue(ex.value[i]) - 2 * (a + y / 10.0)) < 1e-9, "perimeter seed %d: \"not converted\" on %s", seed, ex.opt[i]);
+    }
+  }
 }
 
 static bool utf8ok(const char *s) {
@@ -274,6 +305,7 @@ int main(int argc, char **argv) {
   };
   for (const Run &r : runs) testKind(r, samples);
   testVerifyCatches();
+  testSlipReasons();
   testLessons();
   if (samples) {
     fclose(samples);
