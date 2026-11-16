@@ -20,6 +20,7 @@ S(S_G_DAILY, "Daily maths")
 S(S_G_QUIZ, "Quiz")
 S(S_G_ADVENTURE, "Adventure")
 S(S_G_XO, "X and O")
+S(S_G_TUTOR7, "Tutor")  // a school tutor, class by class and subject by subject (now: 7th grade maths, geometry); the lessons themselves are in Romanian only
 S(S_G_GAMES, "Games")  // the status bar on the launcher; a button back to it
 
 // ---- buttons shared by the games (pill buttons, ~200 px wide in portrait)
@@ -51,6 +52,8 @@ S(S_G_STORIES, "1 story|%ld stories")  // stories played to the end; also the Ad
 S(S_G_L_CHOOSE_WAY, "Choose your way")
 S(S_G_L_WON_DRAWN, "Won %d, drawn %d")
 S(S_G_L_BEAT_BOARD, "Beat the board")
+S(S_G_L_LESSONS, "Lessons: %d/%d")  // Tutor: lessons practised, of all
+S(S_G_L_GRADE7_MATHS, "7th grade, maths")  // Tutor, before any lesson is practised
 
 // ---- AI: why the board's own questions or story are used (12pt, up to 3 lines)
 S(S_G_AI_OFF, "AI in games is off (Settings), so this is the board's own.")

@@ -48,11 +48,11 @@ without touching the board:
 | `recipe test` | the recipe parser against good and broken replies (a fenced reply, words around it, odd shapes, trailing commas, cut short, not JSON, a refusal, too many ingredients): `recipe test <name> PASS/FAIL` lines, then `recipe test: <n> failed` |
 | `recipe sample`, `recipe sample save` | a sample recipe on screen (and saved), to check the pages without the AI |
 | `recipe ask <words>`, `recipe voice <seconds>` | a recipe request, typed or spoken, as the app sends it |
-| `game`, `game <n>` | Games: the launcher, or game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O), where it was left |
-| `game peek` | the game on screen as one line of text: 2048's board, Memory's cards (`*` matched), the maths or quiz question with its answer, the story's scene, the X and O board; then the ids of what can be tapped |
+| `game`, `game <n>` | Games: the launcher, or game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor), where it was left |
+| `game peek` | the game on screen as one line of text: 2048's board, Memory's cards (`*` matched), the maths or quiz question with its answer, the story's scene, the X and O board, Tutor's exercise with its options (`*` the right one); then the ids of what can be tapped |
 | `game right`, `game wrong` | answer the question on screen right or wrong (Maths, Quiz); Memory: turn over a pair, or two that don't match |
 | `game type <words>` | Quiz or Adventure on screen: the words as if typed for *Your own theme* / *Your own idea* |
-| `game slide <0-3>`, `game pick <id>` | 2048: slide left, right, up, down; press what has that id (a card, an answer, a choice, a level, a square; 900 Back, 901 New game, 902 Again, 903 Games, 904 Next, 905 Cancel, 906 the built-in quiz or story, 907 Practice, 908 Play, 909 Try again) |
+| `game slide <0-3>`, `game pick <id>` | 2048: slide left, right, up, down; press what has that id (a card, an answer, a choice, a level, a square; 900 Back, 901 New game, 902 Again, 903 Games, 904 Next, 905 Cancel, 906 the built-in quiz or story, 907 Practice, 908 Play, 909 Try again; Tutor: 25 the class, 30 the subject, 40 to 48 the lessons, 20 / 21 / 22 a lesson's summary, examples and exercises, 0 to 3 an exercise's answers, 10 its clues; `game peek` lists the ids on screen) |
 | `lang <code>` | Settings → Language: `en`, `es`, `pt`, `fr`, `de`, `it`, `ru`, `tr`, `pl`, `ro` (kept, as the setting) |
 | `settings language` | Settings, on its Language page |
 | `keyboard`, `keyboard accents` | Notes' keyboard; `accents`: on its page of accented letters (in Russian: the Latin letters) |
