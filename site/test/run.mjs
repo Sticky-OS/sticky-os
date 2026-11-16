@@ -828,7 +828,7 @@ test('site: links to other websites open in a new tab, without opener or referre
   }
 });
 
-const BLOG_PAGES = ['blog/index.html', 'blog/introducing-sticky-os/index.html', 'blog/books/index.html'];
+const BLOG_PAGES = ['blog/index.html', 'blog/introducing-sticky-os/index.html', 'blog/sticky-os-1-4-books-app-fridge-door/index.html'];
 
 test('blog: pages pass the CSP, point at real files, and say the board is not Seeed\'s', async () => {
   const { readFile } = await import('node:fs/promises');

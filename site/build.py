@@ -18,6 +18,12 @@ Until a file is there, its frame shows a "screenshot coming" placeholder.
 (home-landscape.png also replaces the Timer picture in the hero.)
 Captures must hold demo data only: no names, WiFi names, addresses or places.
 
+Blog posts live in src/blog/<permalink>/index.html, listed in src/blog/index.html.
+A permalink is the title's keywords, lower case and hyphenated, without small
+words ("Sticky OS 1.4: a books app for the fridge door" ->
+sticky-os-1-4-books-app-fridge-door). Once published it stays; a post moved
+anyway gets a 301 in src/_redirects from its old address.
+
 The setup app is src/setup/ (served at setup/; setup/?demo runs it against a
 simulated board). Its tests: node test/run.mjs, from this folder.
 """
