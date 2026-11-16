@@ -1,15 +1,18 @@
 #!/bin/bash
 # The letters beyond ASCII for the board's fonts (glyphs.h): Latin-1,
 # Latin Extended-A, Romanian's comma-below letters, basic Cyrillic and a few
-# punctuation marks, for every Adafruit GFX font the screens use.
+# punctuation marks, for every Adafruit GFX font the screens use; and the
+# Books app's reading typeface, whole (BookSerif*.h: ASCII, the same extra
+# letters and the line's measures; see bookfonts.h).
 #   firmware/tools/fontext/make.sh <folder with GNU FreeFont 20120503's .ttf files>
+# OUT=<folder> writes there instead of the firmware's src/fonts (to compare).
 # Needs FreeType (macOS: brew install freetype; Debian: libfreetype-dev). An Intel
 # Homebrew on Apple silicon: CFLAGS="-arch x86_64" make.sh ...
 # FreeFont: https://ftp.gnu.org/gnu/freefont/freefont-ttf-20120503.zip
 set -euo pipefail
-TTF=${1:?usage: make.sh <folder with FreeSans.ttf, FreeSansBold.ttf, FreeSerifItalic.ttf>}
+TTF=${1:?usage: make.sh <folder with FreeSans*.ttf and FreeSerif*.ttf>}
 HERE=$(cd "$(dirname "$0")" && pwd)
-OUT="$HERE/../../sticky-os/src/fonts"
+OUT=${OUT:-"$HERE/../../sticky-os/src/fonts"}
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 ${CC:-cc} ${CFLAGS:-} -O2 -o "$TMP/fontext" "$HERE/fontext.c" $(pkg-config --cflags --libs freetype2 2>/dev/null || freetype-config --cflags --libs)
@@ -37,3 +40,18 @@ for spec in FreeSans:9 FreeSans:12 FreeSans:18 FreeSansBold:9 FreeSansBold:12 Fr
   "$TMP/fontext" "$TTF/$face.ttf" "$pt" "${face}${pt}ptExt" "$TMP/codes.txt" > "$OUT/${face}${pt}ptExt.h"
   echo "$face $pt pt: $(tail -1 "$OUT/${face}${pt}ptExt.h")"
 done
+
+# The Books app: FreeSerif in four styles at the seven text sizes, and two
+# larger bolds for chapter titles. bookfonts.cpp lists the same fonts: a
+# size changed here changes there too.
+total=0
+for spec in FreeSerif:BookSerif:"10 11 12 14 16 18 21" FreeSerifItalic:BookSerifItalic:"10 11 12 14 16 18 21" \
+            FreeSerifBold:BookSerifBold:"10 11 12 14 16 18 21 24 28" FreeSerifBoldItalic:BookSerifBoldItalic:"10 11 12 14 16 18 21"; do
+  IFS=: read -r face name sizes <<< "$spec"
+  for pt in $sizes; do
+    "$TMP/fontext" book "$TTF/$face.ttf" "$pt" "${name}${pt}" "$TMP/codes.txt" > "$OUT/${name}${pt}.h"
+    echo "$name $pt pt: $(tail -1 "$OUT/${name}${pt}.h")"
+    total=$((total + $(tail -1 "$OUT/${name}${pt}.h" | tr -dc '0-9')))
+  done
+done
+echo "Books fonts: $total bytes of flash"

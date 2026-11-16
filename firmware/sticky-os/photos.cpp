@@ -3,21 +3,18 @@
 #include <dirent.h>
 #include <vector>
 
-#include "driver/sdspi_host.h"
 #include "esp32s3/rom/tjpgd.h"
 #include "esp_heap_caps.h"
-#include "esp_vfs_fat.h"
-#include "sdmmc_cmd.h"
 
+#include "card.h"
 #include "glyphs.h"
 #include "i18n.h"
 #include "pins.h"
 #include "settings.h"
 
 static std::vector<String> files;  // full paths
-static bool mounted;
 
-bool photosCardIn() { return digitalRead(PIN_SD_DETECT) == LOW; }
+bool photosCardIn() { return cardIn(); }
 int photosCount() { return files.size(); }
 
 static void list(const char *dir) {
@@ -35,31 +32,10 @@ static void list(const char *dir) {
 }
 
 bool photosMount() {
-  pinMode(PIN_SD_DETECT, INPUT_PULLUP);
-  if (!mounted) {
-    if (!photosCardIn()) {
-      Serial.println("photos: no card in the slot");
-      return false;
-    }
-    // The screen already set up SPI2; the card is one more device on it.
-    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    host.slot = SPI2_HOST;
-    sdspi_device_config_t slot = SDSPI_DEVICE_CONFIG_DEFAULT();
-    slot.gpio_cs = (gpio_num_t)PIN_SD_CS;
-    slot.host_id = SPI2_HOST;
-    esp_vfs_fat_sdmmc_mount_config_t mount = {};
-    mount.max_files = 4;
-    sdmmc_card_t *card = nullptr;
-    esp_err_t err = esp_vfs_fat_sdspi_mount("/sd", &host, &slot, &mount, &card);
-    if (err != ESP_OK) {
-      Serial.printf("photos: card mount failed: %s\n", esp_err_to_name(err));
-      return false;
-    }
-    mounted = true;
-  }
   files.clear();
+  if (!cardMount()) return false;
   list(PHOTO_DIR);
-  if (files.empty()) list("/sd");
+  if (files.empty()) list(CARD_ROOT);
   Serial.printf("photos: %d JPEG files\n", (int)files.size());
   return !files.empty();
 }
@@ -97,9 +73,14 @@ bool photoRender(int index, uint8_t *out, int w, int h, char *name, size_t nameS
   if (index < 0 || index >= (int)files.size()) return *why = T(S_N_PHOTO_NONE), false;
   const String &path = files[index];
   utf8Copy(name, path.c_str() + path.lastIndexOf('/') + 1, nameSize);
+  return jpegRender(path.c_str(), out, w, h, false, why);
+}
 
+bool jpegRender(const char *path, uint8_t *out, int w, int h, bool fit, const char **why) {
+  static const char *none = "";
+  if (!why) why = &none;
   Job job = {};
-  job.file = fopen(path.c_str(), "rb");
+  job.file = fopen(path, "rb");
   if (!job.file) return *why = T(S_N_PHOTO_CANT_OPEN), false;
 
   static uint8_t work[4096];  // the decoder's own workspace
@@ -133,9 +114,9 @@ bool photoRender(int index, uint8_t *out, int w, int h, char *name, size_t nameS
   }
 
   // Source pixels per output pixel, in 16.16 fixed point. Landscape fills
-  // (the larger zoom, cropped); portrait fits (the smaller zoom, white bars).
+  // (the larger zoom, cropped); portrait fits (the smaller zoom, white bars), and so does everything with `fit`.
   uint32_t stepX = ((uint32_t)job.w << 16) / w, stepY = ((uint32_t)job.h << 16) / h;
-  bool portrait = job.h > job.w;
+  bool portrait = fit || job.h > job.w;
   uint32_t step = portrait ? max(stepX, stepY) : min(stepX, stepY);
   int shownW = min<int64_t>(w, ((int64_t)job.w << 16) / step), shownH = min<int64_t>(h, ((int64_t)job.h << 16) / step);
   int offX = (w - shownW) / 2, offY = (h - shownH) / 2;                    // bars, when fitting

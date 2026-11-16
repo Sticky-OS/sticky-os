@@ -239,6 +239,7 @@ timer adds an hourglass and its minutes left when there is room.
 | Photos | Two albums, one after the other: the board's own photos, then the microSD card's JPEGs, in four greys, a new one every 10 minutes. The status bar says which album and where in it ("Board photos 2 / 5"). With none, it says how to add some. Double-tap the photo for full screen: the photo edge to edge, no status bar; double-tap again to bring it back | Photos sent from the setup app, kept in the board's flash (up to 100); the card's `photos` folder (baseline JPEG; progressive ones are refused) |
 | Quote | Quote of the Day in large serif italic, the author under it; a long quote wraps and gets smaller type. It changes at local midnight. *New quote* (or OK) shows another. Double-tap the quote for full screen: only the words, larger (up to 40 pt, still smaller for a long one), and the author, with ZenQuotes' credit in small type at the foot when it's theirs; double-tap again to bring back the heading and the button | Today's quote from ZenQuotes (`zenquotes.io/api/today`, free, no key), fetched once a day and kept in the board's flash (`/quote.txt`), so it shows offline too; *New quote* asks `/api/random`. Its quotes show ZenQuotes' attribution, as its free API asks. Without WiFi, with `quotes.online` off, or when ZenQuotes asks for a pause (it allows 5 requests in 30 s; the board waits 7 s between them), a quote comes from the board's own list of 54 public-domain quotes, and a quiet line under it says so |
 | Recipes | Say what you'd like to cook ("a quick vegetarian pasta for two") or type it, and the AI writes a recipe: the title, the time and how many it serves, the ingredients with tick boxes (tap one while you cook; the ticks last until another recipe is opened), the numbered steps, tips. Large type, a page at a time. Saved recipes are a list, newest first; *Delete* (tap twice) | Speech to text as for Notes (OpenAI or your relay), then the model in `notes.ai_model` answers as strict JSON (OpenAI structured outputs). The board reads it defensively (code fences and words around it, trailing commas, numbers as text, ingredients as plain strings, all capped, and anything the fonts lack folded to a look-alike) and keeps up to 30 in its flash (`/recipes/`; the 31st replaces the oldest). Failures say why: *AI key rejected: it's expired or wrong*, *The AI's recipe came back garbled. Try again.* |
+| Books | An e-reader for the books on the microSD card: a library, then each book's cover and pages in a serif typeface, full screen, a page at a time (see [Books](#books)) | The card's `books` folder (EPUB, MOBI and AZW3 without DRM, FB2, PDF, plain text, Markdown, HTML); the board keeps where you are in each, and your bookmarks, on the card |
 | Games | A folder of seven games (see Games below): 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O | The board; Quiz and Adventure also the model in `notes.ai_model` when there's a key, WiFi and `games.ai` is on. Progress in the board's flash (`/games.txt`, `/games-practice.txt`) |
 | Claude | This week's Claude Code usage, all models and Fable alone, with reset times | Retained numbers under `claude.topic` on your MQTT broker: `…/seven_day/percent`, `…/seven_day/resets_at_unix`, `…/weekly_scoped/percent`, `…/age_seconds` |
 | Settings | Laid out like Android's: headings (Display, Sound and power, Connections, Apps, System), an icon, title and summary on each row. Tap a row with `>` for a page of choices (rotation, temperature, sleep on battery, which apps the home screen shows); tap a switch to turn it on or off; WiFi has the saved networks and adds new ones; *Connect to the setup app* starts Bluetooth setup | Kept in the board's flash |
@@ -369,6 +370,92 @@ The progress is kept in the board's flash and written by the loop only:
 `/games.txt` (best scores, levels, stars, the daily streak, the X and O
 tally) and `/games-practice.txt` (up to 30 maths questions to practise).
 Demo mode shows made-up progress and saves nothing.
+
+## Books
+
+**Books** reads the books on the microSD card. Put them in a folder named
+`books` at the card's top (sub-folders are fine, two levels deep: an author's
+folder, then a title's, as Calibre lays them out); with no such folder, the
+books at the card's top are listed. The board reads:
+
+- **EPUB** (2 and 3), the usual format of free and bought e-books;
+- **MOBI, AZW and AZW3** (Kindle) books **without DRM**;
+- **FB2**, **plain text** (`.txt`, `.md`) and **HTML**;
+- **PDF**, as its text, reflowed to the screen: the pages aren't shown as
+  pictures (they would be too small to read). Most text PDFs read well;
+  a scanned PDF has no text to show, and a page with columns, tables or
+  formulas may come out in the wrong order.
+
+Copy-protected books (DRM: most bought from Amazon, Kobo, Google or Apple)
+can't be read, and the board says so. Free books without DRM: Project
+Gutenberg (gutenberg.org) and Standard Ebooks (standardebooks.org).
+
+**The library.** At the top, a line with your reading time and how many
+days in a row you've read (tap it for the statistics), then a black card
+with the book you were reading and how far you are: tap it to go straight
+on. Under it the books in three parts: *Reading* (the last read first),
+*New*, and *Finished*, each with its author and format, and how far you are
+in the ones you're reading. Swipe up / down for more pages of the list.
+UP / DOWN move a ring from book to book, OK opens the ringed one. The first
+time the app looks at a card it reads each book's title as it goes (the
+foot says *Reading the card: 3 of 12*); after that the list comes at once.
+
+**A book's page.** Tap a book in the list to see its page: its cover, title,
+author, format and size; *Start reading* (or *Continue reading*, *Read
+again*); how far you are and in which chapter; how long you've read it, the
+pages you've read, when you started and, once the board knows your pace,
+the time left to the end. Then *About this book*, the book's own description,
+when it has one (many EPUBs from publishers and Standard Ebooks do, Project
+Gutenberg's usually don't), and *Chapters*: every chapter with where it
+starts, the one you're in marked; tap one to open the book there. The
+chapters show once the book has been opened once. Swipe up for the rest of
+the page; *Back* returns to the list.
+
+**Statistics.** Today's reading, this week's, the days in a row you've read
+(at least a minute a day) and your longest run, books finished, the time and
+pages in all, and a bar for each of the last 7 days. Time counts while a
+book is open and its pages turn; a page left for more than 5 minutes counts
+as one minute. They are kept on the card and need the clock (WiFi) for the
+days.
+
+**Opening a book** the first time, the board gets it ready (*Getting the
+book ready*, with a bar): it turns the book into its own text once and
+keeps that on the card, so the next time it opens at once. A novel takes
+a few seconds; tap *Cancel* to stop.
+
+**Reading.** A book opens on its cover (its own picture in four greys, or
+the title set in type), then its pages, full screen: the chapter, the time
+and the battery at the top, and at the foot how many pages are left in the
+chapter (or, once the board knows how fast you read, the minutes left in
+it) and how far you are in the book.
+
+- **Turn a page:** tap the right side of the page, swipe left, or press
+  DOWN. **Back a page:** tap the left side, swipe right, or press UP.
+- **The menu:** tap the middle of the page, press OK, or swipe down. It
+  shows the status bar, the title, the chapter, *Page 34 of about 312*, and
+  a progress bar with a mark for each chapter: tap the bar to jump there.
+  Under it four buttons: *Library*, *Contents* (the chapters; tap one to go
+  to it, the one you're in has a dot), *Bookmarks*, and *Text*. Tap the
+  page, or press OK, to close the menu.
+- **Text:** seven text sizes (the smallest about 6 pt in print, the
+  largest 12.5 pt), line spacing (tight, normal, loose), margins (narrow,
+  normal, wide) and *Even right edge* (justified lines) on or off. The page
+  changes as you choose and keeps your place; the choices are kept for
+  every book.
+- **Bookmarks:** tap the top right corner of a page to add one (a ribbon
+  shows there) or remove it. *Bookmarks* in the menu lists them with the
+  chapter and the first words; tap one to go there, the X removes it.
+- **Your place** is kept on the card for every book, whatever text size or
+  way up the board is; the app reopens on the page you left, even after a
+  restart or sleep. A book read to the end moves to *Finished*.
+- **Going home:** swipe up from the bottom edge, press UP and DOWN together,
+  or open the menu and tap the status bar.
+
+What the board keeps on the card is in a hidden folder, `.sticky/books`:
+the books ready to read, their covers and your places and bookmarks. You can
+delete it; the books are got ready again when opened (your places and
+bookmarks go with it). When the card fills, the board makes room by
+removing the ready copies of finished books first.
 
 ## Photos
 

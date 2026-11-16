@@ -2,9 +2,10 @@
 
 Sticky OS is a firmware for the [Seeed reTerminal Sticky](https://www.seeedstudio.com/sticky/), the 3.97" magnetic
 touch e-paper board. It turns the board into a small app device: a home
-screen of app icons, a status bar, quick settings, and twelve apps (clock,
+screen of app icons, a status bar, quick settings, and thirteen apps (clock,
 weather, calendar, notes with voice, timer, photos, quote of the day,
-recipes, a folder of games and more), made to be read at a glance from
+recipes, an e-reader for the books on a
+microSD card, a folder of games and more), made to be read at a glance from
 across the room. Settings live on the board and are made from a setup app
 in your browser, over USB or Bluetooth; nothing personal is built into the
 firmware.
@@ -41,6 +42,7 @@ The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 | Timer | A countdown that rings even with sounds off |
 | Photos | Photos sent from the setup app, and JPEGs from a microSD card; double-tap for full screen |
 | Quote | Quote of the Day from ZenQuotes, or the board's own list offline; double-tap for full screen |
+| Books | An e-reader for the books on a microSD card: EPUB, MOBI and AZW3 without DRM, FB2, PDF (as text), plain text and HTML; a library with each book's page (cover, description, chapters, progress), justified serif pages in seven sizes, contents, bookmarks and reading statistics |
 | Recipes | Say or type a dish; the AI writes the recipe (needs an OpenAI key) |
 | Games | 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O |
 | Claude | Your weekly Claude Code usage, from your own MQTT broker |

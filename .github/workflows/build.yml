@@ -23,6 +23,8 @@ jobs:
         run: firmware/test/ics/run.sh
       - name: Translations
         run: firmware/test/i18n/run.sh
+      - name: Books (readers, pager, library, fonts)
+        run: firmware/test/ebook/run.sh
       - name: Build
         run: ./upload.sh build
       - name: Size
