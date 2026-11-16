@@ -7,6 +7,15 @@
 - [Source, README and install steps](https://github.com/ovidiul/sticky-os)
 - [Latest release](https://github.com/ovidiul/sticky-os/releases/latest)
 
+## Guides
+
+- [How to install custom firmware on the reTerminal Sticky](https://sticky-os.space.fast/blog/install-custom-firmware-reterminal-sticky/): Flashing Sticky OS on the reTerminal Sticky: a backup, esptool or ESP Tool at 115200 baud, the first start, common errors and going back.
+- [Your Google Calendar on an e-paper fridge display, no subscription](https://sticky-os.space.fast/blog/google-calendar-e-paper-fridge-display-no-subscription/): Google, iCloud or Outlook on the reTerminal Sticky through a secret iCal link: up to three calendars, every 30 minutes, no account and no subscription.
+- [reTerminal Sticky e-reader: EPUB, MOBI and PDF from a microSD card](https://sticky-os.space.fast/blog/reterminal-sticky-e-reader-epub-mobi-pdf-microsd-card/): EPUB, MOBI, AZW3, FB2 and PDF from a microSD card: putting books on the card, the library, text sizes, bookmarks and statistics.
+- [reTerminal Sticky firmware compared: Seeedash, Sticky OS, TRMNL, CrossPoint and ESPHome](https://sticky-os.space.fast/blog/reterminal-sticky-firmware-compared-seeedash-sticky-os-trmnl-crosspoint-esphome/): Seeedash, Sticky OS, TRMNL, CrossPoint Reader, ESPHome and OpenDisplay side by side, and which to pick.
+- [Restore the Seeedash firmware on the reTerminal Sticky](https://sticky-os.space.fast/blog/restore-seeedash-firmware-reterminal-sticky/): Seeed's official web flasher, or your own 32 MB backup with esptool: how to go back to the stock firmware.
+- [reTerminal Sticky games: 2048, Memory, maths, quiz and more](https://sticky-os.space.fast/blog/reterminal-sticky-games-2048-memory-maths-quiz/): 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, and Tutor: the eight games and their controls.
+
 ## Blog
 
 - [Sticky OS 1.5: Tutor, 7th grade geometry lessons in Romanian](https://sticky-os.space.fast/blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/)
