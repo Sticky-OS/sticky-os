@@ -828,7 +828,7 @@ test('site: links to other websites open in a new tab, without opener or referre
   }
 });
 
-const BLOG_PAGES = ['blog/index.html', 'blog/introducing-sticky-os/index.html'];
+const BLOG_PAGES = ['blog/index.html', 'blog/introducing-sticky-os/index.html', 'blog/books/index.html'];
 
 test('blog: pages pass the CSP, point at real files, and say the board is not Seeed\'s', async () => {
   const { readFile } = await import('node:fs/promises');
@@ -845,9 +845,13 @@ test('blog: pages pass the CSP, point at real files, and say the board is not Se
   }
   const post = await readFile(new URL('../src/blog/introducing-sticky-os/index.html', import.meta.url), 'utf8');
   assert.match(post, /\{\{NAME\}\} is an independent, open-source firmware for the Seeed reTerminal Sticky\. Not made by or affiliated with Seeed Studio\./);
-  const og = post.match(/<meta property="og:image" content="https:\/\/sticky-os\.space\.fast\/(shots\/[^"]+\.png)">/);
-  assert.ok(og, 'the post: an og:image on the site');
-  await readFile(new URL('../src/' + og[1], import.meta.url));   // the picture is published with the site
+  // Every page has a share picture of its own site (link previews), published with it.
+  for (const f of ['index.html', ...BLOG_PAGES]) {
+    const html = await readFile(new URL('../src/' + f, import.meta.url), 'utf8');
+    const og = html.match(/<meta property="og:image" content="https:\/\/sticky-os\.space\.fast\/(shots\/[^"]+\.(?:png|jpg))">/);
+    assert.ok(og, `${f}: an og:image on the site`);
+    await readFile(new URL('../src/' + og[1], import.meta.url));
+  }
   const home = await readFile(new URL('../src/index.html', import.meta.url), 'utf8');
   assert.match(home, /href="blog\/"/, 'index.html: a Blog link');
 });
