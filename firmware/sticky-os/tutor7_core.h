@@ -56,7 +56,8 @@ enum Kind : uint8_t {
 
 // What the screen draws, from the exercise's own numbers. 0: the length is
 // the unknown (drawn as ?). Right triangle: A = 90 degrees, v = AB, AC, BC.
-enum FigureKind : uint8_t { FIG_RIGHT_TRIANGLE, FIG_TRIANGLE, FIG_SQUARE_DIAGONAL, FIG_EQUILATERAL_HEIGHT };
+// FIG_RIGHT_NAMED is for the theory pages: the sides are named (AB, AC, BC), not measured.
+enum FigureKind : uint8_t { FIG_RIGHT_TRIANGLE, FIG_TRIANGLE, FIG_SQUARE_DIAGONAL, FIG_EQUILATERAL_HEIGHT, FIG_RIGHT_NAMED };
 struct Figure {
   FigureKind kind;
   int32_t v[3];

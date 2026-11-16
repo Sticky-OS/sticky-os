@@ -14,7 +14,7 @@
 #include <new>
 #include <vector>
 
-enum GameId : uint8_t { GAME_2048, GAME_MEMORY, GAME_MATHS, GAME_DAILY, GAME_QUIZ, GAME_ADVENTURE, GAME_XO, GAME_COUNT };
+enum GameId : uint8_t { GAME_2048, GAME_MEMORY, GAME_MATHS, GAME_DAILY, GAME_QUIZ, GAME_ADVENTURE, GAME_XO, GAME_TUTOR7, GAME_COUNT };
 extern const char *const GAME_NAMES[GAME_COUNT];  // English, for the serial port's lines
 const char *gameName(int g);  // in the board's language, for the screen
 
@@ -38,6 +38,7 @@ struct GameProgress {
   int quizPlayed = 0, quizBest = 0;  // rounds finished; the most right in one (of 8)
   int stories = 0;          // adventures played to the end
   int xoWins = 0, xoDraws = 0, xoLosses = 0, xoLevel = 1;  // level 0 easy .. 3 can't be beaten
+  uint8_t tutor7Best[8] = {};  // Tutor7: the most exercises right first time in each lesson (of its practice)
 };
 GameProgress &gameProgress();
 void gamesBegin();     // after LittleFS is mounted: reads what's saved

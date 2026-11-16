@@ -16,6 +16,13 @@
 // or ends (and show() adds one every 12 partials, against ghosting).
 
 
+// Tutor7's screens (tutor7.ino draws them).
+enum { T7_SUBJECTS, T7_LESSONS, T7_LESSON, T7_PAGE, T7_QUESTION, T7_CLUE, T7_WRONG, T7_SOLUTION, T7_RESULT };
+static void drawTutor7();
+static void actTutor7(int id);
+static void tutor7Open();
+static void tutor7Peek(String &s);
+
 // Everything the games hold while the board runs, in one place in PSRAM
 // (gamesUiBegin()): only the pointer takes internal RAM.
 struct GTarget { int16_t x, y, w, h, id; };
@@ -61,6 +68,12 @@ struct GState {
   bool xoOver = false, xoPlayerStarts = true;
   int xoWin = -1;
   StrId xoSay = S_G_XO_START;     // what's happening, under the board
+  // Tutor7
+  int t7Screen = T7_SUBJECTS, t7Lesson = 0, t7Part = 0, t7Page = 0;  // t7Part: 0 the summary, 1 the worked examples
+  int t7Index = 0, t7Right = 0, t7Tries = 0, t7Clues = 0, t7Picked = -1;  // the exercise; right first time; wrong tries and clues on it
+  bool t7Crossed[4] = {}, t7GaveUp = false, t7NewBest = false;
+  uint32_t t7Seen[t7::MAX_STEPS] = {};  // what this practice has asked, so nothing comes twice
+  t7::Exercise t7Ex;
 };
 static GState *gs;
 
@@ -245,6 +258,14 @@ static void gameIcon(int g, int cx, int cy, int s) {
       gGlyphX(cx - c, cy - c, c / 3, t);
       ring(cx, cy, c / 3 + 1, t);
       gGlyphX(cx + c, cy + c, c / 3, t);
+      break;
+    }
+    case GAME_TUTOR7: {  // a right triangle with its right angle marked
+      int x0 = cx - r + s / 8, x1 = cx + r - s / 8, y0 = cy + r - s / 8, y1 = cy - r + s / 8, m = max(6, s / 5);
+      thickLine(x0, y0, x1, y0, t + 1);
+      thickLine(x0, y0, x0, y1, t + 1);
+      thickLine(x1, y0, x0, y1, t + 1);
+      for (int k = 0; k < max(1, t - 1); k++) canvas->drawRect(x0 + t + 1 + k, y0 - t - 1 - m + k, m - 2 * k, m - 2 * k, INK);
       break;
     }
   }
@@ -1617,6 +1638,7 @@ static String launcherLine(int g) {
     case GAME_QUIZ: return p.quizBest ? TF(S_G_QUIZ_BEST, p.quizBest) : String(T(S_G_L_EIGHT_QUESTIONS));
     case GAME_ADVENTURE: return gs->aScreen == AS_PLAY && !gs->aScene.ending && gs->aNum ? TF(S_G_L_SCENE_GO_ON, gs->aNum) : p.stories ? TP(S_G_STORIES, p.stories) : String(T(S_G_L_CHOOSE_WAY));
     case GAME_XO: return p.xoWins + p.xoDraws + p.xoLosses ? TF(S_G_L_WON_DRAWN, p.xoWins, p.xoDraws) : String(T(S_G_L_BEAT_BOARD));
+    case GAME_TUTOR7: return p.tutor7Best[0] ? String("Pitagora: ") + p.tutor7Best[0] + "/" + t7::lesson(0).nSteps : String("Geometrie, clasa a VII-a");
   }
   return "";
 }
@@ -1661,6 +1683,7 @@ static void gameOpen(int g) {
     case GAME_XO:
       if (std::count(gs->xoBoard, gs->xoBoard + 9, ' ') == 9 || demoMode) gs->xoPlayerStarts = !gs->xoPlayerStarts, xoNew();
       break;
+    case GAME_TUTOR7: tutor7Open(); break;
   }
   render(true);
 }
@@ -1689,6 +1712,7 @@ static void drawGames() {
     case GAME_QUIZ: drawQuiz(); break;
     case GAME_ADVENTURE: drawAdventure(); break;
     case GAME_XO: drawXo(); break;
+    case GAME_TUTOR7: drawTutor7(); break;
     default: drawLauncher(); break;
   }
 }
@@ -1702,6 +1726,7 @@ static void gamesActivate(int id) {
     case GAME_QUIZ: return actQuiz(id);
     case GAME_ADVENTURE: return actAdventure(id);
     case GAME_XO: return actXo(id);
+    case GAME_TUTOR7: return actTutor7(id);
     default:
       if (id >= 0 && id < GAME_COUNT) gameOpen(id);
   }
@@ -1840,6 +1865,8 @@ static void gamesCommand(const String &arg) {
     } else if (gs->gGame == GAME_XO) {
       for (char c : gs->xoBoard) s += c == ' ' ? '.' : c;
       s += String(" ") + i18nRaw(L_EN, gs->xoSay);
+    } else if (gs->gGame == GAME_TUTOR7) {
+      tutor7Peek(s);
     } else {
       s += String("screen of ") + (gs->gGame < 0 ? "the launcher" : GAME_NAMES[gs->gGame]);
     }
@@ -1860,6 +1887,9 @@ static void gamesCommand(const String &arg) {
   if (gs->gGame == GAME_MATHS && gs->mScreen == MS_PLAY) {
     for (int i = 0; i < 4; i++)
       if ((gs->mQ.options[i] == gs->mQ.answer) == right && !gs->mCrossed[i]) return mAnswer(i);
+  } else if (gs->gGame == GAME_TUTOR7 && gs->t7Screen == T7_QUESTION) {
+    for (int i = 0; i < gs->t7Ex.nopt; i++)
+      if ((i == gs->t7Ex.correct) == right && !gs->t7Crossed[i]) return actTutor7(i);
   } else if (gs->gGame == GAME_QUIZ && gs->qScreen == QS_QUESTION && gs->qPicked < 0) {
     for (int i = 0; i < 4; i++)
       if ((i == gs->qQuiz[gs->qNum].answer) == right) return quizPick(i);

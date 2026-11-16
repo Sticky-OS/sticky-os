@@ -9,6 +9,7 @@
 #include <set>
 #include <string>
 #include "tutor7_core.h"
+#include "tutor7_lessons.h"
 
 using namespace t7;
 
@@ -161,6 +162,60 @@ static void testVerifyCatches() {
   cv = ex;  // reset
 }
 
+static bool utf8ok(const char *s) {
+  const unsigned char *p = (const unsigned char *)s;
+  while (*p) {
+    int n = *p < 0x80 ? 0 : (*p >> 5) == 6 ? 1 : (*p >> 4) == 14 ? 2 : (*p >> 3) == 30 ? 3 : -1;
+    if (n < 0) return false;
+    p++;
+    for (int i = 0; i < n; i++, p++)
+      if ((*p & 0xC0) != 0x80) return false;
+  }
+  return true;
+}
+
+// The lessons' text: well-formed, short enough for a screen, and the worked examples' arithmetic is right.
+static void testLessons() {
+  for (int li = 0; li < LESSON_COUNT; li++) {
+    const Lesson &l = lesson(li);
+    CHECK(l.name && l.subject && utf8ok(l.name) && utf8ok(l.subject), "lesson %d name", li);
+    CHECK(l.nSummary >= 1 && l.nSummary <= MAX_PAGES && l.nExample >= 1 && l.nExample <= MAX_PAGES, "lesson %d page counts", li);
+    CHECK(l.nSteps >= 1 && l.nSteps <= MAX_STEPS, "lesson %d step count", li);
+    auto page = [&](const Page &p, const char *what, int i) {
+      CHECK(p.title && p.body && p.title[0] && p.body[0], "lesson %d %s %d is empty", li, what, i);
+      CHECK(utf8ok(p.title) && utf8ok(p.body), "lesson %d %s %d: bad UTF-8", li, what, i);
+      CHECK(strlen(p.body) < 620, "lesson %d %s %d: body too long for a screen (%zu bytes)", li, what, i, strlen(p.body));
+      CHECK(p.figure >= -1 && p.figure <= FIG_RIGHT_NAMED, "lesson %d %s %d: figure kind", li, what, i);
+    };
+    for (int i = 0; i < l.nSummary; i++) page(l.summary[i], "summary", i);
+    for (int i = 0; i < l.nExample; i++) page(l.example[i], "example", i);
+    // every planned exercise can be made, and verifies
+    for (int i = 0; i < l.nSteps; i++) {
+      int made = 0;
+      for (int seed = 1; seed <= 300; seed++) {
+        Rng rng(seed * 40503u + li);
+        Exercise ex;
+        char err[120];
+        if (generate(l.steps[i].kind, l.steps[i].level, rng, ex)) {
+          made++;
+          CHECK(verify(ex, err, sizeof err), "lesson %d step %d: %s", li, i, err);
+        }
+      }
+      CHECK(made > 100, "lesson %d step %d: only %d of 300 seeds made an exercise", li, i, made);
+    }
+  }
+  // The Pythagoras lesson's worked examples, recomputed here and looked for in the text.
+  const Lesson &p = lesson(0);
+  auto has = [](const char *text, const char *needle) { return strstr(text, needle) != nullptr; };
+  CHECK(9 * 9 + 40 * 40 == 1681 && 41 * 41 == 1681, "example 1 arithmetic");
+  CHECK(has(p.example[0].body, "1681") && has(p.example[0].body, "41 cm"), "example 1 text");
+  CHECK(9 * 9 - 7 * 7 == 32 && fmt(exactSqrt(32)) == "4\xE2\x88\x9A" "2", "example 2 arithmetic");
+  CHECK(has(p.example[1].body, "= 32") && has(p.example[1].body, "4\xE2\x88\x9A" "2"), "example 2 text");
+  CHECK(20 * 20 + 21 * 21 == 841 && 29 * 29 == 841, "example 3 arithmetic");
+  CHECK(has(p.example[2].body, "841") && has(p.example[2].body, "29 cm"), "example 3 text");
+  CHECK(16 * 2 == 32 && has(p.summary[2].body, "16\xC2\xB7" "2"), "the simplification shown on page 3 is right");
+}
+
 int main(int argc, char **argv) {
   setvbuf(stdout, nullptr, _IONBF, 0);
   bool wantSamples = argc > 1 && !strcmp(argv[1], "samples");
@@ -173,6 +228,7 @@ int main(int argc, char **argv) {
   };
   for (const Run &r : runs) testKind(r, samples);
   testVerifyCatches();
+  testLessons();
   if (samples) {
     fclose(samples);
     printf("samples written to build/samples.txt\n");

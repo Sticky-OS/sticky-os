@@ -463,6 +463,7 @@
 {S_G_QUIZ, "Quiz"},
 {S_G_ADVENTURE, "Aventură"},
 {S_G_XO, "X și O"},
+{S_G_TUTOR7, "Tutor7"},
 {S_G_GAMES, "Jocuri"},
 {S_G_BACK, "Înapoi"},
 {S_G_NEW_GAME, "Joc nou"},

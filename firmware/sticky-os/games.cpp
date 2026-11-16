@@ -12,8 +12,8 @@
 #include "provjson.h"
 #include "recipes.h"  // aiText(), aiJsonObject()
 
-const char *const GAME_NAMES[GAME_COUNT] = {"2048", "Memory", "Maths Quest", "Daily maths", "Quiz", "Adventure", "X and O"};
-static const StrId GAME_STR[GAME_COUNT] = {S_G_2048, S_G_MEMORY, S_G_MATHS, S_G_DAILY, S_G_QUIZ, S_G_ADVENTURE, S_G_XO};
+const char *const GAME_NAMES[GAME_COUNT] = {"2048", "Memory", "Maths Quest", "Daily maths", "Quiz", "Adventure", "X and O", "Tutor7"};
+static const StrId GAME_STR[GAME_COUNT] = {S_G_2048, S_G_MEMORY, S_G_MATHS, S_G_DAILY, S_G_QUIZ, S_G_ADVENTURE, S_G_XO, S_G_TUTOR7};
 const char *gameName(int g) { return g >= 0 && g < GAME_COUNT ? T(GAME_STR[g]) : ""; }
 
 // ---------------------------------------------------------------- random numbers
@@ -70,6 +70,15 @@ void gamesBegin() {
     else if (k == "quizBest") p.quizBest = n;
     else if (k == "stories") p.stories = n;
     else if (k == "xo") sscanf(v.c_str(), "%d %d %d %d", &p.xoWins, &p.xoDraws, &p.xoLosses, &p.xoLevel);
+    else if (k == "tutor7") {
+      int from = 0;
+      for (int i = 0; i < 8 && from < (int)v.length(); i++) {
+        int next = v.indexOf(' ', from);
+        p.tutor7Best[i] = constrain((int)v.substring(from, next < 0 ? v.length() : next).toInt(), 0, 99);
+        if (next < 0) break;
+        from = next + 1;
+      }
+    }
     else if (k == "mathsStars" || k == "mathsBest") {
       int from = 0;
       for (int i = 0; i < MATHS_LEVELS && from < (int)v.length(); i++) {
@@ -126,6 +135,9 @@ void gamesSave() {
   for (int i = 0; i < MATHS_LEVELS; i++) f.printf(" %d", p.mathsBest[i]);
   f.printf("\ndailyDay %ld\ndailyStreak %d\nquizPlayed %d\nquizBest %d\nstories %d\nxo %d %d %d %d\n", p.dailyDay, p.dailyStreak,
            p.quizPlayed, p.quizBest, p.stories, p.xoWins, p.xoDraws, p.xoLosses, p.xoLevel);
+  f.print("tutor7");
+  for (int i = 0; i < 8; i++) f.printf(" %d", p.tutor7Best[i]);
+  f.print("\n");
   f.close();
   f = LittleFS.open(PRACTICE, "w");
   if (f) {
