@@ -288,6 +288,7 @@ enum : int {
   T7_SUBJECT0 = 30,
   T7_LESSON0 = 40,
   T7_PREV = 50,
+  T7_RESET = 60,   // clear the lesson's progress, start from the summary
 };
 
 static const t7::Lesson &t7L() { return t7::lesson(gs->t7Lesson); }
@@ -414,6 +415,12 @@ static void actTutor7(int id) {
         Serial.printf("games: tutor7 %s: %s\n", gs->t7Part ? "examples" : "summary", t7L().name);
       } else if (id == T7_PART0 + 2) {
         return t7StartPractice(), render(true);
+      } else if (id == T7_RESET) {
+        gameProgress().tutor7Best[gs->t7Lesson] = 0;
+        gamesChanged();
+        gs->t7Part = 0, gs->t7Page = 0, gs->t7Index = 0, gs->t7Right = 0, sc = T7_PAGE;
+        Serial.printf("games: tutor7 reset: %s, progress cleared\n", t7L().name);
+        return render(true);
       }
       break;
     case T7_PAGE: {
@@ -638,6 +645,7 @@ static void drawTutor7() {
         t7Button(x, y, w, h, labels[i], T7_PART0 + i, i == 2);
         y += h + 16;
       }
+      if (best) t7Button(x, y, w, t7ButtonH("Reset", w, 60), "Reset", T7_RESET);
       return;
     }
     case T7_PAGE: return drawT7Page();
