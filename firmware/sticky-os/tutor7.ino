@@ -1,6 +1,8 @@
-// ---------------------------------------------------------------- Tutor7
+// ---------------------------------------------------------------- Tutor
 //
-// A maths tutor for 7th graders, in Romanian: a lesson's summary and worked
+// A school tutor, in Romanian, class by class and subject by subject. It starts with 7th grade maths
+// (geometry, units 4 and 7 of the textbook); other subjects (chemistry, geography...) and classes are
+// meant to be added the same way: a class menu, a subject menu, then lessons. Each lesson has a summary and worked
 // examples, then practice that is made from numbers and checked before it is
 // shown (tutor7_core.cpp), with a clue button and an explanation of every
 // wrong choice. The lessons' text is in tutor7_lessons.cpp, in Romanian only,
@@ -245,6 +247,11 @@ static void t7FigSquare(const t7::Figure &fg, int bx, int by, int bw, int bh) {
   thickLine(x1, y1, x0, y1, 3);
   thickLine(x0, y1, x0, y0, 3);
   t7Dashed(x0, y1, x1, y0);
+  if (fg.v[1] == 1) {  // the diagonal is given, the side is asked
+    t7Tag((x0 + x1) / 2, y1 + 28, "l = ?", true);
+    t7Tag(x0 + side * 32 / 100, y0 + side * 28 / 100, String("d = ") + t7Len(fg.v[0]), true);
+    return;
+  }
   t7Tag((x0 + x1) / 2, y1 + 28, t7Len(fg.v[0]));
   t7Tag(x0 + side * 32 / 100, y0 + side * 28 / 100, "d = ?", true);  // above the diagonal, clear of it
 }
@@ -266,6 +273,101 @@ static void t7FigEquilateral(const t7::Figure &fg, int bx, int by, int bw, int b
   t7Tag((x0 + ax) / 2 - 30 - t7TextW(&FreeSans9pt7b, s) / 2, ay + hh / 2 + 6, s);
 }
 
+
+// ---- Unit 4 figures: the vertices are named, the numbers are in the question
+
+struct T7Pt { float x, y; };  // in a unit box, y down
+
+static void t7Poly(const T7Pt *p, int n, int bx, int by, int bw, int bh, const char *names, bool diagonals, int inset = 34) {
+  int ix = bx + inset, iy = by + 22, iw = bw - 2 * inset, ih = bh - 52;
+  int X[8], Y[8];
+  float cx = 0, cy = 0;
+  for (int i = 0; i < n; i++) {
+    X[i] = ix + (int)(p[i].x * iw), Y[i] = iy + (int)(p[i].y * ih);
+    cx += X[i], cy += Y[i];
+  }
+  cx /= n, cy /= n;
+  for (int i = 0; i < n; i++) thickLine(X[i], Y[i], X[(i + 1) % n], Y[(i + 1) % n], 3);
+  if (diagonals && n == 4) {
+    t7Dashed(X[0], Y[0], X[2], Y[2]);
+    t7Dashed(X[1], Y[1], X[3], Y[3]);
+    // the diagonals' meeting point
+    float d1x = X[2] - X[0], d1y = Y[2] - Y[0], d2x = X[3] - X[1], d2y = Y[3] - Y[1];
+    float den = d1x * d2y - d1y * d2x;
+    if (fabsf(den) > 0.001f) {
+      float t = ((X[1] - X[0]) * d2y - (Y[1] - Y[0]) * d2x) / den;
+      t7Tag((int)(X[0] + t * d1x) + 12, (int)(Y[0] + t * d1y) - 6, "O", true);
+    }
+  }
+  for (int i = 0; i < n; i++) {
+    float dx = X[i] - cx, dy = Y[i] - cy, len = sqrtf(dx * dx + dy * dy);
+    if (len < 1) len = 1;
+    char one[2] = {names[i], 0};
+    t7Tag(X[i] + (int)(dx / len * 17), Y[i] + (int)(dy / len * 17) + 7, one, true);
+  }
+}
+
+static void t7FigQuad(int bx, int by, int bw, int bh) {
+  static const T7Pt q[4] = {{0.04f, 0.9f}, {0.9f, 0.84f}, {0.78f, 0.06f}, {0.2f, 0.16f}};
+  t7Poly(q, 4, bx, by, bw, bh, "ABCD", false);
+  int ix = bx + 34, iy = by + 22, iw = bw - 68, ih = bh - 52;  // the diagonal BD, dashed
+  t7Dashed(ix + (int)(q[1].x * iw), iy + (int)(q[1].y * ih), ix + (int)(q[3].x * iw), iy + (int)(q[3].y * ih));
+}
+
+static void t7FigPar(int bx, int by, int bw, int bh) {
+  static const T7Pt q[4] = {{0.02f, 0.9f}, {0.68f, 0.9f}, {0.98f, 0.1f}, {0.32f, 0.1f}};
+  t7Poly(q, 4, bx, by, bw, bh, "ABCD", true);
+}
+
+static void t7FigRect(int bx, int by, int bw, int bh) {
+  static const T7Pt q[4] = {{0.05f, 0.9f}, {0.95f, 0.9f}, {0.95f, 0.1f}, {0.05f, 0.1f}};
+  t7Poly(q, 4, bx, by, bw, bh, "ABCD", true);
+  int ix = bx + 34, iy = by + 22, iw = bw - 68, ih = bh - 52;
+  canvas->drawRect(ix + (int)(q[0].x * iw) + 3, iy + (int)(q[0].y * ih) - 15, 12, 12, INK);  // the right angle at A
+}
+
+static void t7FigRhombus(int bx, int by, int bw, int bh) {
+  static const T7Pt q[4] = {{0.03f, 0.5f}, {0.5f, 0.92f}, {0.97f, 0.5f}, {0.5f, 0.08f}};
+  t7Poly(q, 4, bx, by, bw, bh, "ABCD", true);
+}
+
+static void t7FigTrapezoid(int bx, int by, int bw, int bh, bool isosceles) {
+  static const T7Pt t[4] = {{0.03f, 0.9f}, {0.97f, 0.9f}, {0.72f, 0.1f}, {0.3f, 0.1f}};
+  static const T7Pt u[4] = {{0.03f, 0.9f}, {0.97f, 0.9f}, {0.78f, 0.1f}, {0.22f, 0.1f}};
+  const T7Pt *q = isosceles ? u : t;
+  t7Poly(q, 4, bx, by, bw, bh, "ABCD", false);
+  int ix = bx + 34, iy = by + 22, iw = bw - 68, ih = bh - 52;
+  int dx = ix + (int)(q[3].x * iw), dy = iy + (int)(q[3].y * ih);
+  if (isosceles) {  // the height from D
+    t7Dashed(dx, dy, dx, iy + (int)(q[0].y * ih));
+  }
+}
+
+static void t7FigMidline(int bx, int by, int bw, int bh) {
+  static const T7Pt q[3] = {{0.5f, 0.06f}, {0.03f, 0.92f}, {0.97f, 0.92f}};
+  t7Poly(q, 3, bx, by, bw, bh, "ABC", false);
+  int ix = bx + 34, iy = by + 22, iw = bw - 68, ih = bh - 52;
+  int mx = ix + (int)((q[0].x + q[1].x) / 2 * iw), my = iy + (int)((q[0].y + q[1].y) / 2 * ih);
+  int nx = ix + (int)((q[0].x + q[2].x) / 2 * iw), ny = iy + (int)((q[0].y + q[2].y) / 2 * ih);
+  t7Dashed(mx, my, nx, ny);
+  t7Tag(mx - 16, my + 6, "M", true);
+  t7Tag(nx + 16, ny + 6, "N", true);
+}
+
+static void t7FigMedians(int bx, int by, int bw, int bh) {
+  static const T7Pt q[3] = {{0.5f, 0.06f}, {0.03f, 0.92f}, {0.97f, 0.92f}};
+  t7Poly(q, 3, bx, by, bw, bh, "ABC", false);
+  int ix = bx + 34, iy = by + 22, iw = bw - 68, ih = bh - 52;
+  int X[3], Y[3];
+  for (int i = 0; i < 3; i++) X[i] = ix + (int)(q[i].x * iw), Y[i] = iy + (int)(q[i].y * ih);
+  for (int i = 0; i < 3; i++) {  // each median: from a vertex to the middle of the opposite side
+    int a = (i + 1) % 3, b = (i + 2) % 3;
+    t7Dashed(X[i], Y[i], (X[a] + X[b]) / 2, (Y[a] + Y[b]) / 2);
+  }
+  t7Tag((X[1] + X[2]) / 2, Y[1] + 26, "M", true);
+  t7Tag((X[0] + X[1] + X[2]) / 3 + 16, (Y[0] + Y[1] + Y[2]) / 3 + 6, "G", true);
+}
+
 static void t7Figure(const t7::Figure &fg, int bx, int by, int bw, int bh) {
   switch (fg.kind) {
     case t7::FIG_RIGHT_TRIANGLE: return t7FigRight(fg, false, bx, by, bw, bh);
@@ -273,6 +375,16 @@ static void t7Figure(const t7::Figure &fg, int bx, int by, int bw, int bh) {
     case t7::FIG_TRIANGLE: return t7FigTriangle(fg, bx, by, bw, bh);
     case t7::FIG_SQUARE_DIAGONAL: return t7FigSquare(fg, bx, by, bw, bh);
     case t7::FIG_EQUILATERAL_HEIGHT: return t7FigEquilateral(fg, bx, by, bw, bh);
+    case t7::FIG_QUAD: return t7FigQuad(bx, by, bw, bh);
+    case t7::FIG_PARALLELOGRAM: return t7FigPar(bx, by, bw, bh);
+    case t7::FIG_RECTANGLE: return t7FigRect(bx, by, bw, bh);
+    case t7::FIG_RHOMBUS: return t7FigRhombus(bx, by, bw, bh);
+    case t7::FIG_TRAPEZOID: return t7FigTrapezoid(bx, by, bw, bh, false);
+    case t7::FIG_TRAPEZOID_ISOSCELES: return t7FigTrapezoid(bx, by, bw, bh, true);
+    case t7::FIG_MIDLINE: return t7FigMidline(bx, by, bw, bh);
+    case t7::FIG_MEDIANS: return t7FigMedians(bx, by, bw, bh);
+    case t7::FIG_NONE: return;
+    default: return;
   }
 }
 
@@ -284,6 +396,7 @@ enum : int {
   T7_SHOW_BTN = 11,  // Arată rezolvarea
   T7_AGAIN_BTN = 12, // back to the exercise
   T7_MORE_CLUE = 13, // another clue
+  T7_CLASS0 = 25,    // the class buttons
   T7_PART0 = 20,     // 20 summary, 21 examples, 22 practice
   T7_SUBJECT0 = 30,
   T7_LESSON0 = 40,
@@ -336,7 +449,7 @@ static void t7Exercise() {
   for (bool &c : gs->t7Crossed) c = false;
   gs->t7Screen = T7_QUESTION;
   if (gs->t7Index >= t7L().nSteps) {
-    uint8_t &best = gameProgress().tutor7Best[gs->t7Lesson];
+    uint8_t &best = gameProgress().tutor7Best[t7L().slot];
     gs->t7NewBest = gs->t7Right > best;
     if (gs->t7NewBest) best = gs->t7Right, gamesChanged();
     gs->t7Screen = T7_RESULT;
@@ -359,8 +472,8 @@ static void tutor7Open() {
 }
 
 static void tutor7Peek(String &s) {
-  static const char *NAMES[] = {"subjects", "lessons", "lesson", "page", "question", "clue", "wrong", "solution", "result"};
-  s += String("tutor7 ") + NAMES[constrain(gs->t7Screen, 0, 8)];
+  static const char *NAMES[] = {"classes", "subjects", "lessons", "lesson", "page", "question", "clue", "wrong", "solution", "result"};
+  s += String("tutor7 ") + NAMES[constrain(gs->t7Screen, 0, 9)];
   if (gs->t7Screen == T7_PAGE) s += String(" ") + (gs->t7Part ? "example " : "summary ") + (gs->t7Page + 1);
   if (gs->t7Screen >= T7_QUESTION && gs->t7Screen <= T7_SOLUTION) {
     const t7::Exercise &ex = gs->t7Ex;
@@ -395,7 +508,8 @@ static void actTutor7(int id) {
   gs->gFocusId = -1;
   if (id == ID_BACK) {
     switch (sc) {
-      case T7_SUBJECTS: gs->gGame = -1; break;
+      case T7_CLASSES: gs->gGame = -1; break;
+      case T7_SUBJECTS: sc = T7_CLASSES; break;
       case T7_LESSONS: sc = T7_SUBJECTS; break;
       case T7_LESSON: sc = T7_LESSONS; break;
       default: sc = T7_LESSON; break;  // a page, the practice, the result: the lesson
@@ -403,6 +517,9 @@ static void actTutor7(int id) {
     return render(false);
   }
   switch (sc) {
+    case T7_CLASSES:
+      if (id == T7_CLASS0) sc = T7_SUBJECTS;
+      break;
     case T7_SUBJECTS:
       if (id == T7_SUBJECT0) sc = T7_LESSONS;
       break;
@@ -416,7 +533,7 @@ static void actTutor7(int id) {
       } else if (id == T7_PART0 + 2) {
         return t7StartPractice(), render(true);
       } else if (id == T7_RESET) {
-        gameProgress().tutor7Best[gs->t7Lesson] = 0;
+        gameProgress().tutor7Best[t7L().slot] = 0;
         gamesChanged();
         gs->t7Part = 0, gs->t7Page = 0, gs->t7Index = 0, gs->t7Right = 0, sc = T7_PAGE;
         Serial.printf("games: tutor7 reset: %s, progress cleared\n", t7L().name);
@@ -491,12 +608,19 @@ static void t7Button(int x, int y, int w, int h, const String &label, int id, bo
 
 static void drawT7Menu(const String &title, const std::vector<String> &labels, const std::vector<int> &ids, const String &note) {
   gHeader(title);
-  int top = gTop() + 14, w = TALL ? W - 32 : min(W - 32, 520), x = (W - w) / 2, y = top;
-  if (note.length()) y = t7BlockDraw({&FreeSans12pt7b, 30, 8}, 16, y + 20, note, W - 32) - 4;
+  bool many = labels.size() > 5;  // the lesson list: compact, and two columns in landscape
+  int cols = many && !TALL ? 2 : 1;
+  int top = gTop() + (many ? 8 : 14), gap = many ? 9 : 14, minH = many ? 56 : 64;
+  int w = cols == 2 ? (W - 32 - 14) / 2 : (TALL ? W - 32 : min(W - 32, 520)), x0 = cols == 2 ? 16 : (W - w) / 2, y = top;
+  if (note.length() && !many) y = t7BlockDraw({&FreeSans12pt7b, 30, 8}, 16, y + 20, note, W - 32) - 4;
+  int rowY[2] = {y, y};
   for (size_t i = 0; i < labels.size(); i++) {
-    int h = t7ButtonH(labels[i], w, 64);
-    t7Button(x, y, w, h, labels[i], ids[i]);
-    y += h + 14;
+    int col = cols == 2 ? (int)(i % 2) : 0;
+    int h = t7ButtonH(labels[i], w, minH);
+    if (cols == 2 && col == 0 && i + 1 < labels.size()) h = max(h, t7ButtonH(labels[i + 1], w, minH));  // a row is as tall as its taller button
+    if (cols == 2 && col == 1) h = max(t7ButtonH(labels[i], w, minH), t7ButtonH(labels[i - 1], w, minH));
+    t7Button(x0 + col * (w + 14), rowY[col], w, h, labels[i], ids[i]);
+    rowY[col] += h + gap;
   }
 }
 
@@ -546,7 +670,8 @@ static void drawT7Question() {
   int qy = top + 22, qEnd = t7BlockDraw({qf, 30, 8}, 16, qy, ex.text, leftW);
   // the figure: under the question; in portrait it gets what the answers and buttons leave
   int figY = qEnd - 4, figH = land ? H - 16 - figY : H - 16 - figY - 8 - optsH - 10 - btnH;
-  if (figH > 60) t7Figure(ex.fig, 16, figY, leftW, min(figH, 230));
+  if (ex.fig.kind == t7::FIG_NONE) {}
+  else if (figH > 60) t7Figure(ex.fig, 16, figY, leftW, min(figH, 230));
   else Serial.printf("games: tutor7 no room for the figure (%d px)\n", figH);
   // the answers: from the top on the right (landscape), or just above the buttons (portrait)
   int oy = land ? top + 6 : H - 16 - btnH - 10 - optsH;
@@ -629,15 +754,15 @@ static void drawTutor7() {
       std::vector<String> labels;
       std::vector<int> ids;
       for (int i = 0; i < t7::LESSON_COUNT; i++) {
-        int best = gameProgress().tutor7Best[i];
-        labels.push_back(String(t7::lesson(i).name) + (best ? String(" (") + best + "/" + t7::lesson(i).nSteps + ")" : String("")));
+        int best = gameProgress().tutor7Best[t7::lesson(i).slot];
+        labels.push_back(String(t7::lessonNumber(t7::lesson(i).slot)) + " " + t7::lesson(i).name + (best ? String(" (") + best + "/" + t7::lesson(i).nSteps + ")" : String("")));
         ids.push_back(T7_LESSON0 + i);
       }
-      return drawT7Menu(t7::lesson(0).subject, labels, ids, "Alege o lecție. Mai multe lecții vin curând.");
+      return drawT7Menu(t7::lesson(0).subject, labels, ids, "Alege o lecție.");
     }
     case T7_LESSON: {
       gHeader(t7L().name);
-      int best = gameProgress().tutor7Best[gs->t7Lesson];
+      int best = gameProgress().tutor7Best[t7L().slot];
       std::vector<String> labels = {"1. Rezumatul lecției", "2. Exemple rezolvate", String("3. Exerciții") + (best ? String(" (cel mai bun: ") + best + "/" + t7L().nSteps + ")" : String(""))};
       int top = gTop() + 18, w = TALL ? W - 32 : min(W - 32, 520), x = (W - w) / 2, y = top;
       for (int i = 0; i < 3; i++) {
@@ -654,7 +779,9 @@ static void drawTutor7() {
     case T7_WRONG: return drawT7Wrong();
     case T7_SOLUTION: return drawT7Solution();
     case T7_RESULT: return drawT7Result();
+    case T7_SUBJECTS:
+      return drawT7Menu("Clasa a VII-a", {"Matematică - Geometrie"}, {T7_SUBJECT0}, "Alege materia. Alte materii vor fi adăugate treptat.");
     default:
-      return drawT7Menu("Tutor7", {"Geometrie"}, {T7_SUBJECT0}, "Tutorul tău de matematică pentru clasa a VII-a. Alege materia.");
+      return drawT7Menu("Tutor", {"Clasa a VII-a"}, {T7_CLASS0}, "Tutorul tău pentru școală: rezumate, exemple și exerciții. Alege clasa.");
   }
 }

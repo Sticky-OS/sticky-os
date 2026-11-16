@@ -16,8 +16,8 @@
 // or ends (and show() adds one every 12 partials, against ghosting).
 
 
-// Tutor7's screens (tutor7.ino draws them).
-enum { T7_SUBJECTS, T7_LESSONS, T7_LESSON, T7_PAGE, T7_QUESTION, T7_CLUE, T7_WRONG, T7_SOLUTION, T7_RESULT };
+// Tutor's screens (tutor7.ino draws them): the class, the subject, the lessons, then a lesson's pages and practice.
+enum { T7_CLASSES, T7_SUBJECTS, T7_LESSONS, T7_LESSON, T7_PAGE, T7_QUESTION, T7_CLUE, T7_WRONG, T7_SOLUTION, T7_RESULT };
 static void drawTutor7();
 static void actTutor7(int id);
 static void tutor7Open();
@@ -68,8 +68,8 @@ struct GState {
   bool xoOver = false, xoPlayerStarts = true;
   int xoWin = -1;
   StrId xoSay = S_G_XO_START;     // what's happening, under the board
-  // Tutor7
-  int t7Screen = T7_SUBJECTS, t7Lesson = 0, t7Part = 0, t7Page = 0;  // t7Part: 0 the summary, 1 the worked examples
+  // Tutor (the code says tutor7: it began as the 7th grade maths tutor)
+  int t7Screen = T7_CLASSES, t7Lesson = 0, t7Part = 0, t7Page = 0;  // t7Part: 0 the summary, 1 the worked examples
   int t7Index = 0, t7Right = 0, t7Tries = 0, t7Clues = 0, t7Picked = -1;  // the exercise; right first time; wrong tries and clues on it
   bool t7Crossed[4] = {}, t7GaveUp = false, t7NewBest = false;
   uint32_t t7Seen[t7::MAX_STEPS] = {};  // what this practice has asked, so nothing comes twice
@@ -1638,7 +1638,11 @@ static String launcherLine(int g) {
     case GAME_QUIZ: return p.quizBest ? TF(S_G_QUIZ_BEST, p.quizBest) : String(T(S_G_L_EIGHT_QUESTIONS));
     case GAME_ADVENTURE: return gs->aScreen == AS_PLAY && !gs->aScene.ending && gs->aNum ? TF(S_G_L_SCENE_GO_ON, gs->aNum) : p.stories ? TP(S_G_STORIES, p.stories) : String(T(S_G_L_CHOOSE_WAY));
     case GAME_XO: return p.xoWins + p.xoDraws + p.xoLosses ? TF(S_G_L_WON_DRAWN, p.xoWins, p.xoDraws) : String(T(S_G_L_BEAT_BOARD));
-    case GAME_TUTOR7: return p.tutor7Best[0] ? String("Pitagora: ") + p.tutor7Best[0] + "/" + t7::lesson(0).nSteps : String("Geometrie, clasa a VII-a");
+    case GAME_TUTOR7: {
+      int done = 0;
+      for (int i = 0; i < t7::LESSON_COUNT; i++) done += p.tutor7Best[t7::lesson(i).slot] > 0;
+      return done ? String("Lecții: ") + done + "/" + t7::LESSON_COUNT : String("Clasa a VII-a, matematică");
+    }
   }
   return "";
 }
@@ -1822,7 +1826,7 @@ static void gamesAiArrived(const String &say, const String &raw) {
 // ======================================================================== the serial port's game commands
 
 // game                  the launcher
-// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor7)
+// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor)
 // game peek             what's on the screen, as text: the board, the cards, the right answer
 // game right / wrong    answer the question on screen right (or wrong): Maths, Quiz; Memory: a pair (or a miss)
 // game slide <0-3>      2048: left, right, up, down

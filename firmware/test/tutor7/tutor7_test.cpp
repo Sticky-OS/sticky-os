@@ -10,6 +10,7 @@
 #include <string>
 #include "tutor7_core.h"
 #include "tutor7_lessons.h"
+#define RTS "\xE2\x88\x9A"
 
 using namespace t7;
 
@@ -185,7 +186,7 @@ static void testLessons() {
       CHECK(p.title && p.body && p.title[0] && p.body[0], "lesson %d %s %d is empty", li, what, i);
       CHECK(utf8ok(p.title) && utf8ok(p.body), "lesson %d %s %d: bad UTF-8", li, what, i);
       CHECK(strlen(p.body) < 620, "lesson %d %s %d: body too long for a screen (%zu bytes)", li, what, i, strlen(p.body));
-      CHECK(p.figure >= -1 && p.figure <= FIG_RIGHT_NAMED, "lesson %d %s %d: figure kind", li, what, i);
+      CHECK(p.figure >= -1 && p.figure < FIG_COUNT, "lesson %d %s %d: figure kind", li, what, i);
     };
     for (int i = 0; i < l.nSummary; i++) page(l.summary[i], "summary", i);
     for (int i = 0; i < l.nExample; i++) page(l.example[i], "example", i);
@@ -205,7 +206,7 @@ static void testLessons() {
     }
   }
   // The Pythagoras lesson's worked examples, recomputed here and looked for in the text.
-  const Lesson &p = lesson(0);
+  const Lesson &p = lesson(LESSON_COUNT - 1);  // Pitagora, the last in the list
   auto has = [](const char *text, const char *needle) { return strstr(text, needle) != nullptr; };
   CHECK(9 * 9 + 40 * 40 == 1681 && 41 * 41 == 1681, "example 1 arithmetic");
   CHECK(has(p.example[0].body, "1681") && has(p.example[0].body, "41 cm"), "example 1 text");
@@ -214,6 +215,43 @@ static void testLessons() {
   CHECK(20 * 20 + 21 * 21 == 841 && 29 * 29 == 841, "example 3 arithmetic");
   CHECK(has(p.example[2].body, "841") && has(p.example[2].body, "29 cm"), "example 3 text");
   CHECK(16 * 2 == 32 && has(p.summary[2].body, "16\xC2\xB7" "2"), "the simplification shown on page 3 is right");
+  // Unit 4's worked examples: the numbers in the text are recomputed here and looked for in it.
+  auto lessonNamed = [&](const char *name) -> const Lesson * {
+    for (int i = 0; i < LESSON_COUNT; i++)
+      if (!strcmp(lesson(i).name, name)) return &lesson(i);
+    return nullptr;
+  };
+  const Lesson *q = lessonNamed("Patrulaterul convex");
+  CHECK(q && 360 - (70 + 100 + 80) == 110 && has(q->example[0].body, "= 110°") && has(q->example[0].body, "250°"), "U4 L1 example 1");
+  CHECK(q && 8 + 9 + 11 + 12 == 40 && 360 / 40 == 9 && 8 * 9 == 72 && 9 * 9 == 81 && 11 * 9 == 99 && 12 * 9 == 108 && has(q->example[1].body, "72°, 81°, 99° și 108°"), "U4 L1 example 2");
+  CHECK(q && 60 + 105 + 90 + 105 == 360 && has(q->example[2].body, "= 360°"), "U4 L1 example 3");
+  const Lesson *pl = lessonNamed("Paralelogramul");
+  CHECK(pl && 180 - 70 == 110 && has(pl->example[0].body, "B = 180° − 70° = 110°") && has(pl->example[0].body, "D = 110°"), "U4 L2 example 1");
+  CHECK(pl && 2 * 5 == 10 && has(pl->example[1].body, "BD = 2 · 5 = 10 cm") && has(pl->example[1].body, "CO = AO = 3 cm"), "U4 L2 example 2");
+  CHECK(pl && 30 - 2 * 6 == 18 && 18 / 2 == 9 && has(pl->example[2].body, "30 − 2 · 6 = 18 cm") && has(pl->example[2].body, "câte 9 cm"), "U4 L2 example 3");
+  const Lesson *ml = lessonNamed("Linia mijlocie");
+  CHECK(ml && 18 / 2 == 9 && has(ml->example[0].body, "MN = BC : 2 = 18 : 2 = 9 cm"), "U4 L3 example 1");
+  CHECK(ml && 10 + 14 + 12 == 36 && 36 / 2 == 18 && 10 + 12 > 14 && has(ml->example[1].body, "36 : 2 = 18 cm"), "U4 L3 example 2");
+  CHECK(ml && 2 * 18 / 3 == 12 && 18 / 3 == 6 && 12 + 6 == 18 && has(ml->example[2].body, "(2/3) · 18 = 12 cm") && has(ml->example[2].body, "(1/3) · 18 = 6 cm"), "U4 L3 example 3");
+  const Lesson *re = lessonNamed("Dreptunghiul");
+  CHECK(re && 2 * 7 == 14 && has(re->example[0].body, "AC = 2 · AO = 14 cm") && has(re->example[0].body, "BD = AC = 14 cm"), "U4 L4 example 1");
+  CHECK(re && 180 - 68 == 112 && 112 / 2 == 56 && has(re->example[1].body, "180° − 68° = 112°") && has(re->example[1].body, "= 56°"), "U4 L4 example 2");
+  CHECK(re && 18 / 2 == 9 && 3 * 9 == 27 && has(re->example[2].body, "perimetrul este 3 · 9 = 27 cm"), "U4 L4 example 3");
+  const Lesson *ro = lessonNamed("Rombul și pătratul");
+  CHECK(ro && 2 * 35 == 70 && 180 - 70 == 110 && has(ro->example[0].body, "2 · 35° = 70°") && has(ro->example[0].body, "180° − 70° = 110°"), "U4 L5 example 1");
+  CHECK(ro && 6 * 6 + 8 * 8 == 100 && 4 * 10 == 40 && has(ro->example[1].body, "36 + 64 = 100") && has(ro->example[1].body, "4 · 10 = 40 cm"), "U4 L5 example 2");
+  CHECK(ro && fmt(exactSqrt(50)) == "5\xE2\x88\x9A" "2" && has(ro->example[2].body, "l² = 50") && has(ro->example[2].body, "5" RTS "2 cm"), "U4 L5 example 3");
+  const Lesson *tr = lessonNamed("Trapezul");
+  CHECK(tr && 180 - 70 == 110 && 180 - 100 == 80 && has(tr->example[0].body, "D = 180° − 70° = 110°") && has(tr->example[0].body, "B = 180° − 100° = 80°"), "U4 L6 example 1");
+  CHECK(tr && (12 + 6) / 2 == 9 && (12 - 6) / 2 == 3 && has(tr->example[1].body, "MN = (12 + 6) : 2 = 9 cm") && has(tr->example[1].body, "PQ = (12 − 6) : 2 = 3 cm"), "U4 L6 example 2");
+  CHECK(tr && (20 - 8) / 2 == 6 && 10 * 10 - 6 * 6 == 64 && 8 * 8 == 64 && has(tr->example[2].body, "100 − 36 = 64") && has(tr->example[2].body, "h = 8 cm"), "U4 L6 example 3");
+  const Lesson *ar = lessonNamed("Perimetre și arii");
+  CHECK(ar && 10 * 6 == 60 && 2 * (10 + 7) == 34 && has(ar->example[0].body, "A = 10 · 6 = 60 cm²") && has(ar->example[0].body, "P = 2 · (10 + 7) = 34 cm"), "U4 L7 example 1");
+  CHECK(ar && 6 * 6 + 8 * 8 == 100 && 12 * 16 / 2 == 96 && has(ar->example[1].body, "40 cm") && has(ar->example[1].body, "96 cm²"), "U4 L7 example 2");
+  CHECK(ar && (10 + 7) * 4 / 2 == 34 && has(ar->example[2].body, "0,7 dm = 7 cm") && has(ar->example[2].body, "68 : 2 = 34 cm²"), "U4 L7 example 3");
+  const Lesson *rv = lessonNamed("Recapitulare U4");
+  CHECK(rv && 3 * 60 == 180 && has(rv->example[1].body, "B = 60° și A = 120°"), "U4 review example 2");
+  CHECK(rv && 6 * 8 / 2 == 24 && 48 * 10 == 480 && 48.0 / 10 == 4.8 && has(rv->example[2].body, "h = 48 : 10 = 4,8 cm"), "U4 review example 3");
 }
 
 int main(int argc, char **argv) {
@@ -225,6 +263,14 @@ int main(int argc, char **argv) {
       {K_HYPOTENUSE, 1, "hypotenuse, integers"}, {K_HYPOTENUSE, 2, "hypotenuse, radicals"}, {K_LEG, 1, "leg, integers"},
       {K_LEG, 2, "leg, radicals"},               {K_CONVERSE, 3, "converse"},               {K_SQUARE_DIAGONAL, 3, "square diagonal"},
       {K_EQUILATERAL_HEIGHT, 3, "equilateral height"},
+      {K_Q_FOURTH_ANGLE, 1, "fourth angle"},        {K_Q_PROPORTIONAL, 2, "proportional angles"}, {K_PAR_ANGLE, 1, "parallelogram angle"},
+      {K_PAR_PERIMETER, 1, "parallelogram perimeter"}, {K_PAR_DIAGONAL, 1, "parallelogram diagonal"}, {K_CLASSIFY, 3, "classify"},
+      {K_MIDLINE, 1, "midline"},                    {K_MEDIAN_TRIANGLE, 2, "median triangle"},    {K_CENTROID, 2, "centroid"},
+      {K_RECT_DIAGONAL, 1, "rectangle diagonal"},   {K_RECT_ANGLE, 2, "rectangle angle"},         {K_RHOMBUS_ANGLE, 2, "rhombus angle"},
+      {K_RHOMBUS_SIDE, 1, "rhombus side, ints"},    {K_RHOMBUS_SIDE, 2, "rhombus side, radicals"}, {K_SQUARE_SIDE, 3, "square side"},
+      {K_TRAP_ANGLE, 1, "trapezoid angle"},         {K_TRAP_MIDLINE, 2, "trapezoid midline"},     {K_TRAP_HEIGHT, 1, "trapezoid height, ints"},
+      {K_TRAP_HEIGHT, 2, "trapezoid height, radicals"}, {K_AREA, 2, "area"},                      {K_PERIMETER, 1, "perimeter"},
+      {K_HEIGHT_FROM_AREA, 1, "height from area"},  {K_HEIGHT_FROM_AREA, 2, "height, right triangle"},
   };
   for (const Run &r : runs) testKind(r, samples);
   testVerifyCatches();

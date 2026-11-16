@@ -1,5 +1,5 @@
 // Tutor7's logic: see tutor7_core.h.
-#include "tutor7_core.h"
+#include "tutor7_internal.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -38,6 +38,7 @@ static Exact norm(int64_t p, int64_t r, int64_t q) {
   return Exact{(int32_t)p, (int32_t)r, (int32_t)q};
 }
 
+Exact exactNorm(int64_t p, int64_t r, int64_t q) { return norm(p, r, q); }
 Exact exactInt(int32_t n) { return norm(n, 1, 1); }
 Exact exactFrac(int32_t p, int32_t q) { return norm(p, 1, q); }
 
@@ -71,30 +72,12 @@ int exactFormat(const Exact &e, char *out, int cap) {
 
 // ---------------------------------------------------------------- building blocks
 
-#define SQ "\xC2\xB2"  // the superscript two
-#define RT "\xE2\x88\x9A"
 
-// snprintf into a fixed buffer; true when it did not fit.
-#define PR(dst, ...) (snprintf((dst), sizeof(dst), __VA_ARGS__) >= (int)sizeof(dst))
-
-static int64_t sq(int64_t x) { return x * x; }
-
-struct Cand {
-  Exact v;
-  char why[200];
-};
-
-// Adds a typical slip: its value, and why it is wrong.
-#define SLIP(list, n, value, ...)            \
-  do {                                       \
-    (list)[n].v = (value);                   \
-    if (PR((list)[n].why, __VA_ARGS__)) bad = true; \
-    (n)++;                                   \
-  } while (0)
 
 // The right answer plus three of the slips, in a random order. False when
 // there are not three distinct slips (then the caller tries another seed).
-static bool setOptions(Exercise &ex, Rng &rng, const Exact &right, Cand *c, int nc, const char *unit) {
+bool setOptions(Exercise &ex, Rng &rng, const Exact &right, Cand *c, int nc, const char *unit) {
+  if (PR(ex.unit, "%s", unit)) return false;
   // shuffle the slips, keep the first three that differ from the answer and each other
   for (int i = nc - 1; i > 0; i--) {
     int j = rng.range(0, i);
@@ -116,7 +99,7 @@ static bool setOptions(Exercise &ex, Rng &rng, const Exact &right, Cand *c, int 
   Cand pick[3];
   int np = 0;
   for (int i = 0; i < nc && np < 3; i++) {
-    bool dup = fabs(exactValue(c[i].v) - exactValue(right)) < 1e-9;
+    bool dup = c[i].v.p <= 0 || fabs(exactValue(c[i].v) - exactValue(right)) < 1e-9;  // a length or an angle is positive
     for (int k = 0; k < np && !dup; k++) dup = fabs(exactValue(c[i].v) - exactValue(pick[k].v)) < 1e-9;
     if (!dup) pick[np++] = c[i];
   }
@@ -404,7 +387,7 @@ bool generate(Kind kind, int level, Rng &rng, Exercise &ex) {
     case K_CONVERSE: return genConverse(rng, ex);
     case K_SQUARE_DIAGONAL: return genSquareDiagonal(rng, ex);
     case K_EQUILATERAL_HEIGHT: return genEquilateralHeight(rng, ex);
-    default: return false;
+    default: return u4Generate(kind, level, rng, ex);
   }
 }
 
@@ -423,7 +406,7 @@ static bool validUtf8(const char *s) {
 }
 
 // token occurs in text and is not just a piece of a longer number
-static bool hasToken(const char *text, const char *token) {
+bool hasToken(const char *text, const char *token) {
   size_t n = strlen(token);
   if (!n) return false;
   for (const char *p = text; (p = strstr(p, token)); p++) {
@@ -491,10 +474,16 @@ bool verify(const Exercise &ex, char *err, int cap) {
     }
     snprintf(tokens2[0], sizeof tokens2[0], "%d", s[0] * s[0] + s[1] * s[1]);
     snprintf(tokens2[1], sizeof tokens2[1], "%d", s[2] * s[2]);
+  } else if (ex.kind == K_CLASSIFY) {
+    if (!u4VerifyClassify(ex, err, cap)) return false;
   } else {
-    double expect;
-    const char *unit = " cm";
-    if (ex.kind == K_HYPOTENUSE) {
+    double expect = 0;
+    const char *unit = ex.unit;
+    if (ex.kind >= K_Q_FOURTH_ANGLE && ex.kind < K_COUNT) {
+      const char *want = "";
+      if (!u4Expect(ex, expect, want, err, cap)) return false;
+      if (strcmp(want, ex.unit)) return fail(err, cap, "the unit of the options is not the kind's unit");
+    } else if (ex.kind == K_HYPOTENUSE) {
       if (f.kind != FIG_RIGHT_TRIANGLE || f.v[0] <= 0 || f.v[1] <= 0 || f.v[2] != 0) return fail(err, cap, "hypotenuse figure");
       expect = sqrt((double)f.v[0] * f.v[0] + (double)f.v[1] * f.v[1]);
     } else if (ex.kind == K_LEG) {
@@ -521,7 +510,8 @@ bool verify(const Exercise &ex, char *err, int cap) {
     exactFormat(ex.value[ex.correct], token, sizeof token);
     if (!hasToken(ex.solution, token)) return fail(err, cap, "the solution does not state the answer");
     // the answer must not already be a given number, or a clue naming that number would look like a leak
-    for (int i = 0; i < 3; i++) {
+    // (only the Pythagoras kinds: Unit 4's clues and explanations carry no numbers, and a rectangle's BD is its AC)
+    for (int i = 0; i < 3 && ex.kind <= K_EQUILATERAL_HEIGHT; i++) {
       char g[24];
       snprintf(g, sizeof g, "%d", f.v[i]);
       if (f.v[i] && !strcmp(g, token)) return fail(err, cap, "the answer equals a given length");

@@ -20,7 +20,7 @@ S(S_G_DAILY, "Daily maths")
 S(S_G_QUIZ, "Quiz")
 S(S_G_ADVENTURE, "Adventure")
 S(S_G_XO, "X and O")
-S(S_G_TUTOR7, "Tutor7")  // a maths tutor for 7th graders; the lessons themselves are in Romanian only
+S(S_G_TUTOR7, "Tutor")  // a school tutor, class by class and subject by subject (now: 7th grade maths, geometry); the lessons themselves are in Romanian only
 S(S_G_GAMES, "Games")  // the status bar on the launcher; a button back to it
 
 // ---- buttons shared by the games (pill buttons, ~200 px wide in portrait)

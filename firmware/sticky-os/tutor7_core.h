@@ -51,16 +51,42 @@ enum Kind : uint8_t {
   K_CONVERSE,    // three sides: is the triangle right-angled?
   K_SQUARE_DIAGONAL,
   K_EQUILATERAL_HEIGHT,
+  // Unit 4, the quadrilateral
+  K_Q_FOURTH_ANGLE,   // three angles of a convex quadrilateral: the fourth
+  K_Q_PROPORTIONAL,   // four angles in a given ratio: the largest
+  K_PAR_ANGLE,        // a parallelogram's angles
+  K_PAR_PERIMETER,    // a parallelogram's perimeter, or its other side from the perimeter
+  K_PAR_DIAGONAL,     // the diagonals bisect each other
+  K_CLASSIFY,         // which figure do these properties guarantee?
+  K_MIDLINE,          // a triangle's midline
+  K_MEDIAN_TRIANGLE,  // the perimeter of the triangle made by the three midlines
+  K_CENTROID,         // the centroid divides a median 2 : 1
+  K_RECT_DIAGONAL,    // a rectangle's diagonals
+  K_RECT_ANGLE,       // the angle between a rectangle's diagonal and its side
+  K_RHOMBUS_ANGLE,    // a rhombus's angles from the angle its diagonal makes with a side
+  K_RHOMBUS_SIDE,     // a rhombus's side or perimeter from its diagonals
+  K_SQUARE_SIDE,      // a square's side from its diagonal
+  K_TRAP_ANGLE,       // a trapezoid's angles
+  K_TRAP_MIDLINE,     // a trapezoid's midline and the segment between the diagonals
+  K_TRAP_HEIGHT,      // an isosceles trapezoid's height
+  K_AREA,             // areas of the parallelogram, triangle, rhombus, trapezoid, right triangle
+  K_PERIMETER,        // perimeters
+  K_HEIGHT_FROM_AREA, // a height from the area
   K_COUNT
 };
 
 // What the screen draws, from the exercise's own numbers. 0: the length is
 // the unknown (drawn as ?). Right triangle: A = 90 degrees, v = AB, AC, BC.
 // FIG_RIGHT_NAMED is for the theory pages: the sides are named (AB, AC, BC), not measured.
-enum FigureKind : uint8_t { FIG_RIGHT_TRIANGLE, FIG_TRIANGLE, FIG_SQUARE_DIAGONAL, FIG_EQUILATERAL_HEIGHT, FIG_RIGHT_NAMED };
+enum FigureKind : uint8_t {
+  FIG_RIGHT_TRIANGLE, FIG_TRIANGLE, FIG_SQUARE_DIAGONAL, FIG_EQUILATERAL_HEIGHT, FIG_RIGHT_NAMED,
+  // Unit 4: drawn with the vertices named, the numbers are in the question
+  FIG_NONE, FIG_QUAD, FIG_PARALLELOGRAM, FIG_RECTANGLE, FIG_RHOMBUS, FIG_TRAPEZOID, FIG_TRAPEZOID_ISOSCELES, FIG_MIDLINE, FIG_MEDIANS,
+  FIG_COUNT
+};
 struct Figure {
   FigureKind kind;
-  int32_t v[3];
+  int32_t v[4];  // the givens; what they mean depends on the kind (see u4Expect)
 };
 
 static const int MAX_OPTIONS = 4;
@@ -68,7 +94,8 @@ struct Exercise {
   Kind kind;
   uint8_t level;  // 1 integers, 2 radicals, 3 the converse and special cases
   Figure fig;
-  char text[200];  // the question
+  char unit[8];    // after each option's number: " cm", "°", " cm²"
+  char text[240];  // the question
   int nopt;
   int correct;                 // index into opt
   char opt[MAX_OPTIONS][64];   // what the buttons say

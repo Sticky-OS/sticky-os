@@ -10,5 +10,5 @@ if ! echo '#include <new>' | "$CXX" -std=c++17 -x c++ -fsyntax-only - 2>/dev/nul
   SDK=$(xcrun --show-sdk-path 2>/dev/null || true)
   [ -n "$SDK" ] && FLAGS+=(-isysroot "$SDK" -I"$SDK/usr/include/c++/v1")
 fi
-"$CXX" "${FLAGS[@]}" -o build/tutor7_test tutor7_test.cpp ../../sticky-os/tutor7_core.cpp ../../sticky-os/tutor7_lessons.cpp
+"$CXX" "${FLAGS[@]}" -o build/tutor7_test tutor7_test.cpp ../../sticky-os/tutor7_core.cpp ../../sticky-os/tutor7_u4.cpp ../../sticky-os/tutor7_lessons.cpp
 ./build/tutor7_test "$@"
