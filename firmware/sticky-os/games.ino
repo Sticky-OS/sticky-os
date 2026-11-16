@@ -1822,7 +1822,7 @@ static void gamesAiArrived(const String &say, const String &raw) {
 // ======================================================================== the serial port's game commands
 
 // game                  the launcher
-// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O)
+// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor7)
 // game peek             what's on the screen, as text: the board, the cards, the right answer
 // game right / wrong    answer the question on screen right (or wrong): Maths, Quiz; Memory: a pair (or a miss)
 // game slide <0-3>      2048: left, right, up, down

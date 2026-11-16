@@ -104,7 +104,14 @@ static std::vector<String> t7Words(const String &s) {
     }
   }
   if (cur.length()) out.push_back(cur);
-  return out;
+  // a unit stays with its number: "50 cm" never breaks between the two
+  std::vector<String> merged;
+  for (const String &w : out) {
+    bool unit = w == "cm" || w.startsWith("cm.") || w.startsWith("cm,") || w.startsWith("cm?") || w.startsWith("cm)");
+    if (unit && !merged.empty()) merged.back() += " " + w;
+    else merged.push_back(w);
+  }
+  return merged;
 }
 
 static std::vector<String> t7Wrap(const GFXfont *f, const String &s, int width) {
@@ -239,7 +246,7 @@ static void t7FigSquare(const t7::Figure &fg, int bx, int by, int bw, int bh) {
   thickLine(x0, y1, x0, y0, 3);
   t7Dashed(x0, y1, x1, y0);
   t7Tag((x0 + x1) / 2, y1 + 28, t7Len(fg.v[0]));
-  t7Tag((x0 + x1) / 2 - 22, (y0 + y1) / 2 - 8, "d = ?", true);
+  t7Tag(x0 + side * 32 / 100, y0 + side * 28 / 100, "d = ?", true);  // above the diagonal, clear of it
 }
 
 static void t7FigEquilateral(const t7::Figure &fg, int bx, int by, int bw, int bh) {
@@ -254,7 +261,7 @@ static void t7FigEquilateral(const t7::Figure &fg, int bx, int by, int bw, int b
   t7Tag(x0 - 14, y + 22, "B", true);
   t7Tag(x1 + 14, y + 22, "C", true);
   t7Tag(ax, y + 24, "D", true);
-  t7Tag(ax + 30, ay + hh / 2 + 4, "AD = ?", true);
+  t7Tag(ax + 12 + t7TextW(&FreeSansBold9pt7b, "AD = ?") / 2, y - hh / 7, "AD = ?", true);  // low, where the triangle is wide
   String s = t7Len(fg.v[0]);
   t7Tag((x0 + ax) / 2 - 30 - t7TextW(&FreeSans9pt7b, s) / 2, ay + hh / 2 + 6, s);
 }
@@ -491,10 +498,22 @@ static void drawT7Page() {
   bool ex = gs->t7Part == 1;
   const t7::Page &p = ex ? l.example[gs->t7Page] : l.summary[gs->t7Page];
   int n = ex ? l.nExample : l.nSummary;
-  gHeader(p.title, String(gs->t7Page + 1) + " / " + n);
-  int btnH = 52, btnY = H - 16 - btnH, top = gTop() + 8;
+  String count = String(gs->t7Page + 1) + " / " + n;
+  int btnH = 52, btnY = H - 16 - btnH, top = gTop() + 4;
+  // The title goes in the header when it fits there (landscape, a short title); else the header says
+  // what part this is, and the title is wrapped at the top of the page.
+  int headRoom = W - (16 + (TALL ? 104 : 116) + 18) - textW(&FreeSansBold12pt7b, count.c_str()) - 40;
+  if (t7TextW(&FreeSansBold18pt7b, p.title) <= headRoom) {
+    gHeader(p.title, count);
+  } else {
+    gHeader(ex ? "Exemplu" : "Rezumat", count);
+    auto lines = t7Wrap(&FreeSansBold12pt7b, p.title, W - 32);
+    int ty = top + 24;
+    for (const String &l : lines) t7Text(16, ty, &FreeSansBold12pt7b, l), ty += 30;
+    top = ty - 14;
+  }
   bool fig = p.figure >= 0;
-  int figW = TALL ? W - 32 : 270, figH = TALL ? 190 : btnY - top - 8;
+  int figW = TALL ? W - 32 : 230, figH = TALL ? 190 : btnY - top - 8;
   int textX = 16, textW = W - 32, textTop = top + 22, textBottom = btnY - 8;
   if (fig && !TALL) textW = W - 32 - figW - 16;
   if (fig && TALL) textTop = top + figH + 22;
@@ -507,7 +526,7 @@ static void drawT7Page() {
 
 static void drawT7Question() {
   const t7::Exercise &ex = gs->t7Ex;
-  gHeader(String("Exercițiul ") + (gs->t7Index + 1) + " din " + t7L().nSteps, String("corecte: ") + gs->t7Right);
+  gHeader(String("Exercițiul ") + (gs->t7Index + 1) + "/" + t7L().nSteps);
   int top = gTop() + 4, btnH = 52, gap = 10;
   const GFXfont *qf = &FreeSans12pt7b;
   bool land = !TALL;
@@ -582,9 +601,15 @@ static void drawT7Result() {
   String msg = gs->t7Right == l.nSteps ? "Excelent! Ai înțeles lecția." : gs->t7Right * 2 >= l.nSteps ? "Bine! Mai exersează puțin și va fi perfect." : "Recitește rezumatul și exemplele, apoi încearcă din nou.";
   if (gs->t7NewBest) msg += "\nCel mai bun rezultat al tău!";
   int y = top + 140;
-  for (const String &line : t7Wrap(&FreeSans12pt7b, msg, W - 40)) {
-    textCentre(cx, y, &FreeSans12pt7b, line.c_str());
-    y += 30;
+  for (int from = 0; from <= (int)msg.length();) {  // paragraphs, each wrapped and centred
+    int nl = msg.indexOf('\n', from);
+    for (const String &line : t7Wrap(&FreeSans12pt7b, msg.substring(from, nl < 0 ? msg.length() : nl), W - 40)) {
+      textCentre(cx, y, &FreeSans12pt7b, line.c_str());
+      y += 30;
+    }
+    if (nl < 0) break;
+    from = nl + 1;
+    y += 8;
   }
   int btnH = 56, btnY = H - 16 - btnH, bw = (W - 32 - 14) / 2;
   t7Button(16, btnY, bw, btnH, "Lecții", ID_BACK);
