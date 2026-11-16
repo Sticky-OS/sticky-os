@@ -39,6 +39,9 @@ Seeed's pages: [docs](https://www.seeedstudio.com/sticky/docs/),
     STICKY_OTA_HTTP=1 ./upload.sh    # a test build that takes updates over plain http
     STICKY_ICS_HTTP=1 ./upload.sh    # a test build that takes plain http calendar links
     firmware/test/ics/run.sh [feed.ics ...]    # the calendar parser's tests, on this computer
+    firmware/test/ebook/run.sh [name ...]      # the Books app's readers, pager, library and fonts, on this computer
+    BOOKS_DIR=~/books firmware/test/ebook/run.sh    # the same, with real books too
+    firmware/tools/board.py put book.epub books/book.epub    # a file onto the board's microSD card, over the cable
 
 Needs [`arduino-cli`](https://arduino.github.io/arduino-cli/) with the
 `esp32:esp32` core 3.3.11 and the libraries Adafruit GFX 1.12.6 (with
@@ -67,6 +70,29 @@ broker, relay, CA and so on, and the relay's speech-to-text header, see
 Never share a binary built with them: it holds those values. For the same
 reason `upload.sh` refuses a release version (`STICKY_VERSION=v...`) while
 either file exists; releases are built by CI only.
+
+## The microSD card
+
+Photos and Books read the card (FAT, mounted at `/sd` by `card.cpp` when
+first asked). Photos looks in `photos/`, Books in `books/` (two folders
+deep) or, without one, the card's top. Books keeps what it makes on the
+card, in `.sticky/books/`:
+
+| File | What |
+|---|---|
+| `<key>.flow`, `<key>.flow.toc` | the book converted to the app's own text (`bookflow.h`) and its contents, made the first time it's opened |
+| `<key>.cover` | the cover picture as it was in the book (JPEG or PNG) |
+| `<key>.meta` | written once the conversion is whole: title, author, description, sizes, the flow's version |
+| `<key>.pos` | the place, the bookmarks, finished or not, the time and pages read |
+| `library.idx` | the list: a line a book (title, author, how far, time read) |
+| `stats.txt` | the reading statistics: totals and a line a day (400 days) |
+
+`<key>` is 16 hex digits made of the book's path, size and date, so a
+replaced file is a new book. The small files end with a checksum line and
+are written beside themselves first (`name.tmp`), so a card pulled or a
+battery gone flat in the middle of a write leaves the old file or the new
+one. The folder can be deleted: books are converted again when opened
+(places, bookmarks and statistics go with it). Formats are in `booklib.h`.
 
 ## Flash layout and software updates
 

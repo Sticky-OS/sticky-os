@@ -89,10 +89,15 @@
 #include "mbedtls/base64.h"
 
 #include <LittleFS.h>
+#include <sys/stat.h>
 
 #include <algorithm>
 
 #include "bleprov.h"
+#include "bookfonts.h"
+#include "booklib.h"
+#include "bookpage.h"
+#include "card.h"
 #include "config.h"
 #include "games.h"
 #include "tutor7_core.h"
@@ -153,7 +158,7 @@ class TextCanvas : public GFXcanvas1 {
   static const ExtFont *extFor(const GFXfont *f) {
     for (auto &e : FONT_EXT)
       if (e.base == f) return e.ext;
-    return nullptr;
+    return bookExtFor(f);  // the Books app's reading fonts (bookfonts.h)
   }
   const GFXfont *font() const { return gfxFont; }
   size_t write(uint8_t c) override {
@@ -237,15 +242,15 @@ static Readings now;
 // "app <n>" uses them): a new app takes the next number, and APP_ORDER says
 // where it goes on the home screen.
 enum App { APP_CLOCK, APP_WEATHER, APP_CALENDAR, APP_NOTES, APP_TIMER, APP_PHOTOS, APP_CLAUDE, APP_SETTINGS, APP_ABOUT,
-           APP_QUOTE, APP_RECIPES, APP_GAMES, APP_COUNT };
+           APP_QUOTE, APP_RECIPES, APP_GAMES, APP_BOOKS, APP_COUNT };
 // English, for the log; the screens use appName().
 static const char *const APP_NAMES[] = {"Clock", "Weather", "Calendar", "Notes", "Timer", "Photos", "Claude", "Settings", "About",
-                                        "Quote", "Recipes", "Games"};
+                                        "Quote", "Recipes", "Games", "Books"};
 static const StrId APP_LABELS[] = {S_APP_CLOCK, S_APP_WEATHER, S_APP_CALENDAR, S_APP_NOTES, S_APP_TIMER, S_APP_PHOTOS,
-                                   S_APP_CLAUDE, S_APP_SETTINGS, S_APP_ABOUT, S_APP_QUOTE, S_APP_RECIPES, S_APP_GAMES};
+                                   S_APP_CLAUDE, S_APP_SETTINGS, S_APP_ABOUT, S_APP_QUOTE, S_APP_RECIPES, S_APP_GAMES, S_APP_BOOKS};
 #define appName(a) T(APP_LABELS[a])  // a macro: Arduino puts its prototypes above the first function
 static const int APP_ORDER[APP_COUNT] = {APP_CLOCK, APP_WEATHER, APP_CALENDAR, APP_NOTES, APP_TIMER, APP_PHOTOS,
-                                         APP_QUOTE, APP_RECIPES, APP_GAMES, APP_CLAUDE, APP_SETTINGS, APP_ABOUT};
+                                         APP_BOOKS, APP_QUOTE, APP_RECIPES, APP_GAMES, APP_CLAUDE, APP_SETTINGS, APP_ABOUT};
 
 // What fills the screen: the home screen, an app, the quick settings over
 // either, or the welcome screen of a board with no WiFi saved.
@@ -952,6 +957,7 @@ static bool fullScreenApp(int a) { return a == APP_PHOTOS || a == APP_QUOTE; }
 // board is asleep (see deepSleep()). A full-screen photo gets its status bar
 // back for that: the four-grey picture would cover a badge.
 static bool fullScreenOn() {
+  if (screen == SCREEN_APP && app == APP_BOOKS && booksFullScreen() && !setupMode && !updScreen && !revertNotice) return true;  // a book's pages
   return screen == SCREEN_APP && fullScreenApp(app) && (settings.fullScreen >> app & 1) && !setupMode && !updScreen && !revertNotice &&
          !(sleepingNow && app == APP_PHOTOS);
 }
@@ -3395,6 +3401,7 @@ static void appIcon(int a, int cx, int cy, int s) {
     }
     case APP_RECIPES: chefHat(cx, cy, s, t); break;
     case APP_GAMES: gamesFolderIcon(cx, cy, s * 135 / 100); break;  // a folder: four of its games, small
+    case APP_BOOKS: booksIcon(cx, cy, s); break;
     case APP_ABOUT: {
       ring(cx, cy, r, t);
       canvas->fillCircle(cx, cy - r * 45 / 100, t, INK);
@@ -5055,6 +5062,9 @@ static void render(bool full) {
     case APP_QUOTE: drawQuote(); break;
     case APP_RECIPES: drawRecipes(); break;
     case APP_GAMES: drawGames(); break;
+    case APP_BOOKS:
+      if (booksDraw(fs)) return;  // the cover went up in greys by itself
+      break;
     case APP_CLAUDE: xSemaphoreTake(dataLock, portMAX_DELAY); drawClaude(); xSemaphoreGive(dataLock); break;
     case APP_CALENDAR: xSemaphoreTake(dataLock, portMAX_DELAY); drawCalendar(); xSemaphoreGive(dataLock); break;
     case APP_NOTES: drawNotes(); break;
@@ -5237,6 +5247,7 @@ static void logHeap(const char *step) {
 
 static void deepSleep() {
   updMarkGood("deep sleep");  // waking is a restart: it mustn't go back to the old firmware
+  booksSync();  // the place in the book, onto the card
   // The screen stays as it was (e-paper keeps a picture with no power), drawn
   // once more with a full refresh and the moon that says it's asleep.
   sleepingNow = true;
@@ -5697,6 +5708,7 @@ static void moveBy(int move) {
   if (screen == SCREEN_QUICK) return closeQuick();
   if (screen == SCREEN_HOME) return homeMove(move);
   if (app == APP_GAMES) return gamesMove(move);  // as at home: the ring (2048: the tiles)
+  if (app == APP_BOOKS) return booksMove(move);  // the pages, or the ring in the library
   if (app == APP_NOTES && noteOpen >= 0 && !notesTyping) {
     noteStep(move);
     render(false);
@@ -5718,6 +5730,7 @@ static void openApp(int next) {
   if (recipeMode == RM_TYPING) recipeMode = RM_LIST;  // an open recipe stays open: you may be cooking
   if (app == APP_QUOTE) quoteReset();  // it opens on the day's quote
   if (app == APP_GAMES) gamesOpenApp();  // it opens on its launcher (a game left half-played waits there)
+  if (app == APP_BOOKS) booksOpenApp();  // the book left open, else the library
   Serial.printf("app: %s\n", APP_NAMES[app]);
   fetchFor(app, false);  // nothing to show yet: ask for it; the screen redraws when it arrives
   photoAt = millis();
@@ -5739,6 +5752,7 @@ static void swipe(int x0, int y0, int dx, int dy) {
   if (vertical && dy > 0 && y0 < BAR_H + 24) return openQuick();
   if (screen == SCREEN_HOME) return homeScroll((vertical ? dy < 0 : dx < 0) ? 1 : -1);
   if (app == APP_GAMES && gamesSwipe(x0, y0, dx, dy)) return;  // 2048's moves; the games keep sideways swipes
+  if (app == APP_BOOKS && booksSwipe(x0, y0, dx, dy)) return;  // pages and lists
   if (vertical && dy < 0 && y0 > H - 70) return goHome();
   if (app == APP_CALENDAR && calendarSwipe(dx, dy)) return;  // up / down: the agenda's pages
   if (app == APP_WEATHER && hourlyDate) return hourlySwipe(dx, dy);  // a day's hours: sideways the next day
@@ -5829,6 +5843,7 @@ static void action() {  // OK, or a tap in the middle of the screen
   if (app == APP_QUOTE) return quoteNew();
   if (app == APP_RECIPES) return recipesAction();
   if (app == APP_GAMES) return gamesOk();
+  if (app == APP_BOOKS) return booksOk();
   readSensors();
   fetchFor(app, true);
   if (app == APP_ABOUT) dumpAbout();
@@ -5873,6 +5888,7 @@ static void tap(int x, int y) {
   bool full = fullScreenOn();
   if (y < BAR_H + 10 && !full) return goHome();  // the status bar, with its house: home (full screen has none)
   if (fullScreenApp(app) && !(app == APP_QUOTE && !full && onQuoteButton(x, y))) return contentTap(x, y);
+  if (app == APP_BOOKS) return booksTap(x, y);
   if (app == APP_TIMER) return timerTap(x, y);
   if (app == APP_SETTINGS && wifiTyping) return wifiTypeResult(keyboardTap(wifiKb, x, y));
   if (app == APP_SETTINGS && wifiJoining) return;
@@ -6001,6 +6017,80 @@ static void fsPut(const String &request) {
   else Serial.printf("FSPUT %s failed\n", path.c_str());
 }
 
+// Files on the microSD card, from the Mac (books to read, without taking the
+// card out): sdput <path> <offset> <base64> writes the bytes at that offset
+// (0 makes the file afresh; anything else must be the file's size: pieces in
+// order), answering "SDPUT <path> <size>" or "SDPUT <path> failed";
+// sdls [folder], sdrm <path>, sdmkdir <path>. Paths from the card's top,
+// with %XX for a space or any other byte.
+static String sdPath(String p) {
+  p.trim();
+  String d;  // %XX: a byte (board.py writes spaces and the like that way)
+  for (int i = 0; i < (int)p.length(); i++) {
+    if (p[i] == '%' && i + 2 < (int)p.length() && isxdigit(p[i + 1]) && isxdigit(p[i + 2])) {
+      d += (char)strtol(p.substring(i + 1, i + 3).c_str(), nullptr, 16);
+      i += 2;
+    } else d += p[i];
+  }
+  p = d;
+  if (!p.startsWith("/")) p = "/" + p;
+  return p.indexOf("/..") >= 0 ? String() : String(CARD_ROOT) + p;
+}
+
+static void sdPut(const String &request) {
+  int s1 = request.indexOf(' ', 6), s2 = s1 < 0 ? -1 : request.indexOf(' ', s1 + 1);
+  String rel = s1 < 0 ? String() : request.substring(6, s1), path = sdPath(rel);
+  long offset = s2 < 0 ? -1 : request.substring(s1 + 1, s2).toInt();
+  String b64 = s2 < 0 ? String() : request.substring(s2 + 1);
+  b64.trim();
+  size_t n = 0, cap = b64.length() * 3 / 4 + 4;
+  uint8_t *raw = (uint8_t *)heap_caps_malloc(cap, MALLOC_CAP_SPIRAM);
+  bool ok = raw && path.length() && offset >= 0 && cardMount() &&
+            mbedtls_base64_decode(raw, cap, &n, (const unsigned char *)b64.c_str(), b64.length()) == 0;
+  long size = 0;
+  if (ok) {
+    FILE *f = fopen(path.c_str(), offset == 0 ? "wb" : "ab");
+    if (f && offset) {
+      fseek(f, 0, SEEK_END);
+      ok = ftell(f) == offset;
+    }
+    ok = ok && f && fwrite(raw, 1, n, f) == n;
+    if (f) size = ftell(f), ok = (fclose(f) == 0) && ok;
+  }
+  free(raw);
+  if (ok) Serial.printf("SDPUT %s %ld\n", rel.c_str(), size);
+  else Serial.printf("SDPUT %s failed\n", rel.c_str());
+}
+
+static void sdCommand(const String &line) {
+  if (!cardMount()) {
+    Serial.println("SD no card");
+    return;
+  }
+  if (line.startsWith("sdrm ")) {
+    String p = sdPath(line.substring(5));
+    Serial.printf("SDRM %s\n", p.length() && (remove(p.c_str()) == 0 || rmdir(p.c_str()) == 0) ? "ok" : "failed");  // a file, or an empty folder
+  } else if (line.startsWith("sdmkdir ")) {
+    String p = sdPath(line.substring(8));
+    Serial.printf("SDMKDIR %s\n", p.length() && mkdir(p.c_str(), 0775) == 0 ? "ok" : "failed");
+  } else {
+    String p = sdPath(line.length() > 5 ? line.substring(5) : String("/"));
+    DIR *d = p.length() ? opendir(p.c_str()) : nullptr;
+    if (!d) {
+      Serial.println("SDLS failed");
+      return;
+    }
+    while (dirent *e = readdir(d)) {
+      struct stat st;
+      String full = p + "/" + e->d_name;
+      bool dir = stat(full.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+      Serial.printf("SDLS %s%s %ld\n", e->d_name, dir ? "/" : "", dir ? 0L : (long)st.st_size);
+    }
+    closedir(d);
+    Serial.println("END");
+  }
+}
+
 // For testing from the Mac, one command a line on the serial port:
 //   shot       the picture as drawn: "SHOT 800 480", 480 lines of hex (1 bpp, 1 is white), "END"
 //   app <n>    open app n (0 Clock ... 5 Claude)
@@ -6022,7 +6112,7 @@ static void devCommands() {
         continue;
       }
       if (line.length() < 160) line += c;
-      if (line == "@cfg " || line == "fsput ") {  // long lines: into the PSRAM buffer
+      if (line == "@cfg " || line == "fsput " || line == "sdput ") {  // long lines: into the PSRAM buffer
         if (!cfgLine) cfgLine = (char *)heap_caps_malloc(PROV_SERIAL_LINE, MALLOC_CAP_SPIRAM);
         if (cfgLine) {
           memcpy(cfgLine, line.c_str(), line.length());
@@ -6038,6 +6128,7 @@ static void devCommands() {
       String request;
       request.concat(cfgLine, cfgLen);
       if (request.startsWith("fsput ")) fsPut(request);
+      else if (request.startsWith("sdput ")) sdPut(request);
       else provSerialLine(request);
       continue;
     }
@@ -6139,6 +6230,10 @@ static void devCommands() {
       screen = SCREEN_APP, app = APP_WEATHER;
       if (n >= 0 && n < weather.days) hourlyOpen(weather.dayDate[n]);
       else Serial.printf("hours: the forecast has %d days\n", weather.days);
+    } else if (line == "book" || line.startsWith("book ")) {  // the Books app: see booksCommand()
+      booksCommand(line.length() > 5 ? line.substring(5) : String());
+    } else if (line.startsWith("sdls") || line.startsWith("sdrm ") || line.startsWith("sdmkdir ")) {
+      sdCommand(line);
     } else if (line == "game" || line.startsWith("game ")) {  // the Games app: see gamesCommand()
       gamesCommand(line.length() > 5 ? line.substring(5) : String());
     } else if (line == "quote new") {  // the Quote app's New quote
@@ -6310,6 +6405,7 @@ void setup() {
   recipesBegin();
   gamesBegin();
   gamesUiBegin();
+  booksBegin();
   hourlyCache = (HourlyDay *)heap_caps_calloc(HOURLY_DAYS, sizeof(HourlyDay), MALLOC_CAP_SPIRAM);
   photoStoreBegin(NW, NH - BAR_H, NH, NW - BAR_H, NW, NH);  // the Photos app's area, landscape and portrait; full screen
   netBegin();  // before the network task: what both tasks read is loaded once, here
@@ -6437,7 +6533,7 @@ void loop() {
     } else if (wasTouching && (count == 0 || millis() - lastSeen > 150)) {  // 0: lifted; kNoUpdate: no new report yet
       wasTouching = false;
       int dx = lastX - downX, dy = lastY - downY;
-      bool quick = keyboardShown || (screen == SCREEN_APP && fullScreenApp(app));  // typing, a double tap: taps come fast
+      bool quick = keyboardShown || (screen == SCREEN_APP && (fullScreenApp(app) || app == APP_BOOKS));  // typing, a double tap, page turns: taps come fast
       if (millis() - lastTap > (quick ? 60u : 300u)) {
         lastTap = millis();
         if (abs(dx) > 70 || abs(dy) > 70) swipe(downX, downY, dx, dy);
@@ -6500,6 +6596,7 @@ void loop() {
   notesPoll();  // a note's answer has come: apply it and show it
   notesMarksTick();  // what it added stops standing out after a while
   gamesSave();  // a game's progress changed: written here, on the loop
+  booksTick();  // Books: the card's scan, a book being got ready, the place written on leaving
   quotePoll();  // a quote has come from ZenQuotes
 
   // A join from Settings -> WiFi is over: back to the WiFi page, or, when a

@@ -23,7 +23,7 @@ without touching the board:
 
 | Command | Does |
 |---|---|
-| `app <n>` | open app n (0 Clock, 1 Weather, 2 Calendar, 3 Notes, 4 Timer, 5 Photos, 6 Claude, 7 Settings, 8 About, 9 Quote, 10 Recipes, 11 Games). The numbers stay put (Settings keeps hidden apps as a bit each); `APP_ORDER` sets the home screen's order |
+| `app <n>` | open app n (0 Clock, 1 Weather, 2 Calendar, 3 Notes, 4 Timer, 5 Photos, 6 Claude, 7 Settings, 8 About, 9 Quote, 10 Recipes, 11 Games, 12 Books). The numbers stay put (Settings keeps hidden apps as a bit each); `APP_ORDER` sets the home screen's order |
 | `home`, `quick`, `ok`, `move <n>` | home screen, quick settings, the OK button, UP / DOWN |
 | `tap <x> <y>`, `dtap <x> <y>`, `swipe <x0> <y0> <dx> <dy>` | touch, in the picture's own coordinates; `dtap` a double tap (Photos and Quote: full screen on or off). In Photos and Quote a single tap acts 0.35 s later, once no second one came |
 | `full` | which apps are full screen: `full: photos on/off, quote on/off, on screen yes/no` |
@@ -58,6 +58,14 @@ without touching the board:
 | `keyboard`, `keyboard accents` | Notes' keyboard; `accents`: on its page of accented letters (in Russian: the Latin letters) |
 | `listen show`, `listen think`, `listen off` | the voice card on its own over the current screen, for screenshots: *Listening...* (the microphone), *Thinking...* (the speech bubble), or gone. Recording shows the first by itself; the board reads no serial while it records, so a `shot` waits for the end |
 | `airelay <host> <port>`, `airelay off` | until the next restart, the AI's requests (notes, recipes and the games) go to `https://host:port` without checking its certificate and without the OpenAI key: a fake server on a computer can answer (`/v1/audio/transcriptions` with `{"text":...}`, `/v1/responses` with an `output_text`; the request's `text.format.name` says what's wanted: `recipe`, `quiz` or `adventure`). Never saved |
+| `book`, `book list`, `book open <n>` | Books: the app (the book left open, else the library); the books on the card, one `BOOK <n> <status> <percent> <format> "<title>" "<author>" <path>` line each, then `END`; open book n of that list (the first time, it waits while the book is got ready and says how long it took); `book start <n>` opens it as a tap does, the loop going on (the progress screen shows) |
+| `book next [n]`, `book prev [n]`, `book goto <permille>`, `book toc [i]` | Books, with a book open: turn pages, jump to a thousandth of the book, list the contents (`TOC <i> <level> <offset> <title>`) or jump to entry i |
+| `book peek`, `book bench <n>` | the page on screen as text (`PAGE <start>-<end> of <size>`, the chapter, then a `\| ` line for each line of type); n page turns laid out and not drawn, with the time a page takes |
+| `book menu`, `book text`, `book contents`, `book marks`, `book page`, `book cover`, `book library` | Books' screens, for screenshots: the menu, the Text panel, the contents, the bookmarks, back to the page, the cover, the library |
+| `book size <0-6>`, `book spacing <0-2>`, `book margins <0-2>`, `book justify on/off`, `book mark` | the text size (0 the smallest), line spacing and margins (0 tight / narrow, 2 loose / wide), justified or ragged, a bookmark on the page shown (or off it) |
+| `book details <n>`, `book details more`, `book stats` | book n's page (cover, description, progress, statistics, chapters), its next screen; the reading statistics (also printed: `book: stats ...`) |
+| `sdput <path> <offset> <base64>` | writes bytes into a file on the microSD card (offset 0 makes it afresh, else it must be the file's size so far): `SDPUT <path> <size>` or `SDPUT <path> failed`. Paths are from the card's top, with `%XX` for a space or any other byte. `firmware/tools/board.py put book.epub books/book.epub` sends a whole file this way |
+| `sdls [folder]`, `sdrm <path>`, `sdmkdir <path>` | the card's files: `SDLS <name> <bytes>` lines (folders end in `/`) then `END`; remove a file (or an empty folder); make a folder |
 | `stats` | one line: uptime, reset reason, the longest the loop was held up since the last `stats`, the free stack of the loop, network and notes tasks, internal heap (free, lowest, largest block), PSRAM, TLS sessions open at once and the smallest largest-block seen as one opened |
 
 Please include a screenshot in pull requests that change a screen; `demo on`
@@ -85,7 +93,24 @@ keeps your own data out of it.
   arguments); `influx.*` the InfluxDB events; `psalloc.h` a PSRAM allocator
   for vectors; `photos.*` the microSD photos; `photostore.*` the photos
   sent from the setup app (their file format, and the `photo_*` ops);
-  `config.*` and `prov*` the settings and the setup protocol.
+  `config.*` and `prov*` the settings and the setup protocol; `card.*` the microSD
+  card's mount, shared by Photos and Books.
+- The Books app: `books.ino` draws it and takes its taps (a third tab of the
+  sketch, like `games.ino`). Under it, in plain C++ tested on a computer
+  (`firmware/test/ebook/run.sh`; with real books, `BOOKS_DIR=~/books
+  firmware/test/ebook/run.sh`): `booklib.*` the library (the books on the card,
+  and the converted copies and reading places it keeps in `.sticky/books/` on
+  the card); `ebook.*` and `bookformats.h` turning a book into the app's own
+  text format (`bookflow.h`) the first time it's opened, with a reader for each
+  kind of book (`bookepub.cpp`, `bookmobi.cpp`, `bookfb2.cpp`, `bookpdf.cpp`,
+  `booktext.cpp`, and `bookhtml.cpp`, `bookzip.*`, `bookinflate.*`,
+  `bookcharset.*` that they share); `bookpage.*` the pages (line breaking,
+  justification, and the page grid that keeps back and forth exact);
+  `bookfonts.*` the reading typeface (FreeSerif, four styles, seven sizes, made
+  by `firmware/tools/fontext/make.sh`). `firmware/test/ebook/tools/` has
+  `book2flow` (convert a book, print its contents and text) and `pagedump`
+  (its pages as text). `firmware/tools/board.py` drives a board from the
+  computer: dev commands, screenshots (`shot`) and files onto its card.
 - `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), unchanged.
 - `site/`: the website and the browser setup app (`site/src/setup/`), with
   tests in `site/test/` (`node test/run.mjs`). The app's photo code (crop,
@@ -119,7 +144,7 @@ A few habits that keep the board happy:
 
 Every word on the screens is in `firmware/sticky-os/src/i18n/`:
 
-- `strings.h` (and `strings_games.h`, `strings_net.h`, included at its end):
+- `strings.h` (and `strings_games.h`, `strings_net.h`, `strings_books.h`, included at its end):
   one row a string, `S(S_SOME_ID, "English")`, with a comment saying where
   it shows and how much room it has. The code shows it with `T(S_SOME_ID)`,
   a format with `TF(S_SOME_ID, ...)`, a number and a noun with
@@ -129,7 +154,7 @@ Every word on the screens is in `firmware/sticky-os/src/i18n/`:
 - `es.h`, `pt.h`, ... one per language: `{S_SOME_ID, "translation"},` in
   any order. An id a language hasn't got shows in English.
 
-**A new string:** add its row to `strings.h` (or the games / network file)
+**A new string:** add its row to `strings.h` (or the games / network / books file)
 in English, use it with `T()`, and add the translations you can; leave the
 others, they fall back to English. Keep the placeholders (`%s`, `%d`...) in
 the same order in every language; a list (`S_DAYS`) keeps its number of
@@ -158,6 +183,12 @@ Adafruit's `fontconvert`); to add characters, add their code points there
 and run it. Scripts that need shaping or thousands of glyphs (Chinese,
 Japanese, Arabic, Hindi...) need a different text engine: see the pull
 request that added the languages.
+
+The Books app reads in GNU FreeSerif (regular, italic, bold, bold italic at
+seven sizes, and larger bolds for chapter titles: `src/fonts/BookSerif*.h`).
+Each comes whole from the same script, `make.sh`: ASCII, the extra letters and
+the line's measures in one header; `bookfonts.cpp` lists them and is the only
+file that includes them.
 
 ## Licence
 

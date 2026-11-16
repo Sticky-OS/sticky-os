@@ -1,8 +1,10 @@
 # Builds
 firmware/sticky-os/build/
+firmware/test/ebook/build/
 site/dist/
 node_modules/
 *.bin
+!firmware/test/ebook/fixtures/*.bin
 
 # Never public: credentials and the author's own seed values
 firmware/sticky-os/secrets.h
