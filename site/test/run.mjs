@@ -836,7 +836,9 @@ test('blog: pages pass the CSP, point at real files, and say the board is not Se
   for (const f of BLOG_PAGES) {
     const page = new URL('../src/' + f, import.meta.url);
     const html = await readFile(page, 'utf8');
-    assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>/i.test(html), `${f}: an inline script`);
+    // JSON-LD is a data block, never run, so the CSP doesn't apply; it must still parse
+    assert.ok(!/<script(?![^>]*\ssrc=)(?![^>]*type="application\/ld\+json")[^>]*>/i.test(html), `${f}: an inline script`);
+    for (const [, json] of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) JSON.parse(json);
     assert.ok(!/<style[\s>]|\sstyle="|\son[a-z]+="/i.test(html), `${f}: inline style or an event handler`);
     assert.ok(!/192\.168\.\d+\.\d+|100\.\d+\.\d+\.\d+|\.ts\.net\b|relay|mac studio/i.test(html), `${f}: private detail`);
     assert.match(html, /Not made by or affiliated with Seeed Studio\./, `${f}: the disclaimer`);

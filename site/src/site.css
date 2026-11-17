@@ -96,6 +96,19 @@ p { margin: 0 0 1em; max-width: 64ch; }
 .top nav a { text-decoration: none; white-space: nowrap; font-size: .95rem; }
 .top nav a:hover { text-decoration: underline; text-decoration-color: var(--mark); text-decoration-thickness: .3em; }
 @media (max-width: 40rem) { .top .wrap { gap: .75rem; } .top nav ul { gap: .9rem; } }
+/* Narrow screens with JavaScript: a Menu button and a panel under the header */
+.menu-toggle { display: none; }
+@media (max-width: 48rem) {
+  .top.has-menu .wrap { flex-wrap: wrap; }
+  .top.has-menu .menu-toggle { display: inline-flex; align-items: center; gap: .45rem; margin-left: auto; min-height: 2.75rem; padding: 0 .9rem; font-family: inherit; font-size: .95rem; font-weight: 700; line-height: 1; color: var(--ink); background: transparent; border: 2px solid var(--ink); border-radius: .6rem; cursor: pointer; }
+  .top.has-menu .menu-toggle:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
+  .top.has-menu.menu-open .menu-toggle { background: var(--mark); color: var(--mark-ink); border-color: var(--mark-ink); }
+  .top.has-menu nav { display: none; flex-basis: 100%; margin: 0; overflow: visible; }
+  .top.has-menu.menu-open nav { display: block; }
+  .top.has-menu nav ul { flex-direction: column; gap: 0; padding: .25rem 0 .9rem; }
+  .top.has-menu nav li + li { border-top: 1px solid var(--paper-2); }
+  .top.has-menu nav a { display: block; padding: .8rem .25rem; font-size: 1.1rem; }
+}
 
 /* Device frame: the board drawn around a capture */
 .device {
@@ -310,6 +323,10 @@ footer p { margin: 0 0 .5rem; }
 .post-body .credit { color: var(--graphite); font-size: .9rem; line-height: 1.45; }
 .disclaimer { border-left: 6px solid var(--mark); padding: .2rem 0 .2rem 1rem; color: var(--graphite); font-size: 1rem; }
 .post-end { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-top: 2.5rem; }
+.more-posts { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
+.post-body .more-posts h2 { font-size: 1.3rem; margin: 0 0 .6rem; padding: 0; border: 0; }
+.more-posts ul { margin: 0; padding-left: 1.1rem; }
+.more-posts li { margin: .35rem 0; }
 .top nav a[aria-current] { text-decoration: underline; text-decoration-color: var(--mark); text-decoration-thickness: .3em; }
 
 .post-list { list-style: none; padding: 0; margin: 0 0 clamp(3rem, 7vw, 5rem); display: grid; gap: 1.5rem; }
@@ -321,8 +338,8 @@ footer p { margin: 0 0 .5rem; }
 .post-card .screen { display: block; }
 .post-card-text { display: block; }
 .post-card time { display: block; color: var(--graphite); font-size: .9rem; margin-bottom: .3rem; }
-.post-card strong { display: block; font: 700 1.5rem/1.15 var(--display); font-stretch: 88%; margin-bottom: .5rem; }
-.post-card strong::after { content: " →"; }
+.post-card strong, .post-card .post-card-title { display: block; max-width: none; font: 700 1.5rem/1.15 var(--display); font-stretch: 88%; margin-bottom: .5rem; }
+.post-card strong::after, .post-card .post-card-title::after { content: " →"; }
 .post-card-text > span { display: block; color: var(--graphite); font-size: .98rem; line-height: 1.5; }
 @media (min-width: 34.01rem) { .post-body .shots:not(.two-portrait) { align-items: center; } }
 
@@ -404,3 +421,12 @@ html.lightbox-on { overflow: hidden; }
 }
 @keyframes lightbox-in { from { opacity: 0; transform: scale(.985); } }
 @media (prefers-reduced-motion: reduce) { .lightbox[open] { animation: none; } }
+
+/* Home: the keyword line above the headline, and the questions */
+.hero h1 { max-width: none; }
+.hero h1 .eyebrow { display: block; font: 700 1rem/1.3 var(--text); font-stretch: 100%; letter-spacing: 0; color: var(--graphite); margin-bottom: .9rem; }
+.hero h1 .h1-main { display: block; max-width: 12ch; }
+.faq { display: grid; gap: 1.25rem 2.5rem; margin: 1.5rem 0 0; }
+@media (min-width: 56rem) { .faq { grid-template-columns: 1fr 1fr; } }
+.faq dt { font-weight: 700; font-size: 1.1rem; margin-bottom: .3rem; }
+.faq dd { margin: 0; color: var(--graphite); line-height: 1.55; }

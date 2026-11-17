@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Sticky OS blog</title>
+  <subtitle>Releases and notes from Sticky OS, open-source firmware for the Seeed reTerminal Sticky e-paper board.</subtitle>
+  <link href="https://sticky-os.space.fast/blog/feed.xml" rel="self"/>
+  <link href="https://sticky-os.space.fast/blog/"/>
+  <id>https://sticky-os.space.fast/blog/</id>
+  <updated>2026-11-16T09:00:00Z</updated>
+  <author><name>Sticky OS</name></author>
+  <entry>
+    <title>Sticky OS 1.5: Tutor, 7th grade geometry lessons in Romanian</title>
+    <link href="https://sticky-os.space.fast/blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/"/>
+    <id>https://sticky-os.space.fast/blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/</id>
+    <published>2026-11-16T09:00:00Z</published>
+    <updated>2026-11-16T09:00:00Z</updated>
+    <summary>7th grade geometry in Romanian: summaries, worked examples, and exercises with clues that never give the answer away.</summary>
+  </entry>
+  <entry>
+    <title>Sticky OS 1.4: a books app for the fridge door</title>
+    <link href="https://sticky-os.space.fast/blog/sticky-os-1-4-books-app-fridge-door/"/>
+    <id>https://sticky-os.space.fast/blog/sticky-os-1-4-books-app-fridge-door/</id>
+    <published>2026-11-16T09:00:00Z</published>
+    <updated>2026-11-16T09:00:00Z</updated>
+    <summary>EPUB, MOBI, AZW3, FB2, PDF and text from a microSD card, in justified serif pages, with contents, bookmarks and reading statistics.</summary>
+  </entry>
+  <entry>
+    <title>Introducing Sticky OS: calm apps for a magnetic e-paper board</title>
+    <link href="https://sticky-os.space.fast/blog/introducing-sticky-os/"/>
+    <id>https://sticky-os.space.fast/blog/introducing-sticky-os/</id>
+    <published>2026-11-13T09:00:00Z</published>
+    <updated>2026-11-13T09:00:00Z</updated>
+    <summary>Free, open-source firmware for the Seeed reTerminal Sticky: twelve glanceable e-paper apps, setup from your browser, and updates that roll themselves back.</summary>
+  </entry>
+</feed>

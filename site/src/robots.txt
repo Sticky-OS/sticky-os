@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sticky-os.space.fast/sitemap.xml

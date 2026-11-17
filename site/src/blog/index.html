@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Blog: {{NAME}}</title>
-<meta name="description" content="News and notes from {{NAME}}, the independent, open-source firmware for the Seeed reTerminal Sticky e-paper board.">
+<title>{{NAME}} blog: reTerminal Sticky firmware news</title>
+<meta name="description" content="Releases and notes from {{NAME}}, the free, open-source firmware for the reTerminal Sticky: new apps, e-paper tricks and how it works.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
@@ -25,6 +25,45 @@
 <link rel="preload" href="../fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../fonts/atkinson.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../site.css">
+<link rel="alternate" type="application/atom+xml" title="{{NAME}} blog" href="https://sticky-os.space.fast/blog/feed.xml">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Blog",
+ "name": "Sticky OS blog",
+ "url": "https://sticky-os.space.fast/blog/",
+ "publisher": {
+  "@type": "Organization",
+  "@id": "https://sticky-os.space.fast/#org",
+  "name": "Sticky OS",
+  "url": "https://sticky-os.space.fast/",
+  "logo": "https://sticky-os.space.fast/favicon.svg",
+  "sameAs": [
+   "https://github.com/ovidiul/sticky-os"
+  ]
+ },
+ "blogPost": [
+  {
+   "@type": "BlogPosting",
+   "headline": "Introducing Sticky OS: calm apps for a magnetic e-paper board",
+   "url": "https://sticky-os.space.fast/blog/introducing-sticky-os/",
+   "datePublished": "2026-11-13"
+  },
+  {
+   "@type": "BlogPosting",
+   "headline": "Sticky OS 1.4: a books app for the fridge door",
+   "url": "https://sticky-os.space.fast/blog/sticky-os-1-4-books-app-fridge-door/",
+   "datePublished": "2026-11-16"
+  },
+  {
+   "@type": "BlogPosting",
+   "headline": "Sticky OS 1.5: Tutor, 7th grade geometry lessons in Romanian",
+   "url": "https://sticky-os.space.fast/blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/",
+   "datePublished": "2026-11-16"
+  }
+ ]
+}
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -59,7 +98,7 @@
             <span class="device thumb"><span class="screen"><img src="../shots/tutor-landscape.png" width="800" height="480" alt=""></span></span>
             <span class="post-card-text">
               <time datetime="2026-11-16">16 November 2026</time>
-              <strong>{{NAME}} 1.5: Tutor, 7th grade geometry lessons in Romanian</strong>
+              <h2 class="post-card-title">{{NAME}} 1.5: Tutor, 7th grade geometry lessons in Romanian</h2>
               <span>A contributed game in the Games folder: summaries, worked examples, and exercises made from numbers and checked twice, where a wrong answer is explained and a clue never gives the answer away.</span>
             </span>
           </a>
@@ -71,7 +110,7 @@
             <span class="device thumb"><span class="screen"><img src="../shots/books-landscape.png" width="800" height="480" alt=""></span></span>
             <span class="post-card-text">
               <time datetime="2026-11-16">16 November 2026</time>
-              <strong>{{NAME}} 1.4: a books app for the fridge door</strong>
+              <h2 class="post-card-title">{{NAME}} 1.4: a books app for the fridge door</h2>
               <span>EPUB, MOBI, AZW3, FB2, PDF and text from a microSD card: justified serif pages, covers, contents, bookmarks, seven text sizes and reading statistics. Plus five short books to start with, and how one line made it fifteen times faster.</span>
             </span>
           </a>
@@ -83,7 +122,7 @@
             <span class="device thumb"><span class="screen"><img src="../shots/home-landscape.png" width="800" height="480" alt=""></span></span>
             <span class="post-card-text">
               <time datetime="2026-11-13">13 November 2026</time>
-              <strong>Introducing {{NAME}}: calm apps for a magnetic e-paper board</strong>
+              <h2 class="post-card-title">Introducing {{NAME}}: calm apps for a magnetic e-paper board</h2>
               <span>Why a fridge board needs its own apps, what the twelve apps do, setup from the browser, and a look under the hood: e-paper refreshes, scarce RAM, photos dithered in the browser and updates that roll themselves back.</span>
             </span>
           </a>
@@ -103,5 +142,6 @@
   </div>
 </footer>
 <script src="../lightbox.js" defer></script>
+<script type="module" src="../menu.js"></script>
 </body>
 </html>
