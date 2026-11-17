@@ -63,7 +63,7 @@ The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 | Games | 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, and Tutor (7th grade geometry lessons, in Romanian and English) |
 | Claude | Your weekly Claude Code usage, from your own MQTT broker |
 | Settings | Language, rotation, sound, sleep, WiFi, which apps show, software update |
-| About | Firmware, memory, network, battery, sensors |
+| About | The project's website (with a QR code), source and videos; then firmware, memory, network, battery, sensors |
 
 Everything is described in the [guide](docs/guide.md).
 

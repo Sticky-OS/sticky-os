@@ -32,7 +32,7 @@ without touching the board:
 | `demo on` / `demo off` | made-up events, notes, town and network, for screenshots |
 | `shot` | the screen as drawn, as hex: `SHOT 800 480 <rotation>`, 480 rows, `END` |
 | `shot4` | the four-grey frame last sent to the panel (a photo with its status bar): `SHOT4 800 480 <rotation> <on screen 0/1>`, 480 rows of 2 bits a pixel (0 black), `END` |
-| `about` | everything About shows |
+| `about` | everything About shows: the website, source and videos, then the device |
 | `update check`, `update install` | Settings → Software update: Check now, and Install |
 | `fsget <path>` | a LittleFS file as `FSGET <path> <bytes> <base64>` (up to 3 KB) |
 | `fsput <path> <base64>` | writes that file whole (`FSPUT <path> <bytes>`); restart afterwards |
@@ -117,6 +117,9 @@ keeps your own data out of it.
   checks, `tutor7_lessons.*` each lesson's plan, `tutor7_text.*` and `src/tutor/` the words (see
   [Tutor's languages](#tutors-languages)).
 - `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), unchanged.
+- `src/brand/brand.h`: the Sticky OS logo as 1-bit bitmaps (the boot screen, About), made
+  from the brand's SVGs in `site/src/brand/assets/svg/` by `firmware/tools/gen_brand.py`
+  (Pillow and rsvg-convert); run it again when the brand changes.
 - `site/`: the website and the browser setup app (`site/src/setup/`), with
   tests in `site/test/` (`node test/run.mjs`). The app's photo code (crop,
   scale, dither, pack, upload) is plain functions at the top of `app.js`, so

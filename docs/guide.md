@@ -192,7 +192,10 @@ decides.
 
 ## Home screen
 
-The board starts on the home screen, much like a simplified Android phone:
+Turned on (or restarted), the board shows the Sticky OS logo and
+*Starting...* for a couple of seconds, then the home screen; waking from
+sleep goes straight back to where it was. The home screen is much like a
+simplified Android phone's:
 
 - **A widget** at the top: the time and date, the weather outside, and the
   next calendar event. Tap the time for Clock, the weather for Weather, the
@@ -243,7 +246,7 @@ timer adds an hourglass and its minutes left when there is room.
 | Games | A folder of eight games (see Games below): 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor | The board; Quiz and Adventure also the model in `notes.ai_model` when there's a key, WiFi and `games.ai` is on. Progress in the board's flash (`/games.txt`, `/games-practice.txt`) |
 | Claude | This week's Claude Code usage, all models and Fable alone, with reset times | Retained numbers under `claude.topic` on your MQTT broker: `…/seven_day/percent`, `…/seven_day/resets_at_unix`, `…/weekly_scoped/percent`, `…/age_seconds` |
 | Settings | Laid out like Android's: headings (Display, Sound and power, Connections, Apps, System), an icon, title and summary on each row. Tap a row with `>` for a page of choices (rotation, temperature, sleep on battery, which apps the home screen shows); tap a switch to turn it on or off; WiFi has the saved networks and adds new ones; *Connect to the setup app* starts Bluetooth setup | Kept in the board's flash |
-| About | Firmware, chip, memory, network, screen, touch, battery, sensors, card, uptime, in large type with each value under its label | The board itself; OK also prints it on the serial port |
+| About | First, the project: the Sticky OS logo, that it's free, open-source firmware not made by or affiliated with Seeed Studio, and where it lives: the website (sticky-os.space.fast, with a QR code to scan), the source code (github.com/Sticky-OS/sticky-os) and the videos (youtube.com/@stickyosapp). Then, a page at a time: firmware, chip, memory, network, screen, touch, battery, sensors, card, uptime, in large type with each value under its label | The board itself; OK also prints it on the serial port |
 
 Controls inside an app:
 
