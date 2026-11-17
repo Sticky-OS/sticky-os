@@ -472,9 +472,8 @@ static void t7Relang() {
   t7::Exercise &ex = gs->t7Ex;
   int was = ex.lang, correct = ex.correct;
   t7::Rng rng(gs->t7Seed);
-  char err[120] = "";
-  bool ok = t7::generate(st.kind, st.level, rng, ex, t7Lang()) && t7::verify(ex, err, sizeof err) && ex.correct == correct;
-  Serial.printf("games: tutor7 exercise %d now in %s (seed %lu)%s%s\n", gs->t7Index + 1, LANGS[ex.lang].code, (unsigned long)gs->t7Seed, ok ? "" : ": failed ", err);
+  bool ok = t7::generate(st.kind, st.level, rng, ex, t7Lang()) && t7::verify(ex, nullptr, 0) && ex.correct == correct;
+  Serial.printf("games: tutor7 exercise %d now in %s (seed %lu)%s\n", gs->t7Index + 1, LANGS[ex.lang].code, (unsigned long)gs->t7Seed, ok ? "" : ": failed, the old one kept");
   if (ok) return;
   // never happens (firmware/test/tutor7 checks every seed makes the same exercise in every language); back to the old one
   t7::Rng again(gs->t7Seed);
@@ -756,9 +755,9 @@ static void drawT7Wrong() {
   const t7::Exercise &ex = gs->t7Ex;
   gHeader(T(S_G_T7_NOT_RIGHT));
   int top = gTop() + 14, btnH = 56, btnY = H - 16 - btnH;
-  char chose[120];
-  snprintf(chose, sizeof chose, t7::tx(ex.lang, t7::TX_YOU_CHOSE), ex.opt[gs->t7Picked]);
-  String body = String(chose) + "\n" + ex.why[gs->t7Picked];
+  String body = t7::tx(ex.lang, t7::TX_YOU_CHOSE);  // "...%s...": on the heap, not the loop task's stack
+  body.replace("%s", ex.opt[gs->t7Picked]);
+  body += String("\n") + ex.why[gs->t7Picked];
   t7Fitted(16, top + 24, body, W - 32, btnY - top - 24);
   bool show = gs->t7Tries >= 2;
   int n = show ? 3 : 2, bw = (W - 32 - 10 * (n - 1)) / n, x = 16;
@@ -773,8 +772,8 @@ static void drawT7Solution() {
   int top = gTop() + 14, btnH = 56, btnY = H - 16 - btnH;
   String body = String(ex.solution);
   if (gs->t7GaveUp) {
-    char right[120];
-    snprintf(right, sizeof right, t7::tx(ex.lang, t7::TX_RIGHT_ANSWER), ex.opt[ex.correct]);
+    String right = t7::tx(ex.lang, t7::TX_RIGHT_ANSWER);
+    right.replace("%s", ex.opt[ex.correct]);
     body += String("\n") + right;
   }
   t7Fitted(16, top + 24, body, W - 32, btnY - top - 24);
