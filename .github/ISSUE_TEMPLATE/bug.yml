@@ -5,8 +5,20 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time. Please don't paste WiFi passwords, API keys or tokens:
-        the setup app never shows them, and logs from the board don't print them.
+        Thanks for taking the time. A bug we can make happen on our own board is a bug we can fix,
+        so the steps to reproduce it are the most important part of this form.
+
+        Please don't paste WiFi passwords, API keys or tokens: the setup app never shows them,
+        and logs from the board don't print them.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched the open and closed issues and this isn't one of them
+          required: true
+        - label: I'm on the latest release, or I say below which version I'm on and why
+          required: true
   - type: dropdown
     id: where
     attributes:
@@ -17,33 +29,68 @@ body:
   - type: textarea
     id: what
     attributes:
-      label: What happened, and what you expected
-      placeholder: "In Calendar, swiping up on the last page goes back to the first one. I expected it to stay."
+      label: What happened
+      placeholder: "In Calendar, swiping up on the last page goes back to the first one."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: "It stays on the last page."
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: How to make it happen again
-      placeholder: "1. Open Calendar  2. Swipe up four times  3. ..."
+      label: Steps to reproduce
+      description: |
+        Numbered steps from a known start (say "after a restart", or which app was open), with
+        the taps, swipes or settings that matter. If it needs particular data (a book, a calendar
+        link, a recipe), say what kind, or attach a small file that shows it. The fewer steps, the better.
+      placeholder: |
+        1. Restart the board, open Calendar (week view)
+        2. Swipe up four times to the last page
+        3. Swipe up once more
+        4. The first page shows again
+    validations:
+      required: true
+  - type: dropdown
+    id: often
+    attributes:
+      label: How often does it happen?
+      options:
+        - Every time I follow the steps
+        - Sometimes (say roughly how often in the steps)
+        - Once, and I couldn't make it happen again
+    validations:
+      required: true
   - type: input
     id: version
     attributes:
       label: Firmware version
       description: Settings → About this device → Firmware (or the commit you built from).
+      placeholder: v1.7.0
+    validations:
+      required: true
   - type: dropdown
     id: orientation
     attributes:
       label: Held
       options: [Portrait, Landscape, Both, Doesn't matter]
+  - type: input
+    id: setup
+    attributes:
+      label: Board and setup (optional)
+      description: Anything unusual, e.g. the language, a microSD card in, voice through your own server, flashed from source.
   - type: textarea
     id: log
     attributes:
-      label: Serial log (optional)
-      description: 115200 baud. Paste the lines around the problem.
+      label: Serial log (optional, very helpful)
+      description: 115200 baud. Paste the lines from the step before the problem to just after it.
       render: text
   - type: textarea
     id: shot
     attributes:
       label: Photo or screenshot (optional)
-      description: Drag an image here. The serial command `shot` prints the screen exactly as drawn.
+      description: Drag an image here. The serial command `shot` (or `firmware/tools/board.py shot out.png`) gives the screen exactly as drawn; run `demo on` first to keep your own data out of it.

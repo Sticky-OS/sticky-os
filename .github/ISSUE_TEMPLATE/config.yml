@@ -1,8 +1,11 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: Website and setup app
-    url: https://sticky-os.space.fast/
-    about: What Sticky OS is, screenshots, and the browser setup app.
   - name: Questions and show-and-tell
     url: https://github.com/Sticky-OS/sticky-os/discussions
     about: Ask how to do something, or share your board and your setup.
+  - name: A security problem
+    url: https://github.com/Sticky-OS/sticky-os/security/advisories/new
+    about: Report it privately, please, not as an issue (see SECURITY.md).
+  - name: Website and setup app
+    url: https://sticky-os.space.fast/
+    about: What Sticky OS is, screenshots, and the browser setup app.

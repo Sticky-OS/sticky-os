@@ -4,9 +4,23 @@ Thanks for wanting to help. Bug reports, ideas and pull requests are all welcome
 
 ## Reporting a bug or an idea
 
-Open an issue: <https://github.com/Sticky-OS/sticky-os/issues/new/choose>. The forms
-ask for what's useful: what happened, how to make it happen again, the firmware
-version (Settings → About this device) and, if you have it, the serial log.
+Open an issue: <https://github.com/Sticky-OS/sticky-os/issues/new/choose>. Issues
+go through the forms (there are no blank issues), and a bug report needs:
+
+- **Steps to reproduce**, numbered, from a known start ("after a restart", "in
+  Calendar's week view"), with the taps, swipes and settings that matter. If it
+  needs particular data (a book, a calendar link), say what kind or attach a
+  small file that shows it. We fix what we can make happen on our own board.
+- **What happened and what you expected**, separately.
+- **How often**: every time, sometimes, or once.
+- **The firmware version** (Settings → About this device → Firmware), and a
+  search of the open and closed issues first.
+- If you can: the **serial log** around the problem (115200 baud) and a
+  **screenshot** (`firmware/tools/board.py shot out.png`, after `demo on`).
+
+Questions go to [Discussions](https://github.com/Sticky-OS/sticky-os/discussions),
+and security problems to private reporting (see [SECURITY.md](SECURITY.md)),
+not to issues.
 
 Please never paste WiFi passwords, API keys or tokens. The board and the setup
 app never print them, so you shouldn't need to.
@@ -70,6 +84,59 @@ without touching the board:
 
 Please include a screenshot in pull requests that change a screen; `demo on`
 keeps your own data out of it.
+
+## Pull requests
+
+Small, focused pull requests are reviewed fastest. For anything bigger than a
+fix (a new app, a new setting, a change to how something works), open an issue
+or a discussion first, so we can agree on the shape before you build it.
+
+Every pull request fills in the template, and CI checks that its **Tests** and
+**How I tested it** sections aren't empty. What each section needs:
+
+**Tests.** Run the suites and say which you ran:
+
+| Suite | Covers | Run |
+|---|---|---|
+| Translations | every translation: ids, placeholders, plurals, letters the fonts can draw | `firmware/test/i18n/run.sh` |
+| Calendar | the iCalendar parser and repeating events | `firmware/test/ics/run.sh` |
+| Books | the readers (EPUB, MOBI, AZW3, PDF), pages, library, fonts | `firmware/test/ebook/run.sh`, `firmware/test/ebook/fonts.sh` |
+| Tutor | every exercise and lesson, in every language | `firmware/test/tutor7/run.sh` |
+| Setup app and site | the setup app against a simulated board, the pages | `node test/run.mjs` in `site/` |
+
+A change to logic that runs on the host (parsers, rules, maths, text) comes
+with a test in the matching suite that fails without the change. Drawing and
+touch can't be tested on the host: say so, and let the screenshots and steps
+below carry it. A new test command for the serial port (see the table above)
+counts as a way to test, too.
+
+**How I tested it.** The steps you took on a real board, and what you saw:
+
+- **Screenshots** of every screen the change touches, **before and after**, in
+  **portrait and landscape** if it draws differently. Take them with
+  `firmware/tools/board.py shot out.png` (or `run ... shot:a.png ...` for a
+  sequence) after `demo on`, so no names, places or networks are in them.
+  For the four-grey screens (photos, a book's cover) use `shot4`.
+- For anything that talks to a service (weather, calendar, the AI, updates),
+  the serial log of one run, with the keys and tokens left out.
+- For the setup app or the site, a screenshot from the browser, at a phone
+  width and a desktop width.
+
+**Size and memory.** The board's internal RAM is scarce. Give the "Global
+variables use N bytes" line and the sketch size from `./upload.sh build`,
+before and after. Big buffers and task stacks go in PSRAM, images go in flash
+(`const`), and the loop's stack is about 8 KB, so no big local arrays.
+
+**Also:**
+
+- New text goes through `S()` with all ten languages (see [Languages](#languages)).
+- If something a user sees or does changes, update [docs/guide.md](docs/guide.md)
+  and the README in the same pull request.
+- Never commit private values: WiFi names and passwords, keys, tokens, your
+  town or calendar links. CI scans every pull request for secrets.
+- Commit messages say what changed and why, in a sentence a user could read.
+- CI must be green: the firmware build, the test suites, the site and the
+  secret scan.
 
 ## How the code is laid out
 
