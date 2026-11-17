@@ -18,6 +18,7 @@
 
 ## Blog
 
+- [AI recipes by voice: ask the fridge door what's for dinner](https://sticky-os.space.fast/blog/ai-recipes-voice-ask-fridge-door-dinner/)
 - [Sticky OS 1.6: Tutor speaks English](https://sticky-os.space.fast/blog/sticky-os-1-6-tutor-speaks-english/)
 - [Sticky OS 1.5: Tutor, 7th grade geometry lessons in Romanian](https://sticky-os.space.fast/blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/)
 - [Sticky OS 1.4: a books app for the fridge door](https://sticky-os.space.fast/blog/sticky-os-1-4-books-app-fridge-door/)

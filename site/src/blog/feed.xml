@@ -5,8 +5,16 @@
   <link href="https://sticky-os.space.fast/blog/feed.xml" rel="self"/>
   <link href="https://sticky-os.space.fast/blog/"/>
   <id>https://sticky-os.space.fast/blog/</id>
-  <updated>2026-11-17T10:00:00Z</updated>
+  <updated>2026-11-17T12:00:00Z</updated>
   <author><name>Sticky OS</name></author>
+  <entry>
+    <title>AI recipes by voice: ask the fridge door what’s for dinner</title>
+    <link href="https://sticky-os.space.fast/blog/ai-recipes-voice-ask-fridge-door-dinner/"/>
+    <id>https://sticky-os.space.fast/blog/ai-recipes-voice-ask-fridge-door-dinner/</id>
+    <published>2026-11-17T12:00:00Z</published>
+    <updated>2026-11-17T12:00:00Z</updated>
+    <summary>Say a dish to the reTerminal Sticky, or type it, and the AI writes the recipe: ingredients to tick, numbered steps and tips, saved on the board. A real run, timed.</summary>
+  </entry>
   <entry>
     <title>Sticky OS 1.6: Tutor speaks English</title>
     <link href="https://sticky-os.space.fast/blog/sticky-os-1-6-tutor-speaks-english/"/>

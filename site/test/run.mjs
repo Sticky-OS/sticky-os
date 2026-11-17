@@ -831,6 +831,7 @@ test('site: links to other websites open in a new tab, without opener or referre
 const BLOG_PAGES = ['blog/index.html', 'blog/introducing-sticky-os/index.html', 'blog/sticky-os-1-4-books-app-fridge-door/index.html',
                     'blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/index.html',
                     'blog/sticky-os-1-6-tutor-speaks-english/index.html',
+                    'blog/ai-recipes-voice-ask-fridge-door-dinner/index.html',
                     'blog/install-custom-firmware-reterminal-sticky/index.html',
                     'blog/google-calendar-e-paper-fridge-display-no-subscription/index.html',
                     'blog/reterminal-sticky-e-reader-epub-mobi-pdf-microsd-card/index.html',

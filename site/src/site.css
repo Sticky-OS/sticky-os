@@ -365,6 +365,7 @@ footer p { margin: 0 0 .5rem; }
 @media (min-width: 40rem) { .post-card { grid-template-columns: 15rem 1fr; } }
 .post-card .device { display: block; --r: .9rem; --bez: 10px; }
 .post-card .screen { display: block; }
+.post-card .device.portrait { width: 8.5rem; justify-self: center; }   /* a portrait capture as the thumb */
 .post-card-text { display: block; }
 .post-card time { display: block; color: var(--graphite); font-size: .9rem; margin-bottom: .3rem; }
 .post-card strong, .post-card .post-card-title { display: block; max-width: none; font: 700 1.5rem/1.15 var(--display); font-stretch: 88%; margin-bottom: .5rem; }
