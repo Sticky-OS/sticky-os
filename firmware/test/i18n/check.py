@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Checks the board's translations (firmware/sticky-os/src/i18n):
+"""Checks the board's translations (firmware/sticky-os/src/i18n) and Tutor's (src/tutor):
 
   - every language file's ids exist, none twice;
   - a translation keeps the English placeholders (%s, %d, %ld...) in order;
@@ -9,6 +9,10 @@
   - with --widths: translations much wider than the English (FreeSans 12pt),
     to look at on the screen.
 
+Tutor (src/tutor): t7_strings.h's English rows and each language's pairs (ro.h...): ids, doubles,
+placeholders in order, letters; lessons_<code>.h: letters (√ is drawn by the screen). Its page counts
+and lengths are checked by firmware/test/tutor7.
+
   python3 firmware/test/i18n/check.py [--widths] [--missing] [lang ...]
 """
 import os, re, sys
@@ -16,6 +20,7 @@ import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, '..', '..', 'sticky-os')
 I18N = os.path.join(SRC, 'src', 'i18n')
+TUTOR = os.path.join(SRC, 'src', 'tutor')
 LANGS = ['es', 'pt', 'fr', 'de', 'it', 'ru', 'tr', 'pl', 'ro']
 PLURAL_FORMS = {'ru': 3, 'pl': 3, 'ro': 3}  # the rest: 2 (one|other)
 LISTS = {'S_DAYS': 7, 'S_DAYS_SHORT': 7, 'S_DAYS_INITIAL': 7, 'S_MONTHS': 12, 'S_MONTHS_SHORT': 12}
@@ -81,6 +86,51 @@ def advances():
 def width(s, adv):
     return sum(adv.get(ord(c), 13) for c in s)
 
+def check_tutor(codes, err):
+    """Tutor's tables: the same rules as the board's strings, by file."""
+    en = {}
+    for line in open(os.path.join(TUTOR, 't7_strings.h'), encoding='utf-8'):
+        m = re.match(r'\s*T7S\((TX_\w+),\s*(".*?")\)\s*(?://.*)?$', line)
+        if m:
+            if m.group(1) in en:
+                err('tutor en', m.group(1), 'twice')
+            en[m.group(1)] = c_string(m.group(2))
+    def letters(lang, sid, t):
+        for c in t:
+            if c != '\n' and c != '\u221a' and not (0x20 <= ord(c) < 0x7F) and ord(c) not in codes:
+                err('tutor ' + lang, sid, f'"{c}" (U+{ord(c):04X}) is not in the fonts')
+    for sid, t in en.items():
+        letters('en', sid, t)
+    for name in sorted(os.listdir(TUTOR)):
+        m = re.match(r'([a-z]{2})\.h$', name)
+        if m:
+            lang, seen = m.group(1), set()
+            for line in open(os.path.join(TUTOR, name), encoding='utf-8'):
+                p = re.match(r'\s*\{(TX_\w+),\s*(".*")\},', line)
+                if not p:
+                    continue
+                sid, t = p.group(1), c_string(p.group(2))
+                if sid in seen:
+                    err('tutor ' + lang, sid, 'twice')
+                seen.add(sid)
+                if sid not in en:
+                    err('tutor ' + lang, sid, 'no such id')
+                    continue
+                letters(lang, sid, t)
+                if specs(en[sid]) != specs(t):
+                    err('tutor ' + lang, sid, f'placeholders {specs(t)}, English has {specs(en[sid])}')
+            missing = [s for s in en if s not in seen]
+            if missing:
+                print(f'tutor {lang}: {len(missing)} of {len(en)} not translated: Tutor shows English for all its content in {lang}')
+        m = re.match(r'lessons_([a-z]{2})\.h$', name)
+        if m:
+            for n, line in enumerate(open(os.path.join(TUTOR, name), encoding='utf-8'), 1):
+                if line.lstrip().startswith('//'):
+                    continue
+                for lit in re.findall(r'"((?:[^"\\]|\\.)*)"', line):
+                    letters('lessons ' + m.group(1), f'line {n}', c_string('"' + lit + '"'))
+    return len(en)
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     show_widths, show_missing = '--widths' in sys.argv, '--missing' in sys.argv
@@ -135,7 +185,8 @@ def main():
         missing = [s for s in order if s not in pairs]
         if missing:
             print(f'{lang}: {len(missing)} of {len(order)} not translated (English shows)' + (': ' + ' '.join(missing) if show_missing else ''))
-    print(f'{len(en)} strings, {errors} problems')
+    tutor = check_tutor(codes, err)
+    print(f'{len(en)} strings, {tutor} Tutor strings, {errors} problems')
     return 1 if errors else 0
 
 if __name__ == '__main__':
