@@ -315,6 +315,10 @@ S(S_CONNECT_SETUP_HINT, "USB: plug in and open %s. Tap here for Bluetooth.")
 S(S_ABOUT_DEVICE, "About this device")
 S(S_ABOUT_DEVICE_HINT, "Firmware, memory, battery, sensors, network")
 S(S_BOOT_STARTING, "Starting...")  // the boot screen, under the logo: 12pt, centred
+S(S_ABOUT_INDEPENDENT, "Free, open-source firmware for the Seeed reTerminal Sticky. Not made by or affiliated with Seeed Studio.")  // About's first page, under the logo: 12pt, wraps (about 500 px in landscape)
+S(S_ABOUT_WEBSITE, "Website")  // About's first page: small labels over the addresses
+S(S_ABOUT_SOURCE, "Source code")
+S(S_ABOUT_VIDEOS, "Videos")
 S(S_SET_LANGUAGE, "Language")  // Settings: the row and its page
 S(S_SET_LANGUAGE_HINT, "The board's words, dates and keyboard; the AI answers in it too")  // under the Language page title
 S(S_CONNECTING_TO, "Connecting to")  // bold 18pt, then the network's name

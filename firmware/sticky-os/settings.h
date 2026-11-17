@@ -8,6 +8,12 @@
 #define SETUP_URL "https://sticky-os.space.fast/setup/"
 #define SETUP_URL_SHORT "sticky-os.space.fast/setup"  // the same, as printed on the screen
 
+// The project's homes, as the About app shows them (and its QR code, SITE_URL).
+#define SITE_URL "https://sticky-os.space.fast"
+#define SITE_URL_SHORT "sticky-os.space.fast"
+#define SOURCE_URL_SHORT "github.com/Sticky-OS/sticky-os"
+#define VIDEOS_URL_SHORT "youtube.com/@stickyosapp"
+
 // The panel's SPI clock for an SSD1677, which is only written to. (The
 // SSD2677 is also read, at 2.5 MHz at most, so it stays at 2 MHz.)
 #define PANEL_WRITE_HZ 8000000

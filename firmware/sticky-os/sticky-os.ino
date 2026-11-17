@@ -262,7 +262,8 @@ enum Screen { SCREEN_HOME, SCREEN_APP, SCREEN_QUICK, SCREEN_WELCOME };
 enum SettingsPage { SP_MAIN, SP_ROTATION, SP_TEMPERATURE, SP_SLEEP, SP_APPS, SP_WIFI, SP_WIFI_SCAN, SP_WIFI_NET, SP_UPDATE, SP_LANGUAGE };
 
 // One row of a list screen (Settings, About). Long lists turn a page at a time.
-enum RowKind { ROW_HEADER, ROW_LINK, ROW_SWITCH, ROW_RADIO, ROW_INFO, ROW_BACK };
+// ROW_BRAND: About's first page, a page of its own (drawAboutHome()).
+enum RowKind { ROW_HEADER, ROW_LINK, ROW_SWITCH, ROW_RADIO, ROW_INFO, ROW_BACK, ROW_BRAND };
 struct ListRow {
   int kind, id, icon;  // icon: -1 none, 0.. a settings picture, 100 + n app n's icon
   String title, summary;
@@ -864,6 +865,9 @@ static void text(int x, int y, const GFXfont *font, const char *s) {
 
 static void textCentre(int cx, int y, const GFXfont *font, const char *s) { text(cx - textW(font, s) / 2, y, font, s); }
 static void textRight(int right, int y, const GFXfont *font, const char *s) { text(right - textW(font, s), y, font, s); }
+
+// One of the brand's bitmaps (src/brand/brand.h, from firmware/tools/gen_brand.py), top-left at x, y.
+static void brandDraw(const BrandBitmap &b, int x, int y) { canvas->drawBitmap(x, y, b.bits, b.w, b.h, INK); }
 
 // A temperature as a whole number, never "-0" (a low of -0.3 rounds to 0).
 static int wholeTemp(float t) {
@@ -2615,6 +2619,9 @@ static std::vector<std::pair<String, String>> aboutLines() {
 }
 
 static void dumpAbout() {
+  Serial.printf("about: %-14s %s\n", T(S_ABOUT_WEBSITE), SITE_URL);
+  Serial.printf("about: %-14s https://%s\n", T(S_ABOUT_SOURCE), SOURCE_URL_SHORT);
+  Serial.printf("about: %-14s https://www.%s\n", T(S_ABOUT_VIDEOS), VIDEOS_URL_SHORT);
   for (auto &line : aboutLines()) Serial.printf("about: %-14s %s\n", line.first.c_str(), line.second.c_str());
 }
 
@@ -2747,6 +2754,7 @@ static int listTextW(const ListRow &r) {
 }
 
 static int listRowHeight(const ListRow &r) {
+  if (r.kind == ROW_BRAND) return H - 34 - (BODY_Y + 6);  // the whole page (listPages())
   if (r.kind == ROW_HEADER) return 44;
   if (r.kind == ROW_BACK) return 58;
   int lines = r.summary.length() ? wrapped(r.kind == ROW_INFO ? &FreeSansBold12pt7b : &FreeSans12pt7b, r.summary, listTextW(r)).size() : 0;
@@ -2769,6 +2777,8 @@ static std::vector<int> listPages(const std::vector<ListRow> &rows) {
   return starts;
 }
 
+static void drawAboutHome(int top, int h);
+
 static std::vector<ListRow> listShown;     // the rows of the page on screen, for taps
 static std::vector<std::pair<int, int>> listHit;  // their top and bottom on screen
 
@@ -2788,6 +2798,8 @@ static void drawList(const std::vector<ListRow> &rows) {
       if (i > first) canvas->drawFastHLine(LIST_LEFT, y + 4, W - 2 * LIST_LEFT, INK);
       text(LIST_LEFT, y + 34, &FreeSans9pt7b, r.title.c_str());  // printed twice: bolder
       text(LIST_LEFT + 1, y + 34, &FreeSans9pt7b, r.title.c_str());
+    } else if (r.kind == ROW_BRAND) {
+      drawAboutHome(y, h);
     } else if (r.kind == ROW_BACK) {
       thickLine(LIST_LEFT + 12, y + 20, LIST_LEFT + 2, y + 30, 3);
       thickLine(LIST_LEFT + 2, y + 30, LIST_LEFT + 12, y + 40, 3);
@@ -3271,8 +3283,36 @@ static void settingsTap(int y) {
 
 static std::vector<ListRow> aboutRows() {
   std::vector<ListRow> rows;
+  rows.push_back({ROW_BRAND, -1, -1, "", "", false});
   for (auto &line : aboutLines()) rows.push_back({ROW_INFO, -1, -1, line.first, line.second, false});
   return rows;
+}
+
+// About's first page: the logo, what Sticky OS is (and that Seeed didn't
+// make it), and where it lives: the website (also as a QR code), the source
+// and the videos. In landscape the code is on the right; in portrait under
+// the addresses. The rest of About follows a page at a time.
+static void drawAboutHome(int top, int h) {
+  int x = LIST_LEFT + 4, qr = 240;  // the code's square, its quiet zone included
+  int qx = TALL ? (W - qr) / 2 : W - qr - 24, width = TALL ? W - 2 * x : qx - x - 16;
+  int y = top + 12;
+  brandDraw(BRAND_LOCKUP_ABOUT, x, y);
+  y += BRAND_LOCKUP_ABOUT.h + 38;  // the first line's baseline
+  for (const String &l : wrapped(&FreeSans12pt7b, T(S_ABOUT_INDEPENDENT), width)) {
+    text(x, y, &FreeSans12pt7b, l.c_str());
+    y += 28;
+  }
+  const struct { StrId label; const char *where; } homes[] = {
+      {S_ABOUT_WEBSITE, SITE_URL_SHORT}, {S_ABOUT_SOURCE, SOURCE_URL_SHORT}, {S_ABOUT_VIDEOS, VIDEOS_URL_SHORT}};
+  for (auto &home : homes) {
+    text(x, y + 12, &FreeSans9pt7b, T(home.label));
+    text(x, y + 40, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, home.where, width).c_str());
+    y += 58;
+  }
+  int qy = TALL ? y + 8 : top + 14;
+  if (qy + qr + 32 > top + h) return;  // no room: the address is there in words
+  drawQr(qx, qy, qr, SITE_URL);
+  textCentre(qx + qr / 2, qy + qr + 22, &FreeSans9pt7b, SITE_URL_SHORT);
 }
 
 static void drawAbout() { drawList(aboutRows()); }
@@ -5112,9 +5152,6 @@ static void render(bool full) {
 
 // ---------------------------------------------------------------- the boot screen
 
-// One of the brand's bitmaps (src/brand/brand.h, from firmware/tools/gen_brand.py), top-left at x, y.
-static void brandDraw(const BrandBitmap &b, int x, int y) { canvas->drawBitmap(x, y, b.bits, b.w, b.h, INK); }
-
 // A start from off or a restart (not a wake from sleep) shows this while the
 // rest gets ready: the Reading Lines mark, "Sticky OS" and "Starting...", as
 // the brand's boot screen (site/src/brand/assets/panel/boot-1bit-800x480.png:
@@ -6392,6 +6429,7 @@ void setup() {
   Serial.printf("power: charger enable GPIO %d driven low, reads %d\n", PIN_BAT_CHG_EN,
                 gpio_get_level((gpio_num_t)PIN_BAT_CHG_EN));
   updBegin();  // which slot, and whether this firmware is new and on trial
+  Serial.printf("sticky: Sticky OS %s, %s, source https://%s\n", updVersion(), SITE_URL, SOURCE_URL_SHORT);
   cfg::begin();
   cfgSeedFromBuild();  // the author's board: its values, once, from an optional git-ignored header
   netApplyTimezone();
