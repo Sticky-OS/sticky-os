@@ -889,6 +889,23 @@ test('menu: every page gets the one menu from build.py, and its links work', asy
 });
 
 
+test('home: "Latest from the blog" shows the newest posts of the blog list, and its links work', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('python3', [new URL('../build.py', import.meta.url).pathname], { stdio: 'ignore' });
+  const blog = await readFile(new URL('../src/blog/index.html', import.meta.url), 'utf8');
+  const newest = [...blog.match(/<ol class="post-list"[^>]*>[\s\S]*?<\/ol>/)[0].matchAll(/class="post-card" href="([^"]+)"/g)]
+    .slice(0, 3).map((m) => 'blog/' + m[1]);
+  const page = new URL('../dist/index.html', import.meta.url);
+  const home = await readFile(page, 'utf8');
+  const news = home.match(/<section id="news"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(news, 'index.html: a news section');
+  assert.deepEqual([...news.matchAll(/class="post-card" href="([^"]+)"/g)].map((m) => m[1]), newest);
+  for (const [, ref] of news.matchAll(/(?:href|src)="([^"#?:]+)"/g)) {   // throws if a file is missing
+    await readFile(new URL(ref.endsWith('/') ? ref + 'index.html' : ref, page));
+  }
+});
+
 // ------------------------------------------------------------------ run
 for (const [name, fn] of tests) {
   try { await fn(); passed++; console.log(`ok   ${name}`); }

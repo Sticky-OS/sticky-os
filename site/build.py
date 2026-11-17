@@ -11,6 +11,7 @@ dist/.spacefast (the link to the Space) is kept between builds.
 
 The product name lives in NAME below and nowhere else: the pages say {{NAME}}.
 The top menu lives in MENU below and nowhere else: the pages say {{HEADER}}.
+The home page's "Latest from the blog" ({{LATEST}}) is the blog list's first cards.
 
 Screenshots: drop a PNG into src/shots/ with one of these names and rebuild.
 Until a file is there, its frame shows a "screenshot coming" placeholder.
@@ -29,6 +30,7 @@ The setup app is src/setup/ (served at setup/; setup/?demo runs it against a
 simulated board). Its tests: node test/run.mjs, from this folder.
 """
 import os
+import re
 import pathlib
 import shutil
 import subprocess
@@ -85,6 +87,26 @@ def header(rel):
             f'\n      </ul>\n    </nav>{status}\n  </div>\n</header>')
 
 
+LATEST = 3   # how many posts the home page's "Latest from the blog" shows
+
+
+def latest_posts():
+    """The newest posts for the home page ({{LATEST}}): the first cards of the blog's
+    own list (src/blog/index.html, newest first), so a post added there shows on the
+    home page too. Links and pictures are made relative to the site's root, and the
+    card titles become h3 under the section's h2."""
+    blog = (SRC / "blog" / "index.html").read_text()
+    lst = re.search(r'<ol class="post-list"[^>]*>(.*?)</ol>', blog, re.S)
+    items = re.findall(r'\n( *<li>.*?</li>)', lst.group(1), re.S)[:LATEST]
+    out = []
+    for item in items:
+        item = re.sub(r'href="(?!https?:|/|\.\./)([^"]+)"', r'href="blog/\1"', item)
+        item = item.replace('src="../', 'src="')
+        item = re.sub(r'<h2 class="post-card-title">(.*?)</h2>', r'<h3 class="post-card-title">\1</h3>', item, flags=re.S)
+        out.append(item)
+    return '    <ol class="post-list">\n' + "\n".join(out) + '\n    </ol>'
+
+
 def main():
     keep = {".spacefast", ".gitignore"}   # sf's link to the Space survives a rebuild
     DIST.mkdir(exist_ok=True)
@@ -97,6 +119,8 @@ def main():
         text = page.read_text()
         if "{{HEADER}}" in text:
             text = text.replace("{{HEADER}}", header(page.relative_to(DIST).as_posix()))
+        if "{{LATEST}}" in text:
+            text = text.replace("{{LATEST}}", latest_posts())
         page.write_text(text.replace("{{NAME}}", NAME))
     shots = sorted(p.name for p in (DIST / "shots").glob("*.png"))
     print(f"built {DIST} as {NAME!r}; screenshots: {', '.join(shots)}")
