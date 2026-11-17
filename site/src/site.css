@@ -353,7 +353,7 @@ footer p { margin: 0 0 .5rem; }
   border: 2px solid var(--ink); border-radius: .7rem; background: #f3f2ee;
   box-shadow: 0 22px 40px -22px rgba(0,0,0,.4); }
 .video img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
-.video.short { max-width: 20rem; margin: 0 auto 2rem; }
+.video.short { max-width: 20rem; margin: 2.5rem auto; }
 .video.short img { aspect-ratio: 9 / 16; }
 .video.short figcaption { text-align: center; }
 .video-play { position: absolute; left: 50%; top: 50%; width: clamp(3.4rem, 8vw, 5.2rem); aspect-ratio: 1;
