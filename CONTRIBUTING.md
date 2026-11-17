@@ -1,6 +1,7 @@
 # Contributing
 
 Thanks for wanting to help. Bug reports, ideas and pull requests are all welcome.
+Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Reporting a bug or an idea
 
@@ -91,8 +92,11 @@ Small, focused pull requests are reviewed fastest. For anything bigger than a
 fix (a new app, a new setting, a change to how something works), open an issue
 or a discussion first, so we can agree on the shape before you build it.
 
-Every pull request fills in the template, and CI checks that its **Tests** and
-**How I tested it** sections aren't empty. What each section needs:
+Changes reach `main` only through pull requests, and a pull request can be
+merged only when every check passes: the firmware build and test suites, the
+site, the secret scan and the description check. The description check makes
+sure the template's **Tests** and **How I tested it** sections aren't empty.
+What each section needs:
 
 **Tests.** Run the suites and say which you ran:
 
