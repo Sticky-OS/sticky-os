@@ -73,7 +73,8 @@ struct GState {
   int t7Index = 0, t7Right = 0, t7Tries = 0, t7Clues = 0, t7Picked = -1;  // the exercise; right first time; wrong tries and clues on it
   bool t7Crossed[4] = {}, t7GaveUp = false, t7NewBest = false;
   bool t7ResetArmed = false;  // the lesson's Reset was tapped once: the next tap on it clears the progress
-  uint32_t t7Seen[t7::MAX_STEPS] = {};  // what this practice has asked, so nothing comes twice
+  uint32_t t7Seen[t7::MAX_STEPS] = {};  // what this practice has asked (kind and givens), so nothing comes twice
+  uint32_t t7Seed = 0;  // the open exercise's seed: made again from it when the content language changes
   t7::Exercise t7Ex;              // made in place by t7Make(), here in PSRAM: it is 3.9 KB
 };
 static GState *gs;

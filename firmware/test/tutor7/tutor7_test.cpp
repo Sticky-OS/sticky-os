@@ -1,15 +1,23 @@
-// Host tests for Tutor7's exercise generators (firmware/sticky-os/tutor7_core.cpp).
-//   ./run.sh              checks the exact numbers, then makes and verifies thousands of
-//                         exercises per kind, then checks that verify() catches broken ones
-//   ./run.sh samples      also writes build/samples.txt: a few exercises of each kind, to read
+// Host tests for Tutor7's exercise generators (firmware/sticky-os/tutor7_core.cpp) and its words
+// (tutor7_text.cpp, src/tutor/).
+//   ./run.sh              checks the exact numbers, then makes and verifies thousands of exercises
+//                         per kind in every language Tutor has whole, checks that a seed makes the
+//                         same exercise in every language, that verify() catches broken ones, and
+//                         the tables (placeholders, UTF-8, the fonts' letters) and the lessons
+//   ./run.sh samples      also writes build/samples.txt (Romanian) and build/samples_<code>.txt
+//                         for the other languages: a few exercises of each kind, to read
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <set>
+#include <vector>
 #include <string>
 #include "tutor7_core.h"
 #include "tutor7_lessons.h"
+#include "tutor7_text.h"
+#include "i18n.h"
+#include "src/fonts/ExtCodes.h"
 #define RTS "\xE2\x88\x9A"
 
 using namespace t7;
@@ -61,7 +69,15 @@ struct Run {
   const char *name;
 };
 
-static void testKind(const Run &r, FILE *samples) {
+// The languages Tutor has whole: the exercises are made and checked in each.
+static std::vector<int> contentLangs() {
+  std::vector<int> v;
+  for (int l = 0; l < LANG_COUNT; l++)
+    if (complete(l)) v.push_back(l);
+  return v;
+}
+
+static void testKind(const Run &r, int lang, FILE *samples) {
   const int SEEDS = 20000;
   int made = 0, rejected = 0, shown = 0;
   std::set<std::string> distinct;
@@ -69,14 +85,15 @@ static void testKind(const Run &r, FILE *samples) {
   for (int seed = 1; seed <= SEEDS; seed++) {
     Rng rng(seed * 2654435761u);
     Exercise ex;
-    if (!generate(r.kind, r.level, rng, ex)) {
+    if (!generate(r.kind, r.level, rng, ex, lang)) {
       rejected++;
       continue;
     }
     made++;
     char err[120] = "";
     bool ok = verify(ex, err, sizeof err);
-    CHECK(ok, "%s seed %d: %s | %s", r.name, seed, err, ex.text);
+    CHECK(ok, "%s %s seed %d: %s | %s", r.name, LANGS[lang].code, seed, err, ex.text);
+    CHECK(ex.lang == lang, "%s seed %d: made in %d, asked for %d", r.name, seed, ex.lang, lang);
     CHECK(ex.nslip >= 0 && ex.nslip <= MAX_SLIPS, "%s seed %d: %d slips", r.name, seed, ex.nslip);
     distinct.insert(ex.text);
     if (ex.correct >= 0 && ex.correct < 4) correctAt[ex.correct]++;
@@ -89,7 +106,7 @@ static void testKind(const Run &r, FILE *samples) {
       fprintf(samples, "  indiciu 1: %s\n  indiciu 2: %s\n  rezolvare: %s\n\n", ex.clue[0], ex.clue[1], ex.solution);
     }
   }
-  printf("%-26s made %5d, rejected %5d, distinct questions %4zu, right answer at slot 0..3: %d %d %d %d\n", r.name, made, rejected, distinct.size(),
+  printf("%s %-26s made %5d, rejected %5d, distinct questions %4zu, right answer at slot 0..3: %d %d %d %d\n", LANGS[lang].code, r.name, made, rejected, distinct.size(),
          correctAt[0], correctAt[1], correctAt[2], correctAt[3]);
   CHECK(made > SEEDS / 20, "%s: only %d of %d seeds gave an exercise", r.name, made, SEEDS);
   CHECK(distinct.size() >= 12, "%s: only %zu different questions", r.name, distinct.size());
@@ -99,11 +116,11 @@ static void testKind(const Run &r, FILE *samples) {
 }
 
 // verify() must refuse each of these broken exercises
-static void testVerifyCatches() {
+// verify() must refuse each of these broken exercises
+static void testVerifyCatches(int lang) {
   Rng rng(12345);
   Exercise ex;
-  CHECK(generate(K_HYPOTENUSE, 1, rng, ex) || generate(K_HYPOTENUSE, 1, rng, ex) || generate(K_HYPOTENUSE, 1, rng, ex), "need a sample");
-  while (!generate(K_HYPOTENUSE, 1, rng, ex)) {}
+  while (!generate(K_HYPOTENUSE, 1, rng, ex, lang)) {}
   char err[120];
   CHECK(verify(ex, err, sizeof err), "sample must verify: %s", err);
 
@@ -116,11 +133,9 @@ static void testVerifyCatches() {
   CHECK(!verify(a, err, sizeof err), "a figure that disagrees with the key must be caught");
 
   a = ex;
-  snprintf(a.clue[1], sizeof a.clue[1], "Raspunsul este %s.", ex.opt[ex.correct]);
-  // opt has a unit; take the bare number
-  char num[32];
+  char num[32];  // the bare number, without the unit
   exactFormat(ex.value[ex.correct], num, sizeof num);
-  snprintf(a.clue[1], sizeof a.clue[1], "Rezultatul este %s.", num);
+  snprintf(a.clue[1], sizeof a.clue[1], "%s %s.", tx(lang, TX_HYP_HINT1), num);
   CHECK(!verify(a, err, sizeof err), "a clue that gives the answer must be caught");
 
   a = ex;
@@ -135,9 +150,7 @@ static void testVerifyCatches() {
   a = ex;
   {
     int wrong = (a.correct + 1) % a.nopt;
-    char ans[40];
-    exactFormat(ex.value[ex.correct], ans, sizeof ans);
-    snprintf(a.why[wrong], sizeof a.why[wrong], "Gresit. Corect este %s.", ans);  // an explanation that gives the answer
+    snprintf(a.why[wrong], sizeof a.why[wrong], "%s = %s.", ex.why[wrong], num);  // an explanation that gives the answer
     CHECK(!verify(a, err, sizeof err), "a wrong-answer explanation that gives the answer must be caught");
   }
 
@@ -149,7 +162,7 @@ static void testVerifyCatches() {
   // a leg exercise whose 'hypotenuse' is not the longest side
   Rng r2(777);
   Exercise leg;
-  while (!generate(K_LEG, 1, r2, leg)) {}
+  while (!generate(K_LEG, 1, r2, leg, lang)) {}
   CHECK(verify(leg, err, sizeof err), "leg sample must verify: %s", err);
   leg.fig.v[2] = leg.fig.v[0];
   CHECK(!verify(leg, err, sizeof err), "a hypotenuse that is not the longest side must be caught");
@@ -157,41 +170,81 @@ static void testVerifyCatches() {
   // a converse exercise that is not a triangle
   Rng r3(99);
   Exercise cv;
-  while (!generate(K_CONVERSE, 3, r3, cv)) {}
+  while (!generate(K_CONVERSE, 3, r3, cv, lang)) {}
   CHECK(verify(cv, err, sizeof err), "converse sample must verify: %s", err);
   cv.fig.v[0] = 1000;  // sides no longer form a triangle
   CHECK(!verify(cv, err, sizeof err), "sides that do not make a triangle must be caught");
-  cv = ex;  // reset
+
+  // a classify exercise whose button names another figure than its code
+  Rng r4(4242);
+  Exercise cl;
+  while (!generate(K_CLASSIFY, 3, r4, cl, lang)) {}
+  CHECK(verify(cl, err, sizeof err), "classify sample must verify: %s", err);
+  strcpy(cl.opt[0], cl.opt[1]);
+  CHECK(!verify(cl, err, sizeof err), "a classify option that names the wrong figure must be caught");
 }
 
 // A wrong option's explanation must describe how its number is reached. Two slips giving the same number
 // are often both right ("2 · 2 = 2²"), so this can't be checked in general: these are the slips that once
-// carried a number their reason does not give.
-static void testSlipReasons() {
-  auto withReason = [](const Exercise &ex, const char *words) {
+// carried a number their reason does not give. They are found by their string (in every language).
+static void testSlipReasons(int lang) {
+  auto withReason = [lang](const Exercise &ex, int id) {
     for (int i = 0; i < ex.nopt; i++)
-      if (i != ex.correct && strstr(ex.why[i], words)) return i;
+      if (i != ex.correct && !strcmp(ex.why[i], tx(lang, id))) return i;
     return -1;
   };
+  int seen[3] = {0, 0, 0};
   for (int seed = 1; seed <= 20000; seed++) {
     Exercise ex;
     Rng r1(seed * 2654435761u);
-    if (generate(K_PAR_ANGLE, 1, r1, ex)) {  // "taken from 90°" is 90 - A, so only for an acute A
-      int A = ex.fig.v[0], i = withReason(ex, "Ai scăzut din 90");
-      if (ex.fig.v[1] == 1 && i >= 0) CHECK(A < 90 && ex.value[i].p == 90 - A, "parallelogram angle seed %d: A = %d, \"from 90\" on %s", seed, A, ex.opt[i]);
+    if (generate(K_PAR_ANGLE, 1, r1, ex, lang)) {  // "taken from 90°" is 90 - A, so only for an acute A
+      int A = ex.fig.v[0], i = withReason(ex, TX_PANG_SLIP2);
+      if (i >= 0) seen[0]++;
+      if (i >= 0) CHECK(ex.fig.v[1] == 1 && A < 90 && ex.value[i].p == 90 - A, "parallelogram angle seed %d: A = %d, \"from 90\" on %s", seed, A, ex.opt[i]);
     }
     Rng r2(seed * 2654435761u);
-    if (generate(K_Q_PROPORTIONAL, 2, r2, ex)) {  // "with 180°": 180 · m / S exactly, never truncated
-      int S = 0, m = 0, i = withReason(ex, "Ai folosit suma de 180");
+    if (generate(K_Q_PROPORTIONAL, 2, r2, ex, lang)) {  // "with 180°": 180 · m / S exactly, never truncated
+      int S = 0, m = 0, i = withReason(ex, TX_QPROP_SLIP2);
       for (int k = 0; k < 4; k++) S += ex.fig.v[k], m = ex.fig.v[k] > m ? ex.fig.v[k] : m;
+      if (i >= 0) seen[1]++;
       if (i >= 0) CHECK(ex.value[i].q == 1 && ex.value[i].p * S == 180 * m, "proportional seed %d: \"180°\" on %s", seed, ex.opt[i]);
     }
     Rng r3(seed * 2654435761u);
-    if (generate(K_PERIMETER, 1, r3, ex) && ex.fig.v[0] == 4) {  // dm not converted: 2 · (a + y/10), y in cm
-      int a = ex.fig.v[1], y = ex.fig.v[2], i = withReason(ex, "fără să transformi");
+    if (generate(K_PERIMETER, 1, r3, ex, lang) && ex.fig.v[0] == 4) {  // dm not converted: 2 · (a + y/10), y in cm
+      int a = ex.fig.v[1], y = ex.fig.v[2], i = withReason(ex, TX_PER_SLIP8);
+      if (i >= 0) seen[2]++;
       if (i >= 0) CHECK(fabs(exactValue(ex.value[i]) - 2 * (a + y / 10.0)) < 1e-9, "perimeter seed %d: \"not converted\" on %s", seed, ex.opt[i]);
     }
   }
+  for (int k = 0; k < 3; k++) CHECK(seen[k] > 50, "%s: slip %d found only %d times (is its string still the one the generator uses?)", LANGS[lang].code, k, seen[k]);
+}
+
+// The same seed makes the same exercise in every language: the same success, figure, options, key and
+// values. Only the words differ. This is what lets the board switch languages under an open exercise.
+static void testSameInEveryLanguage(const Run &r, const std::vector<int> &langs) {
+  int differ = 0;
+  for (int seed = 1; seed <= 20000; seed++) {
+    Exercise a, b;
+    Rng ra(seed * 2654435761u);
+    bool okA = generate(r.kind, r.level, ra, a, langs[0]);
+    for (size_t li = 1; li < langs.size(); li++) {
+      Rng rb(seed * 2654435761u);
+      bool okB = generate(r.kind, r.level, rb, b, langs[li]);
+      bool same = okA == okB && ra.s == rb.s;
+      if (same && okA) {
+        same = a.kind == b.kind && a.level == b.level && a.fig.kind == b.fig.kind && a.nopt == b.nopt && a.correct == b.correct && a.nslip == b.nslip &&
+               !strcmp(a.unit, b.unit);
+        for (int k = 0; k < 4; k++) same = same && a.fig.v[k] == b.fig.v[k];
+        for (int i = 0; i < a.nopt; i++) same = same && exactSame(a.value[i], b.value[i]);
+        // the answers say the same numbers (the converse's and the classify's are words)
+        if (r.kind != K_CONVERSE && r.kind != K_CLASSIFY)
+          for (int i = 0; i < a.nopt; i++) same = same && !strcmp(a.opt[i], b.opt[i]);
+      }
+      if (!same && differ++ < 5)
+        printf("  %s seed %d: %s %s, %s %s\n", r.name, seed, LANGS[langs[0]].code, okA ? "made" : "failed", LANGS[langs[li]].code, okB ? "made" : "failed");
+    }
+  }
+  CHECK(differ == 0, "%s: %d seeds make a different exercise (or none) in another language", r.name, differ);
 }
 
 static bool utf8ok(const char *s) {
@@ -206,90 +259,172 @@ static bool utf8ok(const char *s) {
   return true;
 }
 
-// The lessons' text: well-formed, short enough for a screen, and the worked examples' arithmetic is right.
-static void testLessons() {
-  for (int li = 0; li < LESSON_COUNT; li++) {
-    const Lesson &l = lesson(li);
-    CHECK(l.name && l.subject && utf8ok(l.name) && utf8ok(l.subject), "lesson %d name", li);
-    CHECK(l.nSummary >= 1 && l.nSummary <= MAX_PAGES && l.nExample >= 1 && l.nExample <= MAX_PAGES, "lesson %d page counts", li);
-    CHECK(l.nSteps >= 1 && l.nSteps <= MAX_STEPS, "lesson %d step count", li);
-    auto page = [&](const Page &p, const char *what, int i) {
-      CHECK(p.title && p.body && p.title[0] && p.body[0], "lesson %d %s %d is empty", li, what, i);
-      CHECK(utf8ok(p.title) && utf8ok(p.body), "lesson %d %s %d: bad UTF-8", li, what, i);
-      CHECK(strlen(p.body) < 620, "lesson %d %s %d: body too long for a screen (%zu bytes)", li, what, i, strlen(p.body));
-      CHECK(p.figure >= -1 && p.figure < FIG_COUNT, "lesson %d %s %d: figure kind", li, what, i);
-    };
-    for (int i = 0; i < l.nSummary; i++) page(l.summary[i], "summary", i);
-    for (int i = 0; i < l.nExample; i++) page(l.example[i], "example", i);
-    // every planned exercise can be made, and verifies
-    for (int i = 0; i < l.nSteps; i++) {
-      int made = 0;
-      for (int seed = 1; seed <= 300; seed++) {
-        Rng rng(seed * 40503u + li);
-        Exercise ex;
-        char err[120];
-        if (generate(l.steps[i].kind, l.steps[i].level, rng, ex)) {
-          made++;
-          CHECK(verify(ex, err, sizeof err), "lesson %d step %d: %s", li, i, err);
-        }
-      }
-      CHECK(made > 100, "lesson %d step %d: only %d of 300 seeds made an exercise", li, i, made);
+// The first code point the fonts can't draw (ASCII, src/fonts' extra letters, and √, which the screen
+// draws itself), or 0. Newlines are paragraph breaks.
+static uint32_t missingGlyph(const char *s) {
+  const unsigned char *p = (const unsigned char *)s;
+  while (*p) {
+    uint32_t c;
+    int n;
+    if (*p < 0x80) c = *p, n = 0;
+    else if ((*p >> 5) == 6) c = *p & 0x1F, n = 1;
+    else if ((*p >> 4) == 14) c = *p & 0x0F, n = 2;
+    else c = *p & 0x07, n = 3;
+    p++;
+    for (int i = 0; i < n && *p; i++, p++) c = (c << 6) | (*p & 0x3F);
+    if (c == '\n' || (c >= 0x20 && c < 0x7F) || c == 0x221A) continue;
+    bool found = false;
+    for (uint16_t e : EXT_CODES) found |= e == c;
+    if (!found) return c;
+  }
+  return 0;
+}
+
+// The printf conversions of a format, in order: "%d%s%lld".
+static std::string specs(const char *s) {
+  std::string out;
+  for (const char *p = s; *p; p++) {
+    if (*p != '%') continue;
+    const char *q = p + 1;
+    if (*q == '%') {
+      p = q;
+      continue;
+    }
+    while (*q && strchr("-+ #0123456789.", *q)) q++;
+    while (*q == 'l' || *q == 'h' || *q == 'z') q++;
+    out.append(p, q + 1 - p);
+    p = q;
+  }
+  return out;
+}
+
+// Every string of every language: UTF-8, letters the fonts have, the English placeholders in order,
+// and no "/" used as a division in English-style text (verify reads it as part of a number).
+static void testTables() {
+  for (int lang = 0; lang < LANG_COUNT; lang++) {
+    if (!complete(lang) && lang != L_EN) continue;
+    for (int id = 0; id < TX_COUNT; id++) {
+      const char *s = tx(lang, id), *en = tx(L_EN, id);
+      CHECK(s && utf8ok(s), "%s string %d: bad UTF-8", LANGS[lang].code, id);
+      uint32_t g = missingGlyph(s);
+      CHECK(!g, "%s string %d: U+%04X is not in the fonts: %s", LANGS[lang].code, id, (unsigned)g, s);
+      CHECK(specs(s) == specs(en), "%s string %d: placeholders %s, English has %s: %s", LANGS[lang].code, id, specs(s).c_str(), specs(en).c_str(), s);
     }
   }
-  // The Pythagoras lesson's worked examples, recomputed here and looked for in the text.
-  const Lesson &p = lesson(LESSON_COUNT - 1);  // Pitagora, the last in the list
-  auto has = [](const char *text, const char *needle) { return strstr(text, needle) != nullptr; };
-  CHECK(9 * 9 + 40 * 40 == 1681 && 41 * 41 == 1681, "example 1 arithmetic");
-  CHECK(has(p.example[0].body, "1681") && has(p.example[0].body, "41 cm"), "example 1 text");
-  CHECK(9 * 9 - 7 * 7 == 32 && fmt(exactSqrt(32)) == "4\xE2\x88\x9A" "2", "example 2 arithmetic");
-  CHECK(has(p.example[1].body, "= 32") && has(p.example[1].body, "4\xE2\x88\x9A" "2"), "example 2 text");
-  CHECK(20 * 20 + 21 * 21 == 841 && 29 * 29 == 841, "example 3 arithmetic");
-  CHECK(has(p.example[2].body, "841") && has(p.example[2].body, "29 cm"), "example 3 text");
-  CHECK(16 * 2 == 32 && has(p.summary[2].body, "16\xC2\xB7" "2"), "the simplification shown on page 3 is right");
-  // Unit 4's worked examples: the numbers in the text are recomputed here and looked for in it.
-  auto lessonNamed = [&](const char *name) -> const Lesson * {
-    for (int i = 0; i < LESSON_COUNT; i++)
-      if (!strcmp(lesson(i).name, name)) return &lesson(i);
-    return nullptr;
+}
+
+// The lessons: every language's words fit the plan (as many pages, none empty, short enough for a
+// screen), the plan's exercises can be made, and the worked examples' arithmetic is right.
+static void testLessons(const std::vector<int> &langs) {
+  for (int li = 0; li < LESSON_COUNT; li++) {
+    const Lesson &l = lesson(li);
+    CHECK(l.slot >= 0 && l.slot < LESSON_COUNT, "lesson %d slot", li);
+    for (int lj = 0; lj < li; lj++) CHECK(lesson(lj).slot != l.slot, "lessons %d and %d share slot %d", lj, li, l.slot);
+    CHECK(l.nSummary >= 1 && l.nSummary <= MAX_PAGES && l.nExample >= 1 && l.nExample <= MAX_PAGES, "lesson %d page counts", li);
+    CHECK(l.nSteps >= 1 && l.nSteps <= MAX_STEPS, "lesson %d step count", li);
+    for (int i = 0; i < MAX_PAGES; i++)
+      CHECK(l.summaryFigure[i] >= -1 && l.summaryFigure[i] < FIG_COUNT && l.exampleFigure[i] >= -1 && l.exampleFigure[i] < FIG_COUNT, "lesson %d page %d: figure kind", li, i);
+    for (int lang : langs) {
+      const LessonText &t = lessonText(lang, l.slot);
+      const char *code = LANGS[lang].code;
+      CHECK(t.name && t.subject && utf8ok(t.name) && utf8ok(t.subject) && !missingGlyph(t.name) && !missingGlyph(t.subject), "%s lesson %d name", code, li);
+      auto pages = [&](const PageText *p, int n, const char *what) {
+        for (int i = 0; i < MAX_PAGES; i++) {
+          if (i >= n) {
+            CHECK(!p[i].title && !p[i].body, "%s lesson slot %d: %s page %d is not in the plan (%d pages)", code, l.slot, what, i + 1, n);
+            continue;
+          }
+          CHECK(p[i].title && p[i].body && p[i].title[0] && p[i].body[0], "%s lesson slot %d %s %d is missing or empty", code, l.slot, what, i);
+          if (!p[i].title || !p[i].body) continue;
+          CHECK(utf8ok(p[i].title) && utf8ok(p[i].body), "%s lesson slot %d %s %d: bad UTF-8", code, l.slot, what, i);
+          uint32_t g = missingGlyph(p[i].title) ? missingGlyph(p[i].title) : missingGlyph(p[i].body);
+          CHECK(!g, "%s lesson slot %d %s %d: U+%04X is not in the fonts", code, l.slot, what, i, (unsigned)g);
+          CHECK(strlen(p[i].body) < 620, "%s lesson slot %d %s %d: body too long for a screen (%zu bytes)", code, l.slot, what, i, strlen(p[i].body));
+        }
+      };
+      pages(t.summary, l.nSummary, "summary");
+      pages(t.example, l.nExample, "example");
+    }
+    // every planned exercise can be made, and verifies, in every language
+    for (int i = 0; i < l.nSteps; i++)
+      for (int lang : langs) {
+        int made = 0;
+        for (int seed = 1; seed <= 300; seed++) {
+          Rng rng(seed * 40503u + li);
+          Exercise ex;
+          char err[120];
+          if (generate(l.steps[i].kind, l.steps[i].level, rng, ex, lang)) {
+            made++;
+            CHECK(verify(ex, err, sizeof err), "%s lesson %d step %d: %s", LANGS[lang].code, li, i, err);
+          }
+        }
+        CHECK(made > 100, "%s lesson %d step %d: only %d of 300 seeds made an exercise", LANGS[lang].code, li, i, made);
+      }
+  }
+
+  // The worked examples: the numbers in the text are recomputed here and looked for in it, in each
+  // language's notation. {slot, example page, Romanian, English}
+  struct Needle {
+    int slot, page;
+    const char *ro, *en;
   };
-  const Lesson *q = lessonNamed("Patrulaterul convex");
-  CHECK(q && 360 - (70 + 100 + 80) == 110 && has(q->example[0].body, "= 110°") && has(q->example[0].body, "250°"), "U4 L1 example 1");
-  CHECK(q && 8 + 9 + 11 + 12 == 40 && 360 / 40 == 9 && 8 * 9 == 72 && 9 * 9 == 81 && 11 * 9 == 99 && 12 * 9 == 108 && has(q->example[1].body, "72°, 81°, 99° și 108°"), "U4 L1 example 2");
-  CHECK(q && 60 + 105 + 90 + 105 == 360 && has(q->example[2].body, "= 360°"), "U4 L1 example 3");
-  const Lesson *pl = lessonNamed("Paralelogramul");
-  CHECK(pl && 180 - 70 == 110 && has(pl->example[0].body, "B = 180° − 70° = 110°") && has(pl->example[0].body, "D = 110°"), "U4 L2 example 1");
-  CHECK(pl && 2 * 5 == 10 && has(pl->example[1].body, "BD = 2 · 5 = 10 cm") && has(pl->example[1].body, "CO = AO = 3 cm"), "U4 L2 example 2");
-  CHECK(pl && 30 - 2 * 6 == 18 && 18 / 2 == 9 && has(pl->example[2].body, "30 − 2 · 6 = 18 cm") && has(pl->example[2].body, "câte 9 cm"), "U4 L2 example 3");
-  const Lesson *ml = lessonNamed("Linia mijlocie");
-  CHECK(ml && 18 / 2 == 9 && has(ml->example[0].body, "MN = BC : 2 = 18 : 2 = 9 cm"), "U4 L3 example 1");
-  CHECK(ml && 10 + 14 + 12 == 36 && 36 / 2 == 18 && 10 + 12 > 14 && has(ml->example[1].body, "36 : 2 = 18 cm"), "U4 L3 example 2");
-  CHECK(ml && 2 * 18 / 3 == 12 && 18 / 3 == 6 && 12 + 6 == 18 && has(ml->example[2].body, "(2/3) · 18 = 12 cm") && has(ml->example[2].body, "(1/3) · 18 = 6 cm"), "U4 L3 example 3");
-  const Lesson *re = lessonNamed("Dreptunghiul");
-  CHECK(re && 2 * 7 == 14 && has(re->example[0].body, "AC = 2 · AO = 14 cm") && has(re->example[0].body, "BD = AC = 14 cm"), "U4 L4 example 1");
-  CHECK(re && 180 - 68 == 112 && 112 / 2 == 56 && has(re->example[1].body, "180° − 68° = 112°") && has(re->example[1].body, "= 56°"), "U4 L4 example 2");
-  CHECK(re && 18 / 2 == 9 && 3 * 9 == 27 && has(re->example[2].body, "perimetrul este 3 · 9 = 27 cm"), "U4 L4 example 3");
-  const Lesson *ro = lessonNamed("Rombul și pătratul");
-  CHECK(ro && 2 * 35 == 70 && 180 - 70 == 110 && has(ro->example[0].body, "2 · 35° = 70°") && has(ro->example[0].body, "180° − 70° = 110°"), "U4 L5 example 1");
-  CHECK(ro && 6 * 6 + 8 * 8 == 100 && 4 * 10 == 40 && has(ro->example[1].body, "36 + 64 = 100") && has(ro->example[1].body, "4 · 10 = 40 cm"), "U4 L5 example 2");
-  CHECK(ro && fmt(exactSqrt(50)) == "5\xE2\x88\x9A" "2" && has(ro->example[2].body, "l² = 50") && has(ro->example[2].body, "5" RTS "2 cm"), "U4 L5 example 3");
-  const Lesson *tr = lessonNamed("Trapezul");
-  CHECK(tr && 180 - 70 == 110 && 180 - 100 == 80 && has(tr->example[0].body, "D = 180° − 70° = 110°") && has(tr->example[0].body, "B = 180° − 100° = 80°"), "U4 L6 example 1");
-  CHECK(tr && (12 + 6) / 2 == 9 && (12 - 6) / 2 == 3 && has(tr->example[1].body, "MN = (12 + 6) : 2 = 9 cm") && has(tr->example[1].body, "PQ = (12 − 6) : 2 = 3 cm"), "U4 L6 example 2");
-  CHECK(tr && (20 - 8) / 2 == 6 && 10 * 10 - 6 * 6 == 64 && 8 * 8 == 64 && has(tr->example[2].body, "100 − 36 = 64") && has(tr->example[2].body, "h = 8 cm"), "U4 L6 example 3");
-  const Lesson *ar = lessonNamed("Perimetre și arii");
-  CHECK(ar && 10 * 6 == 60 && 2 * (10 + 7) == 34 && has(ar->example[0].body, "A = 10 · 6 = 60 cm²") && has(ar->example[0].body, "P = 2 · (10 + 7) = 34 cm"), "U4 L7 example 1");
-  CHECK(ar && 6 * 6 + 8 * 8 == 100 && 12 * 16 / 2 == 96 && has(ar->example[1].body, "40 cm") && has(ar->example[1].body, "96 cm²"), "U4 L7 example 2");
-  CHECK(ar && (10 + 7) * 4 / 2 == 34 && has(ar->example[2].body, "0,7 dm = 7 cm") && has(ar->example[2].body, "68 : 2 = 34 cm²"), "U4 L7 example 3");
-  const Lesson *rv = lessonNamed("Recapitulare U4");
-  CHECK(rv && 3 * 60 == 180 && has(rv->example[1].body, "B = 60° și A = 120°"), "U4 review example 2");
-  CHECK(rv && 6 * 8 / 2 == 24 && 48 * 10 == 480 && 48.0 / 10 == 4.8 && has(rv->example[2].body, "h = 48 : 10 = 4,8 cm"), "U4 review example 3");
+  static const Needle NEEDLES[] = {
+      {0, 0, "1681", "1681"}, {0, 0, "41 cm", "41 cm"},
+      {0, 1, "= 32", "= 32"}, {0, 1, "4" RTS "2", "4" RTS "2"},
+      {0, 2, "841", "841"}, {0, 2, "29 cm", "29 cm"},
+      {1, 0, "= 110°", "= 110°"}, {1, 0, "250°", "250°"},
+      {1, 1, "72°, 81°, 99° și 108°", "72°, 81°, 99° and 108°"},
+      {1, 2, "= 360°", "= 360°"},
+      {2, 0, "B = 180° − 70° = 110°", "B = 180° − 70° = 110°"}, {2, 0, "D = 110°", "D = 110°"},
+      {2, 1, "BD = 2 · 5 = 10 cm", "BD = 2 × 5 = 10 cm"}, {2, 1, "CO = AO = 3 cm", "CO = AO = 3 cm"},
+      {2, 2, "30 − 2 · 6 = 18 cm", "30 − 2 × 6 = 18 cm"}, {2, 2, "câte 9 cm", "each is 9 cm"},
+      {3, 0, "MN = BC : 2 = 18 : 2 = 9 cm", "MN = BC ÷ 2 = 18 ÷ 2 = 9 cm"},
+      {3, 1, "36 : 2 = 18 cm", "36 ÷ 2 = 18 cm"},
+      {3, 2, "(2/3) · 18 = 12 cm", "(2/3) × 18 = 12 cm"}, {3, 2, "(1/3) · 18 = 6 cm", "(1/3) × 18 = 6 cm"},
+      {4, 0, "AC = 2 · AO = 14 cm", "AC = 2 × AO = 14 cm"}, {4, 0, "BD = AC = 14 cm", "BD = AC = 14 cm"},
+      {4, 1, "180° − 68° = 112°", "180° − 68° = 112°"}, {4, 1, "= 56°", "= 56°"},
+      {4, 2, "3 · 9 = 27 cm", "3 × 9 = 27 cm"},
+      {5, 0, "2 · 35° = 70°", "2 × 35° = 70°"}, {5, 0, "180° − 70° = 110°", "180° − 70° = 110°"},
+      {5, 1, "36 + 64 = 100", "36 + 64 = 100"}, {5, 1, "4 · 10 = 40 cm", "4 × 10 = 40 cm"},
+      {5, 2, "l² = 50", "s² = 50"}, {5, 2, "5" RTS "2 cm", "5" RTS "2 cm"},
+      {6, 0, "D = 180° − 70° = 110°", "D = 180° − 70° = 110°"}, {6, 0, "B = 180° − 100° = 80°", "B = 180° − 100° = 80°"},
+      {6, 1, "MN = (12 + 6) : 2 = 9 cm", "MN = (12 + 6) ÷ 2 = 9 cm"}, {6, 1, "PQ = (12 − 6) : 2 = 3 cm", "PQ = (12 − 6) ÷ 2 = 3 cm"},
+      {6, 2, "100 − 36 = 64", "100 − 36 = 64"}, {6, 2, "h = 8 cm", "h = 8 cm"},
+      {7, 0, "A = 10 · 6 = 60 cm²", "A = 10 × 6 = 60 cm²"}, {7, 0, "P = 2 · (10 + 7) = 34 cm", "P = 2 × (10 + 7) = 34 cm"},
+      {7, 1, "40 cm", "40 cm"}, {7, 1, "96 cm²", "96 cm²"},
+      {7, 2, "0,7 dm = 7 cm", "0.7 dm = 7 cm"}, {7, 2, "68 : 2 = 34 cm²", "68 ÷ 2 = 34 cm²"},
+      {8, 1, "B = 60° și A = 120°", "B = 60° and A = 120°"},
+      {8, 2, "h = 48 : 10 = 4,8 cm", "h = 48 ÷ 10 = 4.8 cm"},
+  };
+  // the arithmetic behind them
+  CHECK(9 * 9 + 40 * 40 == 1681 && 41 * 41 == 1681 && 9 * 9 - 7 * 7 == 32 && fmt(exactSqrt(32)) == "4" RTS "2", "Pythagoras examples 1-2");
+  CHECK(20 * 20 + 21 * 21 == 841 && 29 * 29 == 841, "Pythagoras example 3");
+  CHECK(360 - (70 + 100 + 80) == 110 && 8 + 9 + 11 + 12 == 40 && 360 / 40 == 9 && 8 * 9 == 72 && 11 * 9 == 99 && 12 * 9 == 108 && 60 + 105 + 90 + 105 == 360, "4.1");
+  CHECK(180 - 70 == 110 && 2 * 5 == 10 && 30 - 2 * 6 == 18 && 18 / 2 == 9, "4.2");
+  CHECK(10 + 14 + 12 == 36 && 10 + 12 > 14 && 2 * 18 / 3 == 12 && 18 / 3 == 6, "4.3");
+  CHECK(2 * 7 == 14 && 180 - 68 == 112 && 112 / 2 == 56 && 3 * 9 == 27, "4.4");
+  CHECK(2 * 35 == 70 && 6 * 6 + 8 * 8 == 100 && fmt(exactSqrt(50)) == "5" RTS "2", "4.5");
+  CHECK(180 - 100 == 80 && (12 + 6) / 2 == 9 && (12 - 6) / 2 == 3 && (20 - 8) / 2 == 6 && 10 * 10 - 6 * 6 == 64, "4.6");
+  CHECK(10 * 6 == 60 && 2 * (10 + 7) == 34 && 12 * 16 / 2 == 96 && (10 + 7) * 4 / 2 == 34, "4.7");
+  CHECK(3 * 60 == 180 && 6 * 8 / 2 == 24 && 48.0 / 10 == 4.8, "4.8");
+  for (const Needle &n : NEEDLES)
+    for (int lang : langs) {
+      const char *want = lang == L_RO ? n.ro : lang == L_EN ? n.en : nullptr;
+      if (!want) continue;  // a new language: add its column
+      const char *body = lessonText(lang, n.slot).example[n.page].body;
+      CHECK(body && strstr(body, want), "%s slot %d example %d: \"%s\" not found", LANGS[lang].code, n.slot, n.page + 1, want);
+    }
+  CHECK(strstr(lessonText(L_RO, 0).summary[2].body, "16·2") && strstr(lessonText(L_EN, 0).summary[2].body, "16 × 2"), "the simplification shown on Pythagoras page 3");
+  // the content language: a complete language is itself, any other falls back to English
+  CHECK(contentLang(L_RO) == L_RO && contentLang(L_EN) == L_EN && contentLang(L_DE) == L_EN && contentLang(-1) == L_EN, "contentLang");
 }
 
 int main(int argc, char **argv) {
   setvbuf(stdout, nullptr, _IONBF, 0);
   bool wantSamples = argc > 1 && !strcmp(argv[1], "samples");
   testExact();
-  FILE *samples = wantSamples ? fopen("build/samples.txt", "w") : nullptr;
+  std::vector<int> langs = contentLangs();
+  CHECK(langs.size() >= 2 && complete(L_EN) && complete(L_RO), "English and Romanian are complete");
   const Run runs[] = {
       {K_HYPOTENUSE, 1, "hypotenuse, integers"}, {K_HYPOTENUSE, 2, "hypotenuse, radicals"}, {K_LEG, 1, "leg, integers"},
       {K_LEG, 2, "leg, radicals"},               {K_CONVERSE, 3, "converse"},               {K_SQUARE_DIAGONAL, 3, "square diagonal"},
@@ -303,14 +438,23 @@ int main(int argc, char **argv) {
       {K_TRAP_HEIGHT, 2, "trapezoid height, radicals"}, {K_AREA, 2, "area"},                      {K_PERIMETER, 1, "perimeter"},
       {K_HEIGHT_FROM_AREA, 1, "height from area"},  {K_HEIGHT_FROM_AREA, 2, "height, right triangle"},
   };
-  for (const Run &r : runs) testKind(r, samples);
-  testVerifyCatches();
-  testSlipReasons();
-  testLessons();
-  if (samples) {
-    fclose(samples);
-    printf("samples written to build/samples.txt\n");
+  for (int lang : langs) {
+    FILE *samples = nullptr;
+    if (wantSamples) {
+      char path[64];
+      if (lang == L_RO) snprintf(path, sizeof path, "build/samples.txt");  // as before the other languages came
+      else snprintf(path, sizeof path, "build/samples_%s.txt", LANGS[lang].code);
+      samples = fopen(path, "w");
+    }
+    for (const Run &r : runs) testKind(r, lang, samples);
+    if (samples) fclose(samples);
+    testVerifyCatches(lang);
+    testSlipReasons(lang);
   }
+  for (const Run &r : runs) testSameInEveryLanguage(r, langs);
+  testTables();
+  testLessons(langs);
+  if (wantSamples) printf("samples written to build/samples*.txt\n");
   printf("%d checks, %d failures\n", checks, failures);
   return failures ? 1 : 0;
 }

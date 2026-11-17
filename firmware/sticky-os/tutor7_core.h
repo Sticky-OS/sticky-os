@@ -8,8 +8,12 @@
 // tutor7Verify() re-derives the answer a second way before the exercise is
 // shown. An exercise that can't be verified is never shown.
 //
-// Text is UTF-8, in Romanian. A square root is the character U+221A, which
-// the fonts don't have: the screen draws it itself.
+// Text is UTF-8, in the language the exercise is made in (ex.lang, a Lang of
+// i18n.h): the words come from tutor7_text.h's tables, the numbers from the
+// generator. Nothing a generator decides depends on the language (the random
+// numbers, the options and their order, the key, the figure): the same seed
+// makes the same exercise in every language. A square root is the character
+// U+221A, which the fonts don't have: the screen draws it itself.
 #pragma once
 #include <stdint.h>
 
@@ -92,34 +96,38 @@ struct Figure {
 
 static const int MAX_OPTIONS = 4;
 static const int MAX_SLIPS = 8;
+// The buffers have room for the longest language's words (formatted): firmware/test/tutor7 makes
+// every exercise in every language and fails when one does not fit.
+static const int WHY_CAP = 280;
 // A typical slip: the number it gives, and why it is wrong.
 struct Slip {
   Exact v;
-  char why[200];
+  char why[WHY_CAP];
 };
 struct Exercise {
   Kind kind;
   uint8_t level;  // 1 integers, 2 radicals, 3 the converse and special cases
+  uint8_t lang;   // the language of the words (Lang)
   Figure fig;
   char unit[8];    // after each option's number: " cm", "°", " cm²"
-  char text[240];  // the question
+  char text[320];  // the question
   int nopt;
-  int correct;                 // index into opt
-  char opt[MAX_OPTIONS][64];   // what the buttons say
-  Exact value[MAX_OPTIONS];    // the number behind an option (kind-specific for K_CONVERSE: see verify)
-  char why[MAX_OPTIONS][200];  // why an option is wrong (empty for the right one)
-  char clue[2][200];           // a nudge, then a stronger one; never the answer
-  char solution[400];          // the worked solution, shown after the answer or on "give up"
+  int correct;                     // index into opt
+  char opt[MAX_OPTIONS][80];       // what the buttons say
+  Exact value[MAX_OPTIONS];        // the number behind an option (kind-specific for K_CONVERSE: see verify)
+  char why[MAX_OPTIONS][WHY_CAP];  // why an option is wrong (empty for the right one)
+  char clue[2][WHY_CAP];           // a nudge, then a stronger one; never the answer
+  char solution[560];              // the worked solution, shown after the answer or on "give up"
   // The generator's scratch: every slip it thought of, three of which become the wrong options. They
-  // are here and not on the stack because they take 1.7 KB and the board's loop task has 8 KB: the
+  // are here and not on the stack because they take 2.3 KB and the board's loop task has 8 KB: the
   // board keeps its Exercise in PSRAM and makes it there.
   int nslip;
   Slip slip[MAX_SLIPS];
 };
 
-// Fills ex for the kind and level; false when it could not make a valid one
-// (never shown: the caller picks another seed).
-bool generate(Kind kind, int level, Rng &rng, Exercise &ex);
+// Fills ex for the kind and level, its words in `lang` (a Lang; one without Tutor's words gives
+// English); false when it could not make a valid one (never shown: the caller picks another seed).
+bool generate(Kind kind, int level, Rng &rng, Exercise &ex, int lang);
 
 // Re-derives everything a second way and checks the exercise is well-posed:
 // the figure exists, there is exactly one right option, every wrong option

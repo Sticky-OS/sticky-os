@@ -49,7 +49,7 @@ without touching the board:
 | `recipe sample`, `recipe sample save` | a sample recipe on screen (and saved), to check the pages without the AI |
 | `recipe ask <words>`, `recipe voice <seconds>` | a recipe request, typed or spoken, as the app sends it |
 | `game`, `game <n>` | Games: the launcher, or game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor), where it was left |
-| `game peek` | the game on screen as one line of text: 2048's board, Memory's cards (`*` matched), the maths or quiz question with its answer, the story's scene, the X and O board, Tutor's exercise with its options (`*` the right one); then the ids of what can be tapped |
+| `game peek` | the game on screen as one line of text: 2048's board, Memory's cards (`*` matched), the maths or quiz question with its answer, the story's scene, the X and O board, Tutor's screen and the language of its content (`tutor7 question lang en ...`) and its exercise with its options (`*` the right one); then the ids of what can be tapped |
 | `game right`, `game wrong` | answer the question on screen right or wrong (Maths, Quiz); Memory: turn over a pair, or two that don't match |
 | `game type <words>` | Quiz or Adventure on screen: the words as if typed for *Your own theme* / *Your own idea* |
 | `game slide <0-3>`, `game pick <id>` | 2048: slide left, right, up, down; press what has that id (a card, an answer, a choice, a level, a square; 900 Back, 901 New game, 902 Again, 903 Games, 904 Next, 905 Cancel, 906 the built-in quiz or story, 907 Practice, 908 Play, 909 Try again; Tutor: 25 the class, 30 the subject, 40 to 48 the lessons, 20 / 21 / 22 a lesson's summary, examples and exercises, 0 to 3 an exercise's answers, 10 its clues; `game peek` lists the ids on screen) |
@@ -111,6 +111,11 @@ keeps your own data out of it.
   `book2flow` (convert a book, print its contents and text) and `pagedump`
   (its pages as text). `firmware/tools/board.py` drives a board from the
   computer: dev commands, screenshots (`shot`) and files onto its card.
+- Tutor: `tutor7.ino` draws it and takes its taps (a tab, like `games.ino`). Under it, in plain C++
+  tested on a computer (`firmware/test/tutor7/run.sh`; `run.sh samples` writes a few exercises of each
+  kind per language to read): `tutor7_core.*` and `tutor7_u4.cpp` the exercise generators and their
+  checks, `tutor7_lessons.*` each lesson's plan, `tutor7_text.*` and `src/tutor/` the words (see
+  [Tutor's languages](#tutors-languages)).
 - `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), unchanged.
 - `site/`: the website and the browser setup app (`site/src/setup/`), with
   tests in `site/test/` (`node test/run.mjs`). The app's photo code (crop,
@@ -189,6 +194,51 @@ seven sizes, and larger bolds for chapter titles: `src/fonts/BookSerif*.h`).
 Each comes whole from the same script, `make.sh`: ASCII, the extra letters and
 the line's measures in one header; `bookfonts.cpp` lists them and is the only
 file that includes them.
+
+### Tutor's languages
+
+Tutor's lessons and exercises are in `firmware/sticky-os/src/tutor/`, apart from the board's strings:
+they are long, and a language either has all of them or none is shown.
+
+- `t7_strings.h`: the exercises' words, `T7S(TX_ID, "English")`, with a comment saying where each
+  shows and what its placeholders get, in order. Most are printf formats filled with the exercise's
+  numbers; `ro.h` (one file a language) has `{TX_ID, "translation"},` pairs.
+- `lessons_en.h`, `lessons_ro.h`: one `LessonText` a lesson, in slot order: its name, its subject, and
+  its summary and example pages (title, body). The pages' number and figures are the lesson's plan
+  (`tutor7_lessons.cpp`), the same in every language.
+- Tutor shows its content in the board's language when that language has every string and every lesson
+  (`t7::contentLang()`), else in English. The buttons and headers around it are ordinary board strings
+  (`S_G_T7_*` in `strings_games.h`) and fall back string by string, like the rest of the board.
+- An exercise is made from a seed, and nothing but its words depends on the language: the same seed
+  makes the same numbers, options and right answer in every language. Changing the language with an
+  exercise open makes it again from its seed in the new one.
+
+**Adding a language to Tutor:** copy `ro.h` to `<code>.h` and `lessons_ro.h` to `lessons_<code>.h`
+and translate both, all of it; add the two tables to `makeContent()` in `tutor7_text.cpp`; add the
+language's column to the worked examples' checks in `firmware/test/tutor7/tutor7_test.cpp`
+(`NEEDLES`); translate the `S_G_T7_*` strings in `src/i18n/<code>.h`. Then
+`firmware/test/tutor7/run.sh` makes every exercise in every language (it fails if a translation doesn't
+fit its buffer, or makes a different exercise than English), and `firmware/test/i18n/run.sh` checks
+the placeholders and letters. Rules:
+
+- Keep every placeholder, in the same order, and every number of the worked examples.
+- Hints and the reasons of wrong answers add no numbers of their own (say "half", "twice"): the
+  generator refuses an exercise whose hint shows the answer.
+- Notation: the language's own (Romanian: `·` and `:`, a decimal comma; English: `×` and `÷`, a
+  decimal point). Never `/` for a division (a fraction like `2/3` is fine): the checker reads `/` as part
+  of a number. `√` followed by digits or a parenthesised expression; the fonts have no angle, parallel or
+  perpendicular signs ("angle A", "AB and CD are parallel").
+- Bodies of lesson pages stay under 620 bytes; look at them on the board in both orientations
+  (`lang <code>`, `turn 3`, `game 7`, `game pick ...`) and watch the serial log for "does not fit".
+- The unit numbers (4.1 to 4.8, 7.2) are the Romanian textbook's, in every language.
+
+The English uses US school terms, the same ones throughout: leg, hypotenuse, the Pythagorean theorem
+and its converse, convex quadrilateral, opposite and adjacent sides, consecutive angles, supplementary,
+congruent, the diagonals bisect each other, midsegment (of a triangle and of a trapezoid), the medial
+triangle, median, centroid, a trapezoid's bases (longer, shorter) and non-parallel sides (never "legs",
+which belong to the right triangle), right and isosceles trapezoid, perpendicular bisector, angle
+bisector, line of symmetry, height; Grade 7, Unit 4 review, Hints, Solution, right first time. A
+square's side is s, a rectangle's length and width l and w.
 
 ## Licence
 

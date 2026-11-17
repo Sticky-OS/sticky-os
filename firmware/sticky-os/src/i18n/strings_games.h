@@ -20,7 +20,7 @@ S(S_G_DAILY, "Daily maths")
 S(S_G_QUIZ, "Quiz")
 S(S_G_ADVENTURE, "Adventure")
 S(S_G_XO, "X and O")
-S(S_G_TUTOR7, "Tutor")  // a school tutor, class by class and subject by subject (now: 7th grade maths, geometry); the lessons themselves are in Romanian only
+S(S_G_TUTOR7, "Tutor")  // a school tutor, class by class and subject by subject (now: 7th grade maths, geometry); its lessons are in Romanian and English (src/tutor/)
 S(S_G_GAMES, "Games")  // the status bar on the launcher; a button back to it
 
 // ---- buttons shared by the games (pill buttons, ~200 px wide in portrait)
@@ -234,3 +234,42 @@ S(S_G_XO_MEDIUM, "Medium")
 S(S_G_XO_HARD, "Hard")
 S(S_G_XO_BEST, "Best")  // the level the board can't be beaten at
 S(S_G_XO_TALLY, "Won %d   Drawn %d   Lost %d")  // 12pt, one line, ~400 px
+
+// ---- Tutor (tutor7.ino): the menus, buttons and headers around the lessons and exercises. The
+// lessons and exercises themselves are Tutor's own tables (src/tutor/), in the content language
+// (English when the board's language hasn't got all of Tutor); these follow the board's language.
+S(S_G_T7_INTRO, "Your tutor for school: summaries, examples and practice. Choose your grade.")  // the class menu, 12pt above the buttons, up to 3 lines
+S(S_G_T7_GRADE7, "Grade 7")  // the class button, and the subject menu's header
+S(S_G_T7_PICK_SUBJECT, "Choose a subject. More subjects will be added over time.")  // the subject menu, 12pt, up to 3 lines
+S(S_G_T7_MATHS_GEOMETRY, "Math - Geometry")  // the subject button
+S(S_G_T7_PICK_LESSON, "Choose a lesson.")  // the lesson list (not shown when the list is long)
+S(S_G_T7_PART_SUMMARY, "1. Lesson summary")  // a lesson's three buttons (12pt, ~440 px)
+S(S_G_T7_PART_EXAMPLES, "2. Worked examples")
+S(S_G_T7_PART_PRACTICE, "3. Practice")
+S(S_G_T7_PART_PRACTICE_BEST, "3. Practice (best: %d/%d)")  // the best score of the lesson's practice, of its exercises
+S(S_G_T7_RESET, "Clear progress")  // a button; the first tap asks
+S(S_G_T7_RESET_SURE, "Sure? Tap again")  // the same button, armed
+S(S_G_T7_SUMMARY, "Summary")  // a page's header when its title doesn't fit there (bold 18pt)
+S(S_G_T7_EXAMPLE, "Example")
+S(S_G_T7_PREV, "Back")  // a page's buttons, half the width
+S(S_G_T7_NEXT, "Next")
+S(S_G_T7_DONE, "Done")  // the last page's Next
+S(S_G_T7_EXERCISE, "Exercise %d/%d")  // the header: the exercise, of the practice's
+S(S_G_T7_HINTS, "Hints")  // a button; beside the answers, sometimes half width (~110 px in portrait)
+S(S_G_T7_SOLUTION, "Solution")  // a button (as narrow), and the header when the solution is shown
+S(S_G_T7_HINT_N, "Hint %d of 2")  // the header
+S(S_G_T7_BACK_TO_EXERCISE, "Back to the exercise")  // a button, half the width
+S(S_G_T7_MORE_HINT, "Another hint")  // a button, half the width
+S(S_G_T7_NOT_RIGHT, "Not quite")  // the header after a wrong answer
+S(S_G_T7_TRY_AGAIN, "Try again")  // a button, a third of the width
+S(S_G_T7_CORRECT, "Correct!")  // the header after the right answer
+S(S_G_T7_SEE_RESULT, "See the result")  // a button after the last exercise
+S(S_G_T7_RESULT, "Result")  // the header
+S(S_G_T7_SCORE, "%d of %d")  // bold 24pt: right first time, of the exercises
+S(S_G_T7_FIRST_TIME, "right first time")  // 12pt under the score
+S(S_G_T7_MSG_ALL, "Excellent! You've got this lesson.")  // 12pt, centred: all right first time
+S(S_G_T7_MSG_HALF, "Good! A little more practice and it will be perfect.")  // half or more
+S(S_G_T7_MSG_LOW, "Read the summary and the examples again, then try once more.")  // fewer
+S(S_G_T7_NEW_BEST, "Your best result yet!")
+S(S_G_T7_LESSONS, "Lessons")  // a button back to the lesson list
+S(S_G_T7_ONCE_MORE, "Once more")  // a button: the practice again
