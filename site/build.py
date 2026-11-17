@@ -49,7 +49,15 @@ MENU = [
     ("Setup app", "setup/"),
     ("Blog", "blog/"),
     ("GitHub", "https://github.com/ovidiul/sticky-os"),
+    ("YouTube", "https://www.youtube.com/@stickyosapp"),   # drawn as a small icon (ICONS)
 ]
+# Menu entries drawn as an icon on wide screens; the label stays for screen readers
+# and shows beside the icon in the narrow-screen Menu panel.
+ICONS = {
+    "YouTube": ('<svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true">'
+                '<rect x="1" y="1" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/>'
+                '<path d="M9 5.2v5.6l4.8-2.8z" fill="currentColor"/></svg>'),
+}
 LOGO = ('<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><rect x="1.5" y="1.5" '
         'width="15" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>'
         '<path d="M5 7h8M5 11h5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>')
@@ -68,7 +76,8 @@ def header(rel):
     for label, path in MENU:
         attrs = ""
         if path.startswith("http"):
-            href, attrs = path, ' class="gh" target="_blank" rel="noopener noreferrer"'
+            cls = "menu-icon" if label in ICONS else "gh"
+            href, attrs = path, f' class="{cls}" target="_blank" rel="noopener noreferrer"'
         elif path.startswith("#"):
             href = path if home else up + path   # on the home page: scroll-spy links
         else:
@@ -77,7 +86,10 @@ def header(rel):
                 attrs = ' aria-current="page"'
                 if rel == path + "index.html":
                     href = "./"
-        items.append(f'        <li><a href="{href}"{attrs}>{label}</a></li>')
+        text = (f'{ICONS[label]}<span class="icon-label">{label}</span>' if label in ICONS else label)
+        if label in ICONS:
+            attrs += f' title="{{{{NAME}}}} on {label}"'
+        items.append(f'        <li><a href="{href}"{attrs}>{text}</a></li>')
     status = ('\n    <div class="conn" id="status" aria-live="polite"></div>'
               if rel.startswith("setup/") else "")
     brand = "#main" if home else up
