@@ -60,7 +60,7 @@ The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 | Quote | Quote of the Day from ZenQuotes, or the board's own list offline; double-tap for full screen |
 | Books | An e-reader for the books on a microSD card: EPUB, MOBI and AZW3 without DRM, FB2, PDF (as text), plain text and HTML; a library with each book's page (cover, description, chapters, progress), justified serif pages in seven sizes, contents, bookmarks and reading statistics |
 | Recipes | Say or type a dish; the AI writes the recipe (needs an OpenAI key) |
-| Games | 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, and Tutor (7th grade geometry lessons, in Romanian) |
+| Games | 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, and Tutor (7th grade geometry lessons, in Romanian and English) |
 | Claude | Your weekly Claude Code usage, from your own MQTT broker |
 | Settings | Language, rotation, sound, sleep, WiFi, which apps show, software update |
 | About | Firmware, memory, network, battery, sensors |
