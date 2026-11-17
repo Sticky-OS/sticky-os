@@ -134,9 +134,12 @@ def latest_posts():
 
 
 def touch_icon(text):
-    """Every page links favicon.svg; give each the Apple touch icon beside it."""
+    """Every page links favicon.svg; give each the .ico and Apple touch icon beside it.
+    They are linked from brand/assets/icons/: the host answers the root
+    /favicon.ico and /apple-touch-icon.png with its own placeholders."""
     return re.sub(r'(<link rel="icon" href="((?:\.\./)*)favicon\.svg" type="image/svg\+xml">)',
-                  r'\1\n<link rel="apple-touch-icon" href="\2apple-touch-icon.png">', text, count=1)
+                  r'\1\n<link rel="icon" href="\2brand/assets/icons/favicon.ico" sizes="16x16 32x32 48x48">'
+                  r'\n<link rel="apple-touch-icon" href="\2brand/assets/icons/apple-touch-icon.png">', text, count=1)
 
 
 def brand_kit():
