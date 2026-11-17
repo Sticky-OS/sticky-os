@@ -298,6 +298,7 @@
 {S_CONNECT_SETUP_HINT, "USB: podłącz i otwórz %s. Dotknij tu, by użyć Bluetooth."},
 {S_ABOUT_DEVICE, "O urządzeniu"},
 {S_ABOUT_DEVICE_HINT, "Firmware, pamięć, bateria, czujniki, sieć"},
+{S_BOOT_STARTING, "Uruchamianie..."},
 {S_SET_LANGUAGE, "Język"},
 {S_SET_LANGUAGE_HINT, "Słowa, daty i klawiatura urządzenia; AI też odpowiada w tym języku"},
 {S_CONNECTING_TO, "Łączenie z"},

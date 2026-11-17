@@ -298,6 +298,7 @@
 {S_CONNECT_SETUP_HINT, "USB: conéctalo y abre %s. Toca aquí para Bluetooth."},
 {S_ABOUT_DEVICE, "Información del dispositivo"},
 {S_ABOUT_DEVICE_HINT, "Firmware, memoria, batería, sensores, red"},
+{S_BOOT_STARTING, "Iniciando..."},
 {S_SET_LANGUAGE, "Idioma"},
 {S_SET_LANGUAGE_HINT, "Textos, fechas y teclado del dispositivo; la IA también responde en él"},
 {S_CONNECTING_TO, "Conectando a"},

@@ -298,6 +298,7 @@
 {S_CONNECT_SETUP_HINT, "USB: takın ve %s adresini açın. Bluetooth için dokunun."},
 {S_ABOUT_DEVICE, "Bu cihaz hakkında"},
 {S_ABOUT_DEVICE_HINT, "Yazılım, bellek, pil, sensörler, ağ"},
+{S_BOOT_STARTING, "Başlıyor..."},
 {S_SET_LANGUAGE, "Dil"},
 {S_SET_LANGUAGE_HINT, "Cihazın sözcükleri, tarihleri ve klavyesi; YZ de bu dilde yanıtlar"},
 {S_CONNECTING_TO, "Bağlanılıyor:"},

@@ -122,6 +122,7 @@
 #include "ota.h"
 #include "src/sticky_drivers/epaper_panel.h"
 #include "src/sticky_drivers/gt911.h"
+#include "src/brand/brand.h"
 
 #ifndef STICKY_COMMIT  // upload.sh passes the git commit
 #define STICKY_COMMIT unknown
@@ -5109,6 +5110,25 @@ static void render(bool full) {
   show(full);
 }
 
+// ---------------------------------------------------------------- the boot screen
+
+// One of the brand's bitmaps (src/brand/brand.h, from firmware/tools/gen_brand.py), top-left at x, y.
+static void brandDraw(const BrandBitmap &b, int x, int y) { canvas->drawBitmap(x, y, b.bits, b.w, b.h, INK); }
+
+// A start from off or a restart (not a wake from sleep) shows this while the
+// rest gets ready: the Reading Lines mark, "Sticky OS" and "Starting...", as
+// the brand's boot screen (site/src/brand/assets/panel/boot-1bit-800x480.png:
+// the S's top at 75, the type's at 281, the line on 431). In portrait the
+// same block, centred. No status bar: nothing in it is known yet.
+static void drawBoot() {
+  canvas->fillScreen(PAPER);
+  canvas->setTextColor(INK);
+  int top = (H - 480) / 2;  // 0 in landscape, 160 in portrait
+  brandDraw(BRAND_MARK_BOOT, (W - BRAND_MARK_BOOT.w) / 2, top + 75);
+  brandDraw(BRAND_WORD_BOOT, (W - BRAND_WORD_BOOT.w) / 2, top + 281);
+  textCentre(W / 2, top + 431, &FreeSans12pt7b, T(S_BOOT_STARTING));
+}
+
 // ---------------------------------------------------------------- welcome and setup mode
 
 // The first start of a board with no WiFi saved: what it is and how to set
@@ -6399,6 +6419,13 @@ void setup() {
   if (cfg::wifiNetworks().empty() && esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) screen = SCREEN_WELCOME;
   if (sensorBus) motionBegin();
   setRotation(wantedRotation());
+  // The boot screen, the right way up, after a start from off or a restart:
+  // a full refresh, so the screen that follows can be a quick partial one.
+  bool bootShown = screenOk && esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED;
+  if (bootShown) {
+    drawBoot();
+    show(true);
+  }
   notesBegin();  // mounts LittleFS
   recipesBegin();
   gamesBegin();
@@ -6455,7 +6482,7 @@ void setup() {
     xTaskCreatePinnedToCore(netTask, "net", 12288, nullptr, 1, &netTaskHandle, 0);
     notesWorkerBegin();
   }
-  render(true);  // on screen at once; the network fills things in as it answers
+  render(!bootShown);  // on screen at once; the network fills things in as it answers
   lastActivity = millis();
   beep(2000, 60);
   Serial.printf("sticky: ready%s, %u KB free, %u KB PSRAM free\n", setupMode ? " (Bluetooth setup mode)" : "",

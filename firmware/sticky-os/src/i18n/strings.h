@@ -314,6 +314,7 @@ S(S_CONNECT_SETUP, "Connect to the setup app")
 S(S_CONNECT_SETUP_HINT, "USB: plug in and open %s. Tap here for Bluetooth.")
 S(S_ABOUT_DEVICE, "About this device")
 S(S_ABOUT_DEVICE_HINT, "Firmware, memory, battery, sensors, network")
+S(S_BOOT_STARTING, "Starting...")  // the boot screen, under the logo: 12pt, centred
 S(S_SET_LANGUAGE, "Language")  // Settings: the row and its page
 S(S_SET_LANGUAGE_HINT, "The board's words, dates and keyboard; the AI answers in it too")  // under the Language page title
 S(S_CONNECTING_TO, "Connecting to")  // bold 18pt, then the network's name

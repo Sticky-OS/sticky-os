@@ -298,6 +298,7 @@
 {S_CONNECT_SETUP_HINT, "USB: подключите и откройте %s. Нажмите здесь для Bluetooth."},
 {S_ABOUT_DEVICE, "Об устройстве"},
 {S_ABOUT_DEVICE_HINT, "Прошивка, память, батарея, датчики, сеть"},
+{S_BOOT_STARTING, "Запуск..."},
 {S_SET_LANGUAGE, "Язык"},
 {S_SET_LANGUAGE_HINT, "Слова, даты и клавиатура устройства; ИИ тоже отвечает на этом языке"},
 {S_CONNECTING_TO, "Подключение к"},

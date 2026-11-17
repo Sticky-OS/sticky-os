@@ -298,6 +298,7 @@
 {S_CONNECT_SETUP_HINT, "USB: conectați și deschideți %s. Atingeți aici pentru Bluetooth."},
 {S_ABOUT_DEVICE, "Despre dispozitiv"},
 {S_ABOUT_DEVICE_HINT, "Firmware, memorie, baterie, senzori, rețea"},
+{S_BOOT_STARTING, "Pornire..."},
 {S_SET_LANGUAGE, "Limbă"},
 {S_SET_LANGUAGE_HINT, "Cuvintele, datele și tastatura dispozitivului; și IA răspunde în ea"},
 {S_CONNECTING_TO, "Conectare la"},
