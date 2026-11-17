@@ -286,6 +286,9 @@ kbd { font: 700 .78rem/1 var(--text); display: inline-block; min-width: 2.3em; t
 .stickies a { text-decoration-color: currentColor; text-decoration-thickness: 1px; text-underline-offset: .15em; }
 .aside { color: var(--graphite); margin-top: 2.25rem; font-size: .98rem; }
 code { font: 600 .9em/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+/* Commands in the guides: one per line, scrolled sideways rather than wrapped */
+.post-body pre { margin: 0 0 1.2em; padding: .9rem 1.1rem; overflow-x: auto; background: var(--paper-2); border-radius: 4px; }
+.post-body pre code { font-size: .88rem; line-height: 1.6; overflow-wrap: normal; white-space: pre; }
 
 /* Footer */
 footer { border-top: 2px solid var(--ink); padding: 2.5rem 0 3.5rem; color: var(--graphite); font-size: .95rem; }

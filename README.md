@@ -130,7 +130,7 @@ Flashing replaces the firmware the board shipped with; Seeed's
    The file should be exactly 33,554,432 bytes. If it stops part way, run it
    again.
 
-5. Flash Sticky OS at address 0x0. The file is about 2 MB, so this takes
+5. Flash Sticky OS at address 0x0. The file is about 4 MB, so this takes
    about **3 to 4 minutes**:
 
    **macOS / Linux**
