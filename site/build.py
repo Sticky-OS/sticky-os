@@ -10,6 +10,7 @@ site/publish.local with the same KEY=value lines. Building needs neither.
 dist/.spacefast (the link to the Space) is kept between builds.
 
 The product name lives in NAME below and nowhere else: the pages say {{NAME}}.
+The top menu lives in MENU below and nowhere else: the pages say {{HEADER}}.
 
 Screenshots: drop a PNG into src/shots/ with one of these names and rebuild.
 Until a file is there, its frame shows a "screenshot coming" placeholder.
@@ -35,8 +36,53 @@ import sys
 
 NAME = "Sticky OS"   # working name: change it here only
 
+# The site's one menu: every page says {{HEADER}} and gets this, the same links
+# in the same order everywhere. (label, path from the site's root; "#x" is a
+# section of the home page; http… opens in a new tab.) Change it here only.
+MENU = [
+    ("Tour", "#tour"),
+    ("Apps", "#apps"),
+    ("Install", "#install"),
+    ("Privacy", "#privacy"),
+    ("Setup app", "setup/"),
+    ("Blog", "blog/"),
+    ("GitHub", "https://github.com/ovidiul/sticky-os"),
+]
+LOGO = ('<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><rect x="1.5" y="1.5" '
+        'width="15" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>'
+        '<path d="M5 7h8M5 11h5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>')
+
 HERE = pathlib.Path(__file__).resolve().parent
 SRC, DIST = HERE / "src", HERE / "dist"
+
+
+def header(rel):
+    """The top bar for the page at rel (e.g. "blog/x/index.html"): links relative to it,
+    the page's own section marked aria-current. The setup app keeps its connection status."""
+    depth = rel.count("/")
+    up = "../" * depth
+    home = depth == 0
+    items = []
+    for label, path in MENU:
+        attrs = ""
+        if path.startswith("http"):
+            href, attrs = path, ' class="gh" target="_blank" rel="noopener noreferrer"'
+        elif path.startswith("#"):
+            href = path if home else up + path   # on the home page: scroll-spy links
+        else:
+            href = up + path
+            if rel.startswith(path):
+                attrs = ' aria-current="page"'
+                if rel == path + "index.html":
+                    href = "./"
+        items.append(f'        <li><a href="{href}"{attrs}>{label}</a></li>')
+    status = ('\n    <div class="conn" id="status" aria-live="polite"></div>'
+              if rel.startswith("setup/") else "")
+    brand = "#main" if home else up
+    return ('<header class="top">\n  <div class="wrap">\n'
+            f'    <a class="brand" href="{brand}">{LOGO}{{{{NAME}}}}</a>\n'
+            '    <nav aria-label="Site">\n      <ul>\n' + "\n".join(items) +
+            f'\n      </ul>\n    </nav>{status}\n  </div>\n</header>')
 
 
 def main():
@@ -48,7 +94,10 @@ def main():
         shutil.rmtree(old) if old.is_dir() else old.unlink()
     shutil.copytree(SRC, DIST, dirs_exist_ok=True)
     for page in DIST.rglob("*.html"):
-        page.write_text(page.read_text().replace("{{NAME}}", NAME))
+        text = page.read_text()
+        if "{{HEADER}}" in text:
+            text = text.replace("{{HEADER}}", header(page.relative_to(DIST).as_posix()))
+        page.write_text(text.replace("{{NAME}}", NAME))
     shots = sorted(p.name for p in (DIST / "shots").glob("*.png"))
     print(f"built {DIST} as {NAME!r}; screenshots: {', '.join(shots)}")
 

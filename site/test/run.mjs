@@ -861,8 +861,30 @@ test('blog: pages pass the CSP, point at real files, and say the board is not Se
     assert.ok(og, `${f}: an og:image on the site`);
     await readFile(new URL('../src/' + og[1], import.meta.url));
   }
-  const home = await readFile(new URL('../src/index.html', import.meta.url), 'utf8');
-  assert.match(home, /href="blog\/"/, 'index.html: a Blog link');
+});
+
+test('menu: every page gets the one menu from build.py, and its links work', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('python3', [new URL('../build.py', import.meta.url).pathname], { stdio: 'ignore' });
+  const labels = (html) => [...html.match(/<nav aria-label="Site">[\s\S]*?<\/nav>/)[0]
+    .matchAll(/<a [^>]*>([^<]+)<\/a>/g)].map((m) => m[1]);
+  let first;
+  for (const f of ['index.html', 'setup/index.html', ...BLOG_PAGES]) {
+    const src = await readFile(new URL('../src/' + f, import.meta.url), 'utf8');
+    assert.ok(src.includes('{{HEADER}}') && !/<header class="top"/.test(src), `${f}: says {{HEADER}}, no menu of its own`);
+    const page = new URL('../dist/' + f, import.meta.url);
+    const html = await readFile(page, 'utf8');
+    assert.ok(!html.includes('{{'), `${f}: a placeholder left`);
+    const got = labels(html);
+    first ||= got;
+    assert.deepEqual(got, first, `${f}: the same menu as index.html`);
+    const nav = html.match(/<header class="top">[\s\S]*?<\/header>/)[0];
+    for (const [, ref] of nav.matchAll(/href="([^"#?:]+)"/g)) {   // throws if a file is missing
+      await readFile(new URL(ref.endsWith('/') ? ref + 'index.html' : ref, page));
+    }
+  }
+  assert.ok(first.includes('Blog') && first.includes('Setup app'), 'Blog and Setup app in the menu');
 });
 
 
