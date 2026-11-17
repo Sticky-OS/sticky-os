@@ -829,7 +829,13 @@ test('site: links to other websites open in a new tab, without opener or referre
 });
 
 const BLOG_PAGES = ['blog/index.html', 'blog/introducing-sticky-os/index.html', 'blog/sticky-os-1-4-books-app-fridge-door/index.html',
-                    'blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/index.html'];
+                    'blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/index.html',
+                    'blog/install-custom-firmware-reterminal-sticky/index.html',
+                    'blog/google-calendar-e-paper-fridge-display-no-subscription/index.html',
+                    'blog/reterminal-sticky-e-reader-epub-mobi-pdf-microsd-card/index.html',
+                    'blog/reterminal-sticky-firmware-compared-seeedash-sticky-os-trmnl-crosspoint-esphome/index.html',
+                    'blog/restore-seeedash-firmware-reterminal-sticky/index.html',
+                    'blog/reterminal-sticky-games-2048-memory-maths-quiz/index.html'];
 
 test('blog: pages pass the CSP, point at real files, and say the board is not Seeed\'s', async () => {
   const { readFile } = await import('node:fs/promises');
