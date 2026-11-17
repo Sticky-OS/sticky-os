@@ -1,8 +1,8 @@
 # Sticky OS: open-source firmware for the Seeed reTerminal Sticky
 
-[![Latest release](https://img.shields.io/github/v/release/ovidiul/sticky-os)](https://github.com/ovidiul/sticky-os/releases/latest)
-[![Build](https://github.com/ovidiul/sticky-os/actions/workflows/build.yml/badge.svg)](https://github.com/ovidiul/sticky-os/actions/workflows/build.yml)
-[![MIT licence](https://img.shields.io/github/license/ovidiul/sticky-os)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/Sticky-OS/sticky-os)](https://github.com/Sticky-OS/sticky-os/releases/latest)
+[![Build](https://github.com/Sticky-OS/sticky-os/actions/workflows/build.yml/badge.svg)](https://github.com/Sticky-OS/sticky-os/actions/workflows/build.yml)
+[![MIT licence](https://img.shields.io/github/license/Sticky-OS/sticky-os)](LICENSE)
 
 Sticky OS is a free, open-source ESP32-S3 e-ink firmware for the [Seeed reTerminal Sticky](https://www.seeedstudio.com/sticky/), the 3.97" magnetic
 touch e-paper board. It turns the board into a small app device: a home
@@ -29,7 +29,7 @@ It runs on the reTerminal Sticky (3.97", 800 x 480, ESP32-S3) only, not on
 Seeed's 7.5" reTerminal E1001 or E1002.
 
 Website and setup app: **<https://sticky-os.space.fast/>**
-Download: **[latest release](https://github.com/ovidiul/sticky-os/releases/latest)**, then see [Install](#install)
+Download: **[latest release](https://github.com/Sticky-OS/sticky-os/releases/latest)**, then see [Install](#install)
 The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 
 <a href="https://www.youtube.com/watch?v=J3zIYAmNVTM"><img src="docs/video-tour.jpg" width="640" alt="Watch the Sticky OS tour on YouTube (1 min 23 s)"></a>
@@ -98,7 +98,7 @@ Flashing replaces the firmware the board shipped with; Seeed's
 [going back](docs/development.md#going-back-to-seeeds-firmware)).
 
 1. Download `sticky-os-full.bin` (and `sticky-os-full.bin.sha256`) from the
-   [latest release](https://github.com/ovidiul/sticky-os/releases/latest).
+   [latest release](https://github.com/Sticky-OS/sticky-os/releases/latest).
 2. Install [esptool](https://docs.espressif.com/projects/esptool/) (needs
    Python 3):
 

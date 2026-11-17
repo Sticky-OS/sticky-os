@@ -21,7 +21,7 @@
 #define UPD_STR2(x) #x
 #define UPD_STR(x) UPD_STR2(x)
 
-static const char *const GITHUB_FEED = "https://api.github.com/repos/ovidiul/sticky-os/releases/latest";
+static const char *const GITHUB_FEED = "https://api.github.com/repos/Sticky-OS/sticky-os/releases/latest";
 static const char *const ASSET = "sticky-os.bin";
 static const size_t FEED_MAX = 96 * 1024;  // the release JSON, in PSRAM; the assets come before the long parts
 

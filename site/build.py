@@ -48,7 +48,7 @@ MENU = [
     ("Privacy", "#privacy"),
     ("Setup app", "setup/"),
     ("Blog", "blog/"),
-    ("GitHub", "https://github.com/ovidiul/sticky-os"),
+    ("GitHub", "https://github.com/Sticky-OS/sticky-os"),
     ("YouTube", "https://www.youtube.com/@stickyosapp"),   # drawn as a small icon (ICONS)
 ]
 # Menu entries drawn as an icon on wide screens; the label stays for screen readers

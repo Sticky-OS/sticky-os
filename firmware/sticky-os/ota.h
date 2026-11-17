@@ -1,4 +1,4 @@
-// Over-the-air updates from GitHub Releases (ovidiul/sticky-os), or from
+// Over-the-air updates from GitHub Releases (Sticky-OS/sticky-os), or from
 // the feed in the setting update.url (a fork, or a test server).
 //
 // A check reads the feed's newest release (GitHub's releases/latest JSON:

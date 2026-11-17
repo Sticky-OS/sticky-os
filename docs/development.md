@@ -124,7 +124,7 @@ its release (`v1.1.0-rc1` < `v1.1.0`), as in semver. Tags must match
 
 **On the board** (`ota.cpp`; not `update.cpp`, which a case-insensitive disk
 confuses with the core's `Update.h`): the network task asks
-`api.github.com/repos/ovidiul/sticky-os/releases/latest` 2 minutes after a
+`api.github.com/repos/Sticky-OS/sticky-os/releases/latest` 2 minutes after a
 start, then daily (Settings → Software update → Check now asks at once).
 Install streams `sticky-os.bin` into the other app slot, checks its size and
 SHA-256 (the `.sha256` asset, else GitHub's `digest`) and the image's own

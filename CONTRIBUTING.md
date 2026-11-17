@@ -4,7 +4,7 @@ Thanks for wanting to help. Bug reports, ideas and pull requests are all welcome
 
 ## Reporting a bug or an idea
 
-Open an issue: <https://github.com/ovidiul/sticky-os/issues/new/choose>. The forms
+Open an issue: <https://github.com/Sticky-OS/sticky-os/issues/new/choose>. The forms
 ask for what's useful: what happened, how to make it happen again, the firmware
 version (Settings → About this device) and, if you have it, the serial log.
 

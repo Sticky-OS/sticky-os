@@ -3,7 +3,7 @@
 If you find a way to read a stored password, key or token from the board
 without its USB cable, or any other security problem, please don't open a
 public issue. Use GitHub's private reporting instead: **Security → Report a
-vulnerability** on <https://github.com/ovidiul/sticky-os/security>.
+vulnerability** on <https://github.com/Sticky-OS/sticky-os/security>.
 
 ## What to know before you rely on it
 
@@ -18,7 +18,7 @@ vulnerability** on <https://github.com/ovidiul/sticky-os/security>.
   needs the 6-digit code the board shows, and the link is encrypted (LE
   Secure Connections).
 - **Releases aren't signed yet.** The board installs only from
-  `github.com/ovidiul/sticky-os` releases over https (the certificate is
+  `github.com/Sticky-OS/sticky-os` releases over https (the certificate is
   checked), checks the size and SHA-256 published with the release and the
   image's own hash, and never installs an older version. But the checksum
   comes from the same release as the image, so it protects against a broken

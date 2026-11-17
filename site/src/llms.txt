@@ -4,8 +4,8 @@
 
 - [Home: tour, apps, install, FAQ](https://sticky-os.space.fast/)
 - [Setup app (Chrome or Edge)](https://sticky-os.space.fast/setup/)
-- [Source, README and install steps](https://github.com/ovidiul/sticky-os)
-- [Latest release](https://github.com/ovidiul/sticky-os/releases/latest)
+- [Source, README and install steps](https://github.com/Sticky-OS/sticky-os)
+- [Latest release](https://github.com/Sticky-OS/sticky-os/releases/latest)
 
 ## Guides
 
