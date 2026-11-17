@@ -819,7 +819,7 @@ test('published files hold no private data and point at real files', async () =>
 
 test('site: links to other websites open in a new tab, without opener or referrer', async () => {
   const { readFile } = await import('node:fs/promises');
-  for (const f of ['index.html', 'setup/index.html', ...BLOG_PAGES]) {
+  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', ...BLOG_PAGES]) {
     const html = await readFile(new URL('../src/' + f, import.meta.url), 'utf8');
     for (const [tag] of html.matchAll(/<a\s[^>]*href="https?:\/\/[^"]*"[^>]*>/g)) {
       assert.match(tag, /target="_blank"/, `${f}: ${tag}`);
@@ -856,7 +856,7 @@ test('blog: pages pass the CSP, point at real files, and say the board is not Se
   const post = await readFile(new URL('../src/blog/introducing-sticky-os/index.html', import.meta.url), 'utf8');
   assert.match(post, /\{\{NAME\}\} is an independent, open-source firmware for the Seeed reTerminal Sticky\. Not made by or affiliated with Seeed Studio\./);
   // Every page has a share picture of its own site (link previews), published with it.
-  for (const f of ['index.html', ...BLOG_PAGES]) {
+  for (const f of ['index.html', 'brand/index.html', ...BLOG_PAGES]) {
     const html = await readFile(new URL('../src/' + f, import.meta.url), 'utf8');
     const og = html.match(/<meta property="og:image" content="https:\/\/sticky-os\.space\.fast\/(shots\/[^"]+\.(?:png|jpg))">/);
     assert.ok(og, `${f}: an og:image on the site`);
@@ -871,7 +871,7 @@ test('menu: every page gets the one menu from build.py, and its links work', asy
   const labels = (html) => [...html.match(/<nav aria-label="Site">[\s\S]*?<\/nav>/)[0]
     .matchAll(/<a [^>]*>([^<]+)<\/a>/g)].map((m) => m[1]);
   let first;
-  for (const f of ['index.html', 'setup/index.html', ...BLOG_PAGES]) {
+  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', ...BLOG_PAGES]) {
     const src = await readFile(new URL('../src/' + f, import.meta.url), 'utf8');
     assert.ok(src.includes('{{HEADER}}') && !/<header class="top"/.test(src), `${f}: says {{HEADER}}, no menu of its own`);
     const page = new URL('../dist/' + f, import.meta.url);
@@ -886,6 +886,40 @@ test('menu: every page gets the one menu from build.py, and its links work', asy
     }
   }
   assert.ok(first.includes('Blog') && first.includes('Setup app'), 'Blog and Setup app in the menu');
+  assert.ok(!first.includes('Brand'), 'Brand is in the footers, not the menu');
+});
+
+test('brand: the page passes the CSP, every file it links is published, and every footer links it', async () => {
+  const { readFile, stat } = await import('node:fs/promises');
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('python3', [new URL('../build.py', import.meta.url).pathname], { stdio: 'ignore' });
+  const page = new URL('../dist/brand/index.html', import.meta.url);
+  const html = await readFile(page, 'utf8');
+  assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>/i.test(html), 'brand: an inline script');
+  assert.ok(!/<style[\s>]|\sstyle="|\son[a-z]+="/i.test(html), 'brand: inline style or an event handler');
+  assert.match(html, /Not made by or affiliated with Seeed Studio\./, 'brand: the disclaimer');
+  assert.match(html, /SIL Open Font License/, 'brand: the font licences');
+  const refs = [...html.matchAll(/(?:href|src)="([^"#?:]+)"/g)].map((m) => m[1]);
+  assert.ok(refs.includes('sticky-os-brand-kit.zip'), 'brand: links the kit');
+  for (const ref of refs) {   // throws if a file is missing
+    const s = await stat(new URL(ref.endsWith('/') ? ref + 'index.html' : ref, page));
+    assert.ok(s.size > 0, `brand: ${ref} is empty`);
+  }
+  // the zip holds every asset, and the same files make the same bytes
+  const zip = await readFile(new URL('../dist/brand/sticky-os-brand-kit.zip', import.meta.url));
+  execFileSync('python3', [new URL('../build.py', import.meta.url).pathname], { stdio: 'ignore' });
+  assert.ok(zip.equals(await readFile(new URL('../dist/brand/sticky-os-brand-kit.zip', import.meta.url))), 'brand: the zip is reproducible');
+  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', ...BLOG_PAGES]) {
+    const out = new URL('../dist/' + f, import.meta.url);
+    const built = await readFile(out, 'utf8');
+    const footer = built.match(/<footer>[\s\S]*?<\/footer>/)[0];
+    const link = footer.match(/<a href="([^"]*brand\/|\.\/)"[^>]*>Brand<\/a>/);
+    assert.ok(link, `${f}: Brand in the footer`);
+    await readFile(new URL(link[1].endsWith('/') ? link[1] + 'index.html' : link[1], out));
+    const touch = built.match(/<link rel="apple-touch-icon" href="([^"]+)">/);
+    assert.ok(touch, `${f}: an Apple touch icon`);
+    await readFile(new URL(touch[1], out));
+  }
 });
 
 

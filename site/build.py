@@ -26,6 +26,10 @@ words ("Sticky OS 1.4: a books app for the fridge door" ->
 sticky-os-1-4-books-app-fridge-door). Once published it stays; a post moved
 anyway gets a 301 in src/_redirects from its old address.
 
+The brand page is src/brand/; its files are in src/brand/assets/, drawn by
+tools/brand_assets.py (with favicon.svg, favicon.ico, apple-touch-icon.png and
+shots/social-brand.jpg). The build zips them into brand/sticky-os-brand-kit.zip.
+
 The setup app is src/setup/ (served at setup/; setup/?demo runs it against a
 simulated board). Its tests: node test/run.mjs, from this folder.
 """
@@ -35,6 +39,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import zipfile
 
 NAME = "Sticky OS"   # working name: change it here only
 
@@ -58,9 +63,18 @@ ICONS = {
                 '<rect x="1" y="1" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/>'
                 '<path d="M9 5.2v5.6l4.8-2.8z" fill="currentColor"/></svg>'),
 }
-LOGO = ('<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><rect x="1.5" y="1.5" '
-        'width="15" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>'
-        '<path d="M5 7h8M5 11h5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>')
+# The Reading Lines mark, cut for this size: an 18x20 grid with every line on whole
+# pixels (site/tools/brand_assets.py draws the same cut). Ink is the text colour;
+# the tail (the highlighted word) takes the palette's yellow from site.css (.brand .tail).
+LOGO = ('<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true">'
+        '<path class="tail" d="M7.5 17.5H2.5" stroke-width="3" stroke-linecap="round" fill="none"/>'
+        '<path d="M15.5 3.5H6A3.5 3.5 0 0 0 6 10.5H12A3.5 3.5 0 0 1 12 17.5H7.5" stroke="currentColor" '
+        'stroke-width="3" fill="none"/><circle cx="15.5" cy="3.5" r="1.5" fill="currentColor"/></svg>')
+
+# The brand kit download (brand/): every file in src/brand/assets/ (drawn by
+# tools/brand_assets.py), zipped at build time with fixed dates so the zip is
+# the same bytes for the same files.
+KIT = "brand/sticky-os-brand-kit.zip"
 
 HERE = pathlib.Path(__file__).resolve().parent
 SRC, DIST = HERE / "src", HERE / "dist"
@@ -119,6 +133,22 @@ def latest_posts():
     return '    <ol class="post-list">\n' + "\n".join(out) + '\n    </ol>'
 
 
+def touch_icon(text):
+    """Every page links favicon.svg; give each the Apple touch icon beside it."""
+    return re.sub(r'(<link rel="icon" href="((?:\.\./)*)favicon\.svg" type="image/svg\+xml">)',
+                  r'\1\n<link rel="apple-touch-icon" href="\2apple-touch-icon.png">', text, count=1)
+
+
+def brand_kit():
+    assets = DIST / "brand" / "assets"
+    with zipfile.ZipFile(DIST / KIT, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in sorted(p for p in assets.rglob("*") if p.is_file()):
+            info = zipfile.ZipInfo("sticky-os-brand-kit/" + f.relative_to(assets).as_posix(), (2026, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            z.writestr(info, f.read_bytes())
+
+
 def main():
     keep = {".spacefast", ".gitignore"}   # sf's link to the Space survives a rebuild
     DIST.mkdir(exist_ok=True)
@@ -133,7 +163,8 @@ def main():
             text = text.replace("{{HEADER}}", header(page.relative_to(DIST).as_posix()))
         if "{{LATEST}}" in text:
             text = text.replace("{{LATEST}}", latest_posts())
-        page.write_text(text.replace("{{NAME}}", NAME))
+        page.write_text(touch_icon(text).replace("{{NAME}}", NAME))
+    brand_kit()
     shots = sorted(p.name for p in (DIST / "shots").glob("*.png"))
     print(f"built {DIST} as {NAME!r}; screenshots: {', '.join(shots)}")
 
