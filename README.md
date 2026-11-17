@@ -32,9 +32,9 @@ Website and setup app: **<https://sticky-os.space.fast/>**
 Download: **[latest release](https://github.com/ovidiul/sticky-os/releases/latest)**, then see [Install](#install)
 The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 
-<a href="https://www.youtube.com/watch?v=w9eOCHewkCY"><img src="docs/video-tour.jpg" width="640" alt="Watch the Sticky OS tour on YouTube (1 min 23 s)"></a>
+<a href="https://www.youtube.com/watch?v=J3zIYAmNVTM"><img src="docs/video-tour.jpg" width="640" alt="Watch the Sticky OS tour on YouTube (1 min 23 s)"></a>
 
-▶ [Watch the 80-second tour](https://www.youtube.com/watch?v=w9eOCHewkCY) (1:23). Two short ones: [voice notes](https://www.youtube.com/watch?v=90QTHVoBs4s) (0:29) and [recipes by voice](https://www.youtube.com/watch?v=dkU3Z6cRuuQ) (0:37).
+▶ [Watch the 80-second tour](https://www.youtube.com/watch?v=J3zIYAmNVTM) (1:23). Two short ones: [voice notes](https://www.youtube.com/watch?v=5wARjguoKUk) (0:29) and [recipes by voice](https://www.youtube.com/watch?v=XnVlZacf7nQ) (0:37). All videos: [youtube.com/@stickyosapp](https://www.youtube.com/@stickyosapp).
 
 <p>
   <img src="site/src/shots/home-landscape.png" width="400" alt="The home screen in landscape: the time, the weather, the next event, and app icons">
