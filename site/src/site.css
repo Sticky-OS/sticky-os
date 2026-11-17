@@ -357,9 +357,20 @@ footer p { margin: 0 0 .5rem; }
   border: 2px solid var(--ink); border-radius: .7rem; background: #f3f2ee;
   box-shadow: 0 22px 40px -22px rgba(0,0,0,.4); }
 .video img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
-.video.short { max-width: 20rem; margin: 2.5rem auto; }
 .video.short img { aspect-ratio: 9 / 16; }
-.video.short figcaption { text-align: center; }
+/* A Short beside what it shows: the video on the left, a list of its beats on the right;
+   stacked on a phone. Fills the column instead of a narrow video with gaps on both sides. */
+.short-feature { display: grid; gap: 1.5rem 2.25rem; align-items: center; margin: 2.75rem 0; }
+.short-feature .video.short { width: 100%; max-width: 17rem; margin: 0 auto; }
+@media (min-width: 40rem) {
+  .short-feature { grid-template-columns: 15rem 1fr; }
+  .short-feature .video.short { max-width: none; }
+}
+.short-kicker { margin: 0 0 .35rem; color: var(--graphite); font-size: .9rem; font-weight: 700; letter-spacing: .02em; }
+.short-title { margin: 0 0 .75rem; font: 700 1.6rem/1.1 var(--display); font-stretch: 88%; }
+.short-text ul { margin: 0 0 1.1rem; padding-left: 1.15rem; }
+.short-text li + li { margin-top: .35rem; }
+.short-note { margin: .6rem 0 0; color: var(--graphite); font-size: .88rem; }
 .video-play { position: absolute; left: 50%; top: 50%; width: clamp(3.4rem, 8vw, 5.2rem); aspect-ratio: 1;
   transform: translate(-50%, -50%); border-radius: 50%; background: #1f2023;
   box-shadow: 0 0 0 4px rgba(255,255,255,.85), 0 10px 26px rgba(0,0,0,.35); }
