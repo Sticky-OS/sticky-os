@@ -1,12 +1,14 @@
 // ---------------------------------------------------------------- Tutor
 //
-// A school tutor, in Romanian, class by class and subject by subject. It starts with 7th grade maths
-// (geometry, units 4 and 7 of the textbook); other subjects (chemistry, geography...) and classes are
+// A school tutor, class by class and subject by subject. It starts with 7th grade maths (geometry,
+// units 4 and 7 of the Romanian textbook); other subjects (chemistry, geography...) and classes are
 // meant to be added the same way: a class menu, a subject menu, then lessons. Each lesson has a summary and worked
 // examples, then practice that is made from numbers and checked before it is
 // shown (tutor7_core.cpp), with a clue button and an explanation of every
-// wrong choice. The lessons' text is in tutor7_lessons.cpp, in Romanian only,
-// whatever language the board speaks. This tab draws the screens and takes
+// wrong choice. The lessons' plan is in tutor7_lessons.cpp, their words and the exercises' words in
+// src/tutor/ (tutor7_text.h), in Romanian and English: the content shows in the board's language
+// when Tutor has all of it in that language, else in English (t7::contentLang); the buttons and
+// headers are the board's own strings (S_G_T7_*). This tab draws the screens and takes
 // the taps; it follows the other games (gHeader, gButton, gTarget).
 //
 // The fonts have no square root sign, so t7Text() draws it: a stroke down and
@@ -221,7 +223,7 @@ static void t7FigRight(const t7::Figure &fg, bool named, int bx, int by, int bw,
     t7Dashed(ax, ay, fx, fy);
     t7Tag((ax + fx) / 2, (ay + fy) / 2 + 6, "h = ?", true);
   } else if (fg.v[3] == 4) {  // the area is asked
-    t7Tag(ax + w / 3, ay - h / 3 + 6, "Aria = ?", true);
+    t7Tag(ax + w / 3, ay - h / 3 + 6, t7::tx(gs->t7Ex.lang, t7::TX_FIG_AREA), true);
   }
 }
 
@@ -257,7 +259,7 @@ static void t7FigSquare(const t7::Figure &fg, int bx, int by, int bw, int bh) {
   thickLine(x0, y1, x0, y0, 3);
   t7Dashed(x0, y1, x1, y0);
   if (fg.v[1] == 1) {  // the diagonal is given, the side is asked
-    t7Tag((x0 + x1) / 2, y1 + 28, "l = ?", true);
+    t7Tag((x0 + x1) / 2, y1 + 28, t7::tx(gs->t7Ex.lang, t7::TX_FIG_SIDE), true);
     t7Tag(x0 + side * 32 / 100, y0 + side * 28 / 100, String("d = ") + t7Len(fg.v[0]), true);
     return;
   }
@@ -413,10 +415,21 @@ enum : int {
 };
 
 static const t7::Lesson &t7L() { return t7::lesson(gs->t7Lesson); }
+static const t7::LessonText &t7Words(const t7::Lesson &l) { return t7::lessonText(t7Lang(), l.slot); }
+static const char *t7Name(const t7::Lesson &l) { return t7Words(l).name; }
 
-static uint32_t t7Hash(const char *s) {
+// The language Tutor's lessons and exercises are shown in now.
+static int t7Lang() { return t7::contentLang(i18nLang()); }
+
+// What an exercise asks, whatever its language: its kind and its givens.
+static uint32_t t7Hash(const t7::Exercise &ex) {
   uint32_t h = 2166136261u;
-  for (; *s; s++) h = (h ^ (uint8_t)*s) * 16777619u;
+  auto mix = [&h](uint32_t v) {
+    for (int i = 0; i < 4; i++, v >>= 8) h = (h ^ (v & 0xFF)) * 16777619u;
+  };
+  mix(ex.kind);
+  mix(ex.fig.kind);
+  for (int32_t v : ex.fig.v) mix((uint32_t)v);
   return h;
 }
 
@@ -431,22 +444,41 @@ static bool t7Make() {
     uint32_t seed = (uint32_t)gameRnd(1, 2000000000);
     t7::Rng rng(seed);
     char err[120];
-    if (!t7::generate(st.kind, st.level, rng, ex)) continue;
+    if (!t7::generate(st.kind, st.level, rng, ex, t7Lang())) continue;
     if (!t7::verify(ex, err, sizeof err)) {
       Serial.printf("games: tutor7 exercise rejected (seed %lu): %s\n", (unsigned long)seed, err);
       continue;
     }
-    uint32_t h = t7Hash(ex.text);
+    uint32_t h = t7Hash(ex);
     bool seen = false;
     for (int i = 0; i < gs->t7Index; i++) seen |= gs->t7Seen[i] == h;
     if (seen && tries < 300) continue;
     gs->t7Seen[gs->t7Index] = h;
-    Serial.printf("games: tutor7 exercise %d of %d: kind %d level %d seed %lu, right option %d (%s)\n", gs->t7Index + 1, t7L().nSteps, (int)ex.kind,
-                  (int)ex.level, (unsigned long)seed, ex.correct, ex.opt[ex.correct]);
+    gs->t7Seed = seed;
+    Serial.printf("games: tutor7 exercise %d of %d: kind %d level %d seed %lu %s, right option %d (%s)\n", gs->t7Index + 1, t7L().nSteps, (int)ex.kind,
+                  (int)ex.level, (unsigned long)seed, LANGS[ex.lang].code, ex.correct, ex.opt[ex.correct]);
     return true;
   }
   Serial.printf("games: tutor7 could not make exercise %d\n", gs->t7Index + 1);
   return false;
+}
+
+// The board's language changed while an exercise is open: the same exercise (its seed) again, in the new
+// content language. The numbers, the options' order and the right one are the same in every language,
+// so what was crossed out, picked or answered still holds.
+static void t7Relang() {
+  if (gs->t7Screen < T7_QUESTION || gs->t7Screen > T7_SOLUTION || gs->t7Ex.lang == t7Lang()) return;
+  const t7::Step &st = t7L().steps[gs->t7Index];
+  t7::Exercise &ex = gs->t7Ex;
+  int was = ex.lang, correct = ex.correct;
+  t7::Rng rng(gs->t7Seed);
+  char err[120] = "";
+  bool ok = t7::generate(st.kind, st.level, rng, ex, t7Lang()) && t7::verify(ex, err, sizeof err) && ex.correct == correct;
+  Serial.printf("games: tutor7 exercise %d now in %s (seed %lu)%s%s\n", gs->t7Index + 1, LANGS[ex.lang].code, (unsigned long)gs->t7Seed, ok ? "" : ": failed ", err);
+  if (ok) return;
+  // never happens (firmware/test/tutor7 checks every seed makes the same exercise in every language); back to the old one
+  t7::Rng again(gs->t7Seed);
+  t7::generate(st.kind, st.level, again, ex, was);
 }
 
 // Shows exercise gs->t7Index, or the result after the last.
@@ -471,7 +503,7 @@ static void t7StartPractice() {
   gs->t7Index = 0;
   gs->t7Right = 0;
   for (uint32_t &h : gs->t7Seen) h = 0;
-  Serial.printf("games: tutor7 practice: %s\n", t7L().name);
+  Serial.printf("games: tutor7 practice: %s\n", t7Name(t7L()));
   t7Exercise();
 }
 
@@ -482,8 +514,9 @@ static void tutor7Open() {
 }
 
 static void tutor7Peek(String &s) {
+  t7Relang();  // as the screen will show it
   static const char *NAMES[] = {"classes", "subjects", "lessons", "lesson", "page", "question", "clue", "wrong", "solution", "result"};
-  s += String("tutor7 ") + NAMES[constrain(gs->t7Screen, 0, 9)];
+  s += String("tutor7 ") + NAMES[constrain(gs->t7Screen, 0, 9)] + " lang " + LANGS[t7Lang()].code;
   if (gs->t7Screen == T7_PAGE) s += String(" ") + (gs->t7Part ? "example " : "summary ") + (gs->t7Page + 1);
   if (gs->t7Screen >= T7_QUESTION && gs->t7Screen <= T7_SOLUTION) {
     const t7::Exercise &ex = gs->t7Ex;
@@ -541,7 +574,7 @@ static void actTutor7(int id) {
     case T7_LESSON:
       if (id == T7_PART0 || id == T7_PART0 + 1) {
         gs->t7Part = id - T7_PART0, gs->t7Page = 0, sc = T7_PAGE;
-        Serial.printf("games: tutor7 %s: %s\n", gs->t7Part ? "examples" : "summary", t7L().name);
+        Serial.printf("games: tutor7 %s: %s\n", gs->t7Part ? "examples" : "summary", t7Name(t7L()));
       } else if (id == T7_PART0 + 2) {
         return t7StartPractice(), render(true);
       } else if (id == T7_RESET) {
@@ -552,7 +585,7 @@ static void actTutor7(int id) {
         gameProgress().tutor7Best[t7L().slot] = 0;
         gamesChanged();
         gs->t7Part = 0, gs->t7Page = 0, gs->t7Index = 0, gs->t7Right = 0, sc = T7_PAGE;
-        Serial.printf("games: tutor7 reset: %s, progress cleared\n", t7L().name);
+        Serial.printf("games: tutor7 reset: %s, progress cleared\n", t7Name(t7L()));
         return render(true);
       }
       break;
@@ -644,7 +677,8 @@ static void drawT7Menu(const String &title, const std::vector<String> &labels, c
 static void drawT7Page() {
   const t7::Lesson &l = t7L();
   bool ex = gs->t7Part == 1;
-  const t7::Page &p = ex ? l.example[gs->t7Page] : l.summary[gs->t7Page];
+  const t7::PageText &p = ex ? t7Words(l).example[gs->t7Page] : t7Words(l).summary[gs->t7Page];
+  int figure = ex ? l.exampleFigure[gs->t7Page] : l.summaryFigure[gs->t7Page];
   int n = ex ? l.nExample : l.nSummary;
   String count = String(gs->t7Page + 1) + " / " + n;
   int btnH = 52, btnY = H - 16 - btnH, top = gTop() + 4;
@@ -654,27 +688,27 @@ static void drawT7Page() {
   if (t7TextW(&FreeSansBold18pt7b, p.title) <= headRoom) {
     gHeader(p.title, count);
   } else {
-    gHeader(ex ? "Exemplu" : "Rezumat", count);
+    gHeader(T(ex ? S_G_T7_EXAMPLE : S_G_T7_SUMMARY), count);
     auto lines = t7Wrap(&FreeSansBold12pt7b, p.title, W - 32);
     int ty = top + 24;
     for (const String &l : lines) t7Text(16, ty, &FreeSansBold12pt7b, l), ty += 30;
     top = ty - 14;
   }
-  bool fig = p.figure >= 0;
+  bool fig = figure >= 0;
   int figW = TALL ? W - 32 : 230, figH = TALL ? 190 : btnY - top - 8;
   int textX = 16, textW = W - 32, textTop = top + 22, textBottom = btnY - 8;
   if (fig && !TALL) textW = W - 32 - figW - 16;
   if (fig && TALL) textTop = top + figH + 22;
-  if (fig) t7Figure(t7::Figure{(t7::FigureKind)p.figure, {0, 0, 0}}, TALL ? 16 : W - 16 - figW, top, figW, figH);
+  if (fig) t7Figure(t7::Figure{(t7::FigureKind)figure, {0, 0, 0}}, TALL ? 16 : W - 16 - figW, top, figW, figH);
   t7Fitted(textX, textTop, p.body, textW, textBottom - textTop);
   int bw = (W - 32 - 14) / 2;
-  if (gs->t7Page > 0) t7Button(16, btnY, bw, btnH, "Înapoi", T7_PREV);
-  t7Button(W - 16 - bw, btnY, bw, btnH, gs->t7Page + 1 < n ? "Mai departe" : "Gata", ID_NEXT, true);
+  if (gs->t7Page > 0) t7Button(16, btnY, bw, btnH, T(S_G_T7_PREV), T7_PREV);
+  t7Button(W - 16 - bw, btnY, bw, btnH, T(gs->t7Page + 1 < n ? S_G_T7_NEXT : S_G_T7_DONE), ID_NEXT, true);
 }
 
 static void drawT7Question() {
   const t7::Exercise &ex = gs->t7Ex;
-  gHeader(String("Exercițiul ") + (gs->t7Index + 1) + "/" + t7L().nSteps);
+  gHeader(TF(S_G_T7_EXERCISE, gs->t7Index + 1, t7L().nSteps));
   int top = gTop() + 4, btnH = 52, gap = 10;
   const GFXfont *qf = &FreeSans12pt7b;
   bool land = !TALL;
@@ -702,54 +736,60 @@ static void drawT7Question() {
   int bw = optW;
   bool show = gs->t7Tries >= 1;
   int cw = show ? (bw - 10) / 2 : bw;
-  t7Button(optX, by, cw, btnH, "Indicii", T7_CLUE_BTN);
-  if (show) t7Button(optX + cw + 10, by, bw - cw - 10, btnH, "Rezolvarea", T7_SHOW_BTN);
+  t7Button(optX, by, cw, btnH, T(S_G_T7_HINTS), T7_CLUE_BTN);
+  if (show) t7Button(optX + cw + 10, by, bw - cw - 10, btnH, T(S_G_T7_SOLUTION), T7_SHOW_BTN);
 }
 
 static void drawT7Clue() {
   const t7::Exercise &ex = gs->t7Ex;
-  gHeader(String("Indiciul ") + gs->t7Clues + " din 2");
+  gHeader(TF(S_G_T7_HINT_N, gs->t7Clues));
   int top = gTop() + 14, btnH = 56, btnY = H - 16 - btnH;
   String body = String(ex.clue[0]);
   if (gs->t7Clues >= 2) body += String("\n") + ex.clue[1];
   t7Fitted(16, top + 24, body, W - 32, btnY - top - 24);
   int bw = gs->t7Clues < 2 ? (W - 32 - 14) / 2 : W - 32;
-  t7Button(16, btnY, bw, btnH, "Înapoi la exercițiu", T7_AGAIN_BTN, true);
-  if (gs->t7Clues < 2) t7Button(W - 16 - bw, btnY, bw, btnH, "Încă un indiciu", T7_MORE_CLUE);
+  t7Button(16, btnY, bw, btnH, T(S_G_T7_BACK_TO_EXERCISE), T7_AGAIN_BTN, true);
+  if (gs->t7Clues < 2) t7Button(W - 16 - bw, btnY, bw, btnH, T(S_G_T7_MORE_HINT), T7_MORE_CLUE);
 }
 
 static void drawT7Wrong() {
   const t7::Exercise &ex = gs->t7Ex;
-  gHeader("Nu e corect");
+  gHeader(T(S_G_T7_NOT_RIGHT));
   int top = gTop() + 14, btnH = 56, btnY = H - 16 - btnH;
-  String body = String("Ai ales: ") + ex.opt[gs->t7Picked] + "\n" + ex.why[gs->t7Picked];
+  char chose[120];
+  snprintf(chose, sizeof chose, t7::tx(ex.lang, t7::TX_YOU_CHOSE), ex.opt[gs->t7Picked]);
+  String body = String(chose) + "\n" + ex.why[gs->t7Picked];
   t7Fitted(16, top + 24, body, W - 32, btnY - top - 24);
   bool show = gs->t7Tries >= 2;
   int n = show ? 3 : 2, bw = (W - 32 - 10 * (n - 1)) / n, x = 16;
-  t7Button(x, btnY, bw, btnH, "Încearcă din nou", T7_AGAIN_BTN, true), x += bw + 10;
-  t7Button(x, btnY, bw, btnH, "Indicii", T7_CLUE_BTN), x += bw + 10;
-  if (show) t7Button(x, btnY, bw, btnH, "Rezolvarea", T7_SHOW_BTN);
+  t7Button(x, btnY, bw, btnH, T(S_G_T7_TRY_AGAIN), T7_AGAIN_BTN, true), x += bw + 10;
+  t7Button(x, btnY, bw, btnH, T(S_G_T7_HINTS), T7_CLUE_BTN), x += bw + 10;
+  if (show) t7Button(x, btnY, bw, btnH, T(S_G_T7_SOLUTION), T7_SHOW_BTN);
 }
 
 static void drawT7Solution() {
   const t7::Exercise &ex = gs->t7Ex;
-  gHeader(gs->t7GaveUp ? "Rezolvarea" : "Corect!");
+  gHeader(T(gs->t7GaveUp ? S_G_T7_SOLUTION : S_G_T7_CORRECT));
   int top = gTop() + 14, btnH = 56, btnY = H - 16 - btnH;
   String body = String(ex.solution);
-  if (gs->t7GaveUp) body += String("\nRăspunsul corect: ") + ex.opt[ex.correct];
+  if (gs->t7GaveUp) {
+    char right[120];
+    snprintf(right, sizeof right, t7::tx(ex.lang, t7::TX_RIGHT_ANSWER), ex.opt[ex.correct]);
+    body += String("\n") + right;
+  }
   t7Fitted(16, top + 24, body, W - 32, btnY - top - 24);
   bool last = gs->t7Index + 1 >= t7L().nSteps;
-  t7Button(16, btnY, W - 32, btnH, last ? "Vezi rezultatul" : "Mai departe", ID_NEXT, true);
+  t7Button(16, btnY, W - 32, btnH, T(last ? S_G_T7_SEE_RESULT : S_G_T7_NEXT), ID_NEXT, true);
 }
 
 static void drawT7Result() {
   const t7::Lesson &l = t7L();
-  gHeader("Rezultat");
+  gHeader(T(S_G_T7_RESULT));
   int top = gTop() + 20, cx = W / 2;
-  textCentre(cx, top + 50, &FreeSansBold24pt7b, (String(gs->t7Right) + " din " + l.nSteps).c_str());
-  textCentre(cx, top + 92, &FreeSans12pt7b, "corecte din prima încercare");
-  String msg = gs->t7Right == l.nSteps ? "Excelent! Ai înțeles lecția." : gs->t7Right * 2 >= l.nSteps ? "Bine! Mai exersează puțin și va fi perfect." : "Recitește rezumatul și exemplele, apoi încearcă din nou.";
-  if (gs->t7NewBest) msg += "\nCel mai bun rezultat al tău!";
+  textCentre(cx, top + 50, &FreeSansBold24pt7b, TF(S_G_T7_SCORE, gs->t7Right, l.nSteps).c_str());
+  textCentre(cx, top + 92, &FreeSans12pt7b, T(S_G_T7_FIRST_TIME));
+  String msg = T(gs->t7Right == l.nSteps ? S_G_T7_MSG_ALL : gs->t7Right * 2 >= l.nSteps ? S_G_T7_MSG_HALF : S_G_T7_MSG_LOW);
+  if (gs->t7NewBest) msg += String("\n") + T(S_G_T7_NEW_BEST);
   int y = top + 140;
   for (int from = 0; from <= (int)msg.length();) {  // paragraphs, each wrapped and centred
     int nl = msg.indexOf('\n', from);
@@ -762,26 +802,27 @@ static void drawT7Result() {
     y += 8;
   }
   int btnH = 56, btnY = H - 16 - btnH, bw = (W - 32 - 14) / 2;
-  t7Button(16, btnY, bw, btnH, "Lecții", T7_LIST_BTN);
-  t7Button(W - 16 - bw, btnY, bw, btnH, "Încă o dată", ID_AGAIN, true);
+  t7Button(16, btnY, bw, btnH, T(S_G_T7_LESSONS), T7_LIST_BTN);
+  t7Button(W - 16 - bw, btnY, bw, btnH, T(S_G_T7_ONCE_MORE), ID_AGAIN, true);
 }
 
 static void drawTutor7() {
+  t7Relang();
   switch (gs->t7Screen) {
     case T7_LESSONS: {
       std::vector<String> labels;
       std::vector<int> ids;
       for (int i = 0; i < t7::LESSON_COUNT; i++) {
         int best = gameProgress().tutor7Best[t7::lesson(i).slot];
-        labels.push_back(String(t7::lessonNumber(t7::lesson(i).slot)) + " " + t7::lesson(i).name + (best ? String(" (") + best + "/" + t7::lesson(i).nSteps + ")" : String("")));
+        labels.push_back(String(t7::lessonNumber(t7::lesson(i).slot)) + " " + t7Name(t7::lesson(i)) + (best ? String(" (") + best + "/" + t7::lesson(i).nSteps + ")" : String("")));
         ids.push_back(T7_LESSON0 + i);
       }
-      return drawT7Menu(t7::lesson(0).subject, labels, ids, "Alege o lecție.");
+      return drawT7Menu(t7Words(t7::lesson(0)).subject, labels, ids, T(S_G_T7_PICK_LESSON));
     }
     case T7_LESSON: {
-      gHeader(t7L().name);
+      gHeader(t7Name(t7L()));
       int best = gameProgress().tutor7Best[t7L().slot];
-      std::vector<String> labels = {"1. Rezumatul lecției", "2. Exemple rezolvate", String("3. Exerciții") + (best ? String(" (cel mai bun: ") + best + "/" + t7L().nSteps + ")" : String(""))};
+      std::vector<String> labels = {T(S_G_T7_PART_SUMMARY), T(S_G_T7_PART_EXAMPLES), best ? TF(S_G_T7_PART_PRACTICE_BEST, best, t7L().nSteps) : String(T(S_G_T7_PART_PRACTICE))};
       int top = gTop() + 18, w = TALL ? W - 32 : min(W - 32, 520), x = (W - w) / 2, y = top;
       for (int i = 0; i < 3; i++) {
         int h = t7ButtonH(labels[i], w, 72);
@@ -789,7 +830,7 @@ static void drawTutor7() {
         y += h + 16;
       }
       if (best) {  // Recipes' Delete works the same way: the first tap asks, the second clears
-        const char *label = gs->t7ResetArmed ? "Sigur? Încă o dată" : "Șterge progresul";
+        const char *label = T(gs->t7ResetArmed ? S_G_T7_RESET_SURE : S_G_T7_RESET);
         t7Button(x, y, w, t7ButtonH(label, w, 60), label, T7_RESET, gs->t7ResetArmed);
       }
       return;
@@ -801,8 +842,8 @@ static void drawTutor7() {
     case T7_SOLUTION: return drawT7Solution();
     case T7_RESULT: return drawT7Result();
     case T7_SUBJECTS:
-      return drawT7Menu("Clasa a VII-a", {"Matematică - Geometrie"}, {T7_SUBJECT0}, "Alege materia. Alte materii vor fi adăugate treptat.");
+      return drawT7Menu(T(S_G_T7_GRADE7), {T(S_G_T7_MATHS_GEOMETRY)}, {T7_SUBJECT0}, T(S_G_T7_PICK_SUBJECT));
     default:
-      return drawT7Menu("Tutor", {"Clasa a VII-a"}, {T7_CLASS0}, "Tutorul tău pentru școală: rezumate, exemple și exerciții. Alege clasa.");
+      return drawT7Menu(T(S_G_TUTOR7), {T(S_G_T7_GRADE7)}, {T7_CLASS0}, T(S_G_T7_INTRO));
   }
 }

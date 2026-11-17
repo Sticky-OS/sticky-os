@@ -173,29 +173,28 @@ static bool genHypotenuse(int level, Rng &rng, Exercise &ex) {
   ex.kind = K_HYPOTENUSE;
   ex.level = level <= 1 ? 1 : 2;
   ex.fig = Figure{FIG_RIGHT_TRIANGLE, {ab, ac, 0}};
-  bad |= PR(ex.text, "Î" "ntr-un triunghi dreptunghic ABC, cu unghiul A = 90°, avem AB = %d cm și AC = %d cm. "
-                     "Cât este lungimea ipotenuzei BC?", ab, ac);
+  bad |= PR(ex.text, TX(TX_HYP_Q), ab, ac);
   Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactSqrt(ab + ac),
-       "Ai adunat lungimile catetelor și ai extras rădăcina. Teorema lui Pitagora adună pătratele catetelor, nu lungimile lor: BC" SQ " = AB" SQ " + AC" SQ ".");
+       TX(TX_HYP_SLIP1));
   SLIP(c, nc, exactSqrt(sq(ab) + ac),
-       "Ai ridicat la pătrat o singură catetă. Ambele catete se ridică la pătrat: BC" SQ " = AB" SQ " + AC" SQ ".");
+       TX(TX_HYP_SLIP2));
   if (ab != ac)
     SLIP(c, nc, exactSqrt(llabs(sq(ab) - sq(ac))),
-         "Ai scăzut pătratele. La ipotenuză se adună pătratele catetelor: BC" SQ " = AB" SQ " + AC" SQ ".");
+         TX(TX_HYP_SLIP3));
   SLIP(c, nc, exactInt((int32_t)n),
-       "Ai uitat să extragi rădăcina pătrată. Relația dă BC" SQ ", nu BC: BC = " RT "(AB" SQ " + AC" SQ ").");
+       TX(TX_HYP_SLIP4));
   SLIP(c, nc, exactInt(ab + ac),
-       "Ai adunat lungimile catetelor. Teorema lui Pitagora folosește pătratele lor: BC" SQ " = AB" SQ " + AC" SQ ".");
+       TX(TX_HYP_SLIP5));
   SLIP(c, nc, exactInt(ab > ac ? ab : ac),
-       "Ai luat cateta mai mare. Ipotenuza este mereu mai lungă decât oricare dintre catete.");
-  bad |= PR(ex.clue[0], "Ipotenuza este latura opusă unghiului drept. Care latură este aceasta în triunghiul ABC?");
-  bad |= PR(ex.clue[1], "Scrie relația lui Pitagora pentru acest triunghi: BC" SQ " = AB" SQ " + AC" SQ ". Înlocuiește AB și AC cu valorile date și calculează.");
+       TX(TX_HYP_SLIP6));
+  bad |= PR(ex.clue[0], TX(TX_HYP_HINT1));
+  bad |= PR(ex.clue[1], TX(TX_HYP_HINT2));
   char rt[64], f[32];
   rootText(right, n, rt, sizeof rt);
   exactFormat(right, f, sizeof f);
-  bad |= PR(ex.solution, "BC" SQ " = AB" SQ " + AC" SQ " = %d" SQ " + %d" SQ " = %d + %d = %lld, deci BC = %s cm.", ab, ac, ab * ab, ac * ac,
+  bad |= PR(ex.solution, TX(TX_HYP_SOL), ab, ac, ab * ab, ac * ac,
             (long long)n, rt);
   return !bad && setOptions(ex, rng, right, c, nc, " cm");
 }
@@ -222,27 +221,26 @@ static bool genLeg(int level, Rng &rng, Exercise &ex) {
   ex.kind = K_LEG;
   ex.level = level <= 1 ? 1 : 2;
   ex.fig = Figure{FIG_RIGHT_TRIANGLE, {ab, 0, bc}};
-  bad |= PR(ex.text, "Î" "ntr-un triunghi dreptunghic ABC, cu unghiul A = 90°, ipotenuza BC = %d cm și cateta AB = %d cm. "
-                     "Cât este lungimea catetei AC?", bc, ab);
+  bad |= PR(ex.text, TX(TX_LEG_Q), bc, ab);
   Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactSqrt(bc - ab),
-       "Ai scăzut lungimile și ai extras rădăcina. Teorema lui Pitagora lucrează cu pătratele: AC" SQ " = BC" SQ " - AB" SQ ".");
+       TX(TX_LEG_SLIP1));
   SLIP(c, nc, exactSqrt(sq(bc) - ab),
-       "Ai ridicat la pătrat doar ipotenuza. Ambele laturi se ridică la pătrat: AC" SQ " = BC" SQ " - AB" SQ ".");
+       TX(TX_LEG_SLIP2));
   SLIP(c, nc, exactSqrt(sq(bc) + sq(ab)),
-       "Ai adunat pătratele, ca la ipotenuză. Ipotenuza este cea mai lungă latură, iar BC" SQ " = AB" SQ " + AC" SQ ", deci AC" SQ " = BC" SQ " - AB" SQ ".");
+       TX(TX_LEG_SLIP3));
   SLIP(c, nc, exactInt((int32_t)n),
-       "Ai uitat să extragi rădăcina pătrată. Diferența pătratelor este AC" SQ ", nu AC.");
+       TX(TX_LEG_SLIP4));
   SLIP(c, nc, exactInt(bc - ab),
-       "Ai scăzut lungimile. Teorema lui Pitagora folosește pătratele: AC" SQ " = BC" SQ " - AB" SQ ".");
+       TX(TX_LEG_SLIP5));
   SLIP(c, nc, exactInt(bc),
-       "Aceasta este lungimea ipotenuzei. Cateta AC este mai scurtă decât ipotenuza.");
-  bad |= PR(ex.clue[0], "Ipotenuza este BC, latura opusă unghiului drept. Din relația BC" SQ " = AB" SQ " + AC" SQ " scoate AC" SQ ".");
-  bad |= PR(ex.clue[1], "AC" SQ " = BC" SQ " - AB" SQ ". Înlocuiește valorile, calculează diferența, apoi extrage rădăcina pătrată.");
+       TX(TX_LEG_SLIP6));
+  bad |= PR(ex.clue[0], TX(TX_LEG_HINT1));
+  bad |= PR(ex.clue[1], TX(TX_LEG_HINT2));
   char rt[64];
   rootText(right, n, rt, sizeof rt);
-  bad |= PR(ex.solution, "AC" SQ " = BC" SQ " - AB" SQ " = %d" SQ " - %d" SQ " = %d - %d = %lld, deci AC = %s cm.", bc, ab, bc * bc, ab * ab,
+  bad |= PR(ex.solution, TX(TX_LEG_SOL), bc, ab, bc * bc, ab * ab,
             (long long)n, rt);
   return !bad && setOptions(ex, rng, right, c, nc, " cm");
 }
@@ -275,12 +273,12 @@ static bool genConverse(Rng &rng, Exercise &ex) {
   ex.kind = K_CONVERSE;
   ex.level = 3;
   ex.fig = Figure{FIG_TRIANGLE, {sides[0], sides[1], sides[2]}};
-  bad |= PR(ex.text, "Un triunghi are laturile de %d cm, %d cm și %d cm. Este triunghiul dreptunghic?", sides[0], sides[1], sides[2]);
+  bad |= PR(ex.text, TX(TX_CONV_Q), sides[0], sides[1], sides[2]);
 
   char yes1[80], yes2[80], no[80];
-  bad |= PR(yes1, "Da, unghiul drept este opus laturii de %d cm", z);
-  bad |= PR(yes2, "Da, unghiul drept este opus laturii de %d cm", x);
-  bad |= PR(no, "Nu, nu este dreptunghic");
+  bad |= PR(yes1, TX(TX_CONV_OPT_YES), z);
+  bad |= PR(yes2, TX(TX_CONV_OPT_YES), x);
+  bad |= PR(no, TX(TX_CONV_OPT_NO));
   const char *label[3] = {no, yes1, yes2};
   int code[3] = {0, 1, 2};
   for (int i = 2; i > 0; i--) {
@@ -302,26 +300,26 @@ static bool genConverse(Rng &rng, Exercise &ex) {
     }
     if (right) {
       if (cd == 2)
-        bad |= PR(ex.why[i], "Unghiul drept este mereu opus celei mai lungi laturi (ipotenuza), nu celei mai scurte.");
+        bad |= PR(ex.why[i], TX(TX_CONV_WHY1));
       else
-        bad |= PR(ex.why[i], "Verifică: %d" SQ " + %d" SQ " = %d + %d = %d și %d" SQ " = %d. Compară cele două rezultate: ce spune reciproca teoremei lui Pitagora într-un astfel de caz?",
+        bad |= PR(ex.why[i], TX(TX_CONV_WHY2),
                   x, y, x * x, y * y, x * x + y * y, z, z * z);
     } else {
       if (cd == 1)
-        bad |= PR(ex.why[i], "Verifică: %d" SQ " + %d" SQ " = %d, dar %d" SQ " = %d. Valorile nu sunt egale, deci unghiul nu este drept.", x, y,
+        bad |= PR(ex.why[i], TX(TX_CONV_WHY3), x, y,
                   x * x + y * y, z, z * z);
       else
-        bad |= PR(ex.why[i], "Unghiul drept ar fi opus celei mai lungi laturi, nu celei mai scurte. Iar %d" SQ " + %d" SQ " = %d, dar %d" SQ " = %d: valorile nu sunt egale.",
+        bad |= PR(ex.why[i], TX(TX_CONV_WHY4),
                   x, y, x * x + y * y, z, z * z);
     }
   }
-  bad |= PR(ex.clue[0], "Pentru reciproca teoremei lui Pitagora, încearcă cu latura cea mai lungă drept ipotenuză. Care este ea?");
-  bad |= PR(ex.clue[1], "Calculează suma pătratelor celorlalte două laturi și compară-o cu pătratul laturii celei mai lungi.");
+  bad |= PR(ex.clue[0], TX(TX_CONV_HINT1));
+  bad |= PR(ex.clue[1], TX(TX_CONV_HINT2));
   if (right)
-    bad |= PR(ex.solution, "Cea mai lungă latură este %d cm. %d" SQ " + %d" SQ " = %d + %d = %d și %d" SQ " = %d. Valorile sunt egale, deci triunghiul este dreptunghic (unghiul drept este opus laturii de %d cm).",
+    bad |= PR(ex.solution, TX(TX_CONV_SOL1),
               z, x, y, x * x, y * y, x * x + y * y, z, z * z, z);
   else
-    bad |= PR(ex.solution, "Cea mai lungă latură este %d cm. %d" SQ " + %d" SQ " = %d + %d = %d, dar %d" SQ " = %d. Valorile sunt diferite, deci triunghiul nu este dreptunghic.",
+    bad |= PR(ex.solution, TX(TX_CONV_SOL2),
               z, x, y, x * x, y * y, x * x + y * y, z, z * z);
   return !bad;
 }
@@ -333,25 +331,25 @@ static bool genSquareDiagonal(Rng &rng, Exercise &ex) {
   ex.kind = K_SQUARE_DIAGONAL;
   ex.level = 3;
   ex.fig = Figure{FIG_SQUARE_DIAGONAL, {l, 0, 0}};
-  bad |= PR(ex.text, "Latura unui pătrat este de %d cm. Cât este lungimea diagonalei pătratului?", l);
+  bad |= PR(ex.text, TX(TX_SQD_Q), l);
   Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, exactInt(2 * l),
-       "Ai dublat latura. Diagonala este ipotenuza unui triunghi dreptunghic isoscel cu catetele de %d cm: d" SQ " = %d" SQ " + %d" SQ ", deci nu se obține prin dublarea laturii.", l, l, l);
+       TX(TX_SQD_SLIP1), l, l, l);
   {
     Exact e = norm(l, 3, 1);
     SLIP(c, nc, e,
-         RT "3 apare la înălțimea triunghiului echilateral, nu aici. Diagonala este ipotenuza unui triunghi dreptunghic isoscel cu catetele de %d cm: d" SQ " = %d" SQ " + %d" SQ ".", l, l, l);
+         TX(TX_SQD_SLIP2), l, l, l);
   }
   SLIP(c, nc, norm(l, 2, 2),
-       "Aceasta este jumătate din diagonală. Diagonala întreagă este ipotenuza: d" SQ " = %d" SQ " + %d" SQ ", nu jumătate din ea.", l, l);
+       TX(TX_SQD_SLIP3), l, l);
   SLIP(c, nc, exactInt(l * l),
-       "Aceasta este aria pătratului, nu lungimea diagonalei. Diagonala se află din teorema lui Pitagora: d" SQ " = %d" SQ " + %d" SQ ".", l, l);
-  bad |= PR(ex.clue[0], "Diagonala împarte pătratul în două triunghiuri dreptunghice. Care sunt catetele și care este ipotenuza într-unul dintre ele?");
-  bad |= PR(ex.clue[1], "Catetele sunt laturile pătratului, de %d cm fiecare, iar diagonala d este ipotenuza. Aplică teorema lui Pitagora: d" SQ " = %d" SQ " + %d" SQ ".", l, l, l);
+       TX(TX_SQD_SLIP4), l, l);
+  bad |= PR(ex.clue[0], TX(TX_SQD_HINT1));
+  bad |= PR(ex.clue[1], TX(TX_SQD_HINT2), l, l, l);
   char rt[64];
   rootText(right, 2 * sq(l), rt, sizeof rt);
-  bad |= PR(ex.solution, "Diagonala este ipotenuza unui triunghi dreptunghic isoscel cu catetele de %d cm: d" SQ " = %d" SQ " + %d" SQ " = %d + %d = %d, deci d = %s cm.",
+  bad |= PR(ex.solution, TX(TX_SQD_SOL),
             l, l, l, l * l, l * l, 2 * l * l, rt);
   return !bad && setOptions(ex, rng, right, c, nc, " cm");
 }
@@ -364,28 +362,29 @@ static bool genEquilateralHeight(Rng &rng, Exercise &ex) {
   ex.kind = K_EQUILATERAL_HEIGHT;
   ex.level = 3;
   ex.fig = Figure{FIG_EQUILATERAL_HEIGHT, {l, 0, 0}};
-  bad |= PR(ex.text, "Un triunghi echilateral ABC are latura de %d cm. Cât este lungimea înălțimii AD?", l);
+  bad |= PR(ex.text, TX(TX_EQH_Q), l);
   Cand *c = ex.slip;
   int nc = 0;
   SLIP(c, nc, norm(l, 3, 1),
-       "Ai uitat să împarți latura la 2. În triunghiul dreptunghic ABD, cateta BD este jumătate din BC: BD = %d cm, apoi AD" SQ " = AB" SQ " - BD" SQ ".", h2);
+       TX(TX_EQH_SLIP1), h2);
   SLIP(c, nc, exactInt(h2),
-       "Aceasta este lungimea lui BD, jumătate din latură, nu a înălțimii AD. Înălțimea AD este cealaltă catetă a triunghiului ABD.");
+       TX(TX_EQH_SLIP2));
   SLIP(c, nc, norm(l, 3, 4),
-       "Ai împărțit la 2 de două ori. Latura se înjumătățește o singură dată (BD = %d cm); apoi AD" SQ " = AB" SQ " - BD" SQ " = %d" SQ " - %d" SQ ".", h2, l, h2);
+       TX(TX_EQH_SLIP3), h2, l, h2);
   SLIP(c, nc, norm(h2, 2, 1),
-       "Aici triunghiul este echilateral, nu pătrat. Calculează cu atenție AD" SQ " = AB" SQ " - BD" SQ " = %d" SQ " - %d" SQ ", apoi extrage rădăcina pătrată.", l, h2);
-  bad |= PR(ex.clue[0], "Înălțimea AD este perpendiculară pe BC, iar D este mijlocul lui BC. Ce fel de triunghi este ABD?");
-  bad |= PR(ex.clue[1], "În triunghiul dreptunghic ABD, ipotenuza este AB = %d cm și o catetă este BD = %d cm. Aplică teorema lui Pitagora pentru a afla AD.", l, h2);
+       TX(TX_EQH_SLIP4), l, h2);
+  bad |= PR(ex.clue[0], TX(TX_EQH_HINT1));
+  bad |= PR(ex.clue[1], TX(TX_EQH_HINT2), l, h2);
   char rt[64];
   rootText(right, 3 * sq(h2), rt, sizeof rt);
-  bad |= PR(ex.solution, "D este mijlocul lui BC, deci BD = %d cm. În triunghiul dreptunghic ABD: AD" SQ " = AB" SQ " - BD" SQ " = %d" SQ " - %d" SQ " = %d - %d = %d, deci AD = %s cm.",
+  bad |= PR(ex.solution, TX(TX_EQH_SOL),
             h2, l, h2, l * l, h2 * h2, 3 * h2 * h2, rt);
   return !bad && setOptions(ex, rng, right, c, nc, " cm");
 }
 
-bool generate(Kind kind, int level, Rng &rng, Exercise &ex) {
+bool generate(Kind kind, int level, Rng &rng, Exercise &ex, int lang) {
   memset(&ex, 0, sizeof ex);
+  ex.lang = (uint8_t)contentLang(lang);  // a language without all of Tutor: English
   switch (kind) {
     case K_HYPOTENUSE: return genHypotenuse(level, rng, ex);
     case K_LEG: return genLeg(level, rng, ex);

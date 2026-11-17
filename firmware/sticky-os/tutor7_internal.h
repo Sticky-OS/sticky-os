@@ -1,6 +1,7 @@
 // Shared by tutor7_core.cpp and tutor7_u4.cpp (not for the sketch's other tabs).
 #pragma once
 #include "tutor7_core.h"
+#include "tutor7_text.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -12,8 +13,21 @@
 #define RT "\xE2\x88\x9A"
 #define DEG "\xC2\xB0"
 
-// snprintf into a fixed buffer; true when it did not fit.
-#define PR(dst, ...) (snprintf((dst), sizeof(dst), __VA_ARGS__) >= (int)sizeof(dst))
+// An exercise's words, in its language: PR(ex.text, TX(TX_HYP_Q), ab, ac). Every generator's exercise is `ex`.
+#define TX(id) tx(ex.lang, (id))
+
+#include <stdarg.h>
+
+// snprintf into a fixed buffer; true when it did not fit. The format is a table's (TX), not a literal: a
+// function of our own, so the compiler doesn't flag every format without arguments.
+inline bool prFits(char *dst, size_t cap, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  int n = vsnprintf(dst, cap, fmt, ap);
+  va_end(ap);
+  return n < 0 || n >= (int)cap;
+}
+#define PR(dst, ...) prFits((dst), sizeof(dst), __VA_ARGS__)
 
 namespace t7 {
 
