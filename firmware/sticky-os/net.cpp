@@ -11,6 +11,7 @@
 #include "i18n.h"
 #include "esp_heap_caps.h"
 #include "esp_mac.h"
+#include "esp_sntp.h"
 #include "letsencrypt_ca.h"
 #include "settings.h"
 
@@ -227,9 +228,27 @@ static bool waitJoined(uint32_t timeoutMs) {
   return netUp();
 }
 
+// The time servers, as addresses. SNTP given names looks them up itself, and
+// when that lookup is still in flight as this task makes its own (the first
+// weather or calendar fetch after joining), lwIP finishes SNTP's on this task:
+// SNTP then sends from outside lwIP's core lock and the board resets
+// ("udp_new_ip_type: Required to lock TCPIP core"). Looked up here, before SNTP
+// starts, SNTP never uses DNS. lwIP keeps the pointers, hence the static strings.
+static void startClock() {
+  static char servers[2][46];
+  static const char *const NAMES[2] = {"pool.ntp.org", "time.cloudflare.com"};
+  esp_sntp_stop();  // a lookup of the last connection's SNTP can't be pending either
+  for (int i = 0; i < 2; i++) {
+    IPAddress ip;
+    if (WiFi.hostByName(NAMES[i], ip) == 1) strlcpy(servers[i], ip.toString().c_str(), sizeof servers[i]);
+    else strlcpy(servers[i], NAMES[i], sizeof servers[i]);  // no DNS now: SNTP tries the name itself
+  }
+  configTzTime(timezoneNow(), servers[0], servers[1]);
+}
+
 static void joined() {
   Serial.printf("wifi: connected, %s, %d dBm\n", WiFi.localIP().toString().c_str(), WiFi.RSSI());
-  configTzTime(timezoneNow(), "pool.ntp.org", "time.cloudflare.com");
+  startClock();
   cfg::confirm();  // settings that get the board online stay (config.h, the trial)
 }
 
