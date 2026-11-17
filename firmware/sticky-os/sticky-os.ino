@@ -1148,14 +1148,19 @@ static void cloudShape(int cx, int cy, int s, int inset, uint16_t colour) {
   canvas->fillRect(cx - s * 26 / 100, cy + s * 6 / 100, s * 54 / 100, s * 18 / 100 - inset, colour);
 }
 
+// The sky's line: s / 28, and at least 3 px in an icon of 40 px or more (the
+// app icons' stroke), 2 in the small ones. skyIcon() sets the least for its parts.
+static int skyLineMin = 2;
+static int skyLine(int s) { return max(skyLineMin, s / 28); }
+
 static void cloud(int cx, int cy, int s) {
-  int line = max(2, s / 28);
+  int line = skyLine(s);
   cloudShape(cx, cy, s, 0, INK);
   cloudShape(cx, cy, s, line, PAPER);
 }
 
 static void sun(int cx, int cy, int s) {
-  int r = s * 24 / 100, line = max(2, s / 28);
+  int r = s * 24 / 100, line = skyLine(s);
   canvas->fillCircle(cx, cy, r, INK);
   canvas->fillCircle(cx, cy, r - line, PAPER);
   for (int i = 0; i < 8; i++) {
@@ -1167,7 +1172,8 @@ static void sun(int cx, int cy, int s) {
 }
 
 static void skyIcon(int cx, int cy, int s, int code) {  // fits a square of side s around cx, cy
-  int line = max(2, s / 28);
+  skyLineMin = s >= 40 ? 3 : 2;
+  int line = skyLine(s);
   switch (skyOf(code)) {
     case SKY_CLEAR: sun(cx, cy, s); break;
     case SKY_PARTLY:
@@ -2633,8 +2639,21 @@ static void thickLine(int x0, int y0, int x1, int y1, int t, uint16_t colour = I
     for (int j = -t / 2; j <= t / 2; j++) canvas->drawLine(x0 + k, y0 + j, x1 + k, y1 + j, colour);
 }
 
+// A circle's line, t px thick inside radius r. Drawn a row at a time, ink
+// only (what's inside stays): circles drawn one inside the other leave
+// pinholes between them.
 static void ring(int cx, int cy, int r, int t) {
-  for (int k = 0; k < t; k++) canvas->drawCircle(cx, cy, r - k, INK);
+  float outer = (r + 0.5f) * (r + 0.5f), inner = (r - t + 0.5f) * (r - t + 0.5f);
+  for (int dy = -r; dy <= r; dy++) {
+    int xo = (int)sqrtf(max(0.0f, outer - dy * dy));
+    if (dy * dy >= inner) {
+      canvas->drawFastHLine(cx - xo, cy + dy, 2 * xo + 1, INK);
+      continue;
+    }
+    int xi = (int)sqrtf(inner - dy * dy);
+    canvas->drawFastHLine(cx - xo, cy + dy, xo - xi, INK);
+    canvas->drawFastHLine(cx + xi + 1, cy + dy, xo - xi, INK);
+  }
 }
 
 static void appIcon(int a, int cx, int cy, int s);
@@ -3370,8 +3389,8 @@ static void appIcon(int a, int cx, int cy, int s) {
     }
     case APP_NOTES: {
       int x = cx - r + 4, y = cy - r;
-      canvas->drawRoundRect(x, y, s - 8, s, 6, INK);
-      canvas->drawRoundRect(x + 1, y + 1, s - 10, s - 2, 5, INK);
+      canvas->fillRoundRect(x, y, s - 8, s, 7, INK);  // the page: a t px frame, as the other icons
+      canvas->fillRoundRect(x + t, y + t, s - 8 - 2 * t, s - 2 * t, 4, PAPER);
       for (int i = 0; i < 3; i++) {
         int ry = y + s * (22 + i * 26) / 100;
         canvas->drawRect(x + 8, ry, 11, 11, INK);
@@ -3387,17 +3406,20 @@ static void appIcon(int a, int cx, int cy, int s) {
       canvas->fillRect(cx - 6, cy - r - 4, 12, 6, INK);
       canvas->fillRect(cx - 2, cy - r, 4, 6, INK);
       thickLine(cx + rr - 2, cyy - rr + 2, cx + rr + 4, cyy - rr - 4, 3);
-      // The part of the minute still to run, as a filled slice.
-      float part = timerRunning ? (timerSecondsLeft() % 3600) / 3600.0f : 0.25f;
-      for (float ang = 0; ang < part * 2 * PI; ang += 0.04f)
-        canvas->drawLine(cx, cyy, cx + sin(ang) * (rr - t - 3), cyy - cos(ang) * (rr - t - 3), INK);
+      // The part of the hour still to run, as a solid slice (a fan of thin triangles).
+      float part = timerRunning ? (timerSecondsLeft() % 3600) / 3600.0f : 0.25f, end = part * 2 * PI;
+      int sr = rr - t - 3;
+      for (float ang = 0; ang < end; ang += 0.12f) {
+        float to = min(ang + 0.12f, end);
+        canvas->fillTriangle(cx, cyy, cx + sin(ang) * sr, cyy - cos(ang) * sr, cx + sin(to) * sr, cyy - cos(to) * sr, INK);
+      }
       thickLine(cx, cyy, cx, cyy - rr + t + 3, 3);
       break;
     }
     case APP_PHOTOS: {
       int x = cx - r, y = cy - r * 3 / 4, w = s, h = s * 3 / 4;
-      canvas->drawRoundRect(x, y, w, h, 6, INK);
-      for (int k = 1; k < t; k++) canvas->drawRoundRect(x + k, y + k, w - 2 * k, h - 2 * k, 6, INK);
+      canvas->fillRoundRect(x, y, w, h, 7, INK);  // a solid frame: nested outlines leave nicks at the corners
+      canvas->fillRoundRect(x + t, y + t, w - 2 * t, h - 2 * t, 4, PAPER);
       canvas->fillTriangle(x + t, y + h - t, x + w * 38 / 100, y + h * 40 / 100, x + w * 66 / 100, y + h - t, INK);
       canvas->fillTriangle(x + w * 45 / 100, y + h - t, x + w * 70 / 100, y + h * 55 / 100, x + w - t, y + h - t, INK);
       canvas->fillCircle(x + w * 74 / 100, y + h * 30 / 100, s / 12, INK);
@@ -3420,14 +3442,15 @@ static void appIcon(int a, int cx, int cy, int s) {
       canvas->fillRect(cx - rr, cyy + t + 6, 2 * rr, t, INK);
       break;
     }
-    case APP_SETTINGS: {  // a gear: a disc with eight teeth and a hole
+    case APP_SETTINGS: {  // a gear in outline, as the other icons: eight teeth on a ring, and the hub
       int body = r * 70 / 100;
       for (int i = 0; i < 8; i++) {
         float ang = i * PI / 4;
         thickLine(cx, cy, cx + cos(ang) * (r - 3), cy + sin(ang) * (r - 3), s / 6);
       }
       canvas->fillCircle(cx, cy, body, INK);
-      canvas->fillCircle(cx, cy, body * 45 / 100, PAPER);
+      canvas->fillCircle(cx, cy, body - t, PAPER);
+      ring(cx, cy, body * 45 / 100, t);
       break;
     }
     case APP_QUOTE: {  // a speech bubble with an opening quote mark
