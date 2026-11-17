@@ -5,8 +5,16 @@
   <link href="https://sticky-os.space.fast/blog/feed.xml" rel="self"/>
   <link href="https://sticky-os.space.fast/blog/"/>
   <id>https://sticky-os.space.fast/blog/</id>
-  <updated>2026-11-16T10:00:00Z</updated>
+  <updated>2026-11-17T10:00:00Z</updated>
   <author><name>Sticky OS</name></author>
+  <entry>
+    <title>Sticky OS 1.6: Tutor speaks English</title>
+    <link href="https://sticky-os.space.fast/blog/sticky-os-1-6-tutor-speaks-english/"/>
+    <id>https://sticky-os.space.fast/blog/sticky-os-1-6-tutor-speaks-english/</id>
+    <published>2026-11-17T10:00:00Z</published>
+    <updated>2026-11-17T10:00:00Z</updated>
+    <summary>7th grade geometry lessons in English and Romanian: the same exercises in both, with hints that never give the answer away.</summary>
+  </entry>
   <entry>
     <title>How to install custom firmware on the reTerminal Sticky</title>
     <link href="https://sticky-os.space.fast/blog/install-custom-firmware-reterminal-sticky/"/>
