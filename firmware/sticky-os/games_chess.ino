@@ -13,6 +13,17 @@
 // loop does nothing else meanwhile: the panel shows the same picture, and a
 // tap made while it thinks is read afterwards.
 //
+// The board as large as the screen allows, full screen (no status bar:
+// chessFullScreen(), asked by sticky-os.ino's fullScreenOn()): 58 px squares
+// sideways, the full width (60 px) upright. Beside it (below it upright): the
+// Menu toggle, what's happening (small, always shown), the pieces taken; at
+// the end, New game. The toggle opens the panel with Back, the levels, the
+// tally, Undo and Resign / New game: beside the board sideways, a sheet under
+// it upright. It stays open until toggled again, and closes by itself when you
+// move. The board keeps its place and size either way, so opening the panel
+// redraws nothing else. Home is still the swipe up from the bottom edge, UP
+// and DOWN together, or Back.
+//
 // Squares: light ones plain, dark ones hatched with thin diagonal lines, the
 // way printed chess diagrams do it. A white piece is only an outline, so each
 // piece first clears its own silhouette, a pixel wider (chessS->mask, made
@@ -28,13 +39,16 @@
 //   20            Undo (your last move and the board's reply)
 //   21            Resign (tap twice) while a game is on; else 901 New game (ID_NEW)
 //   900           Back (ID_BACK)
+//   40            the Menu toggle: opens and closes the panel (Back, levels, Undo, Resign / New game are in it)
+//   Panel closed: the squares, then the toggle (and New game at the end). Open: the panel's buttons first
+//   (toggle, Back, levels, Undo, Resign / New game), then the squares, which stay playable.
 //   1000 + from * 64 + to   (pick only, not drawn) play that move at once; a promotion becomes a queen.
 //                 e2e4 = 1000 + 12 * 64 + 28 = 1796.
 // OK with no ring: rings your first piece that can move (with one picked: its first move);
 // while promoting: a queen; after the end: New game.
 // `game peek`: "chess <FEN> | <white|black> to move | <playing|thinking|promoting|checkmate, you win|
 //   checkmate, board wins|stalemate|draw by repetition|draw by fifty moves|draw by material|resigned>
-//   | you <uci|-> | board <uci|-> (<nodes> nodes, <ms> ms) | level <n> | picked <square|->"
+//   | you <uci|-> | board <uci|-> (<nodes> nodes, <ms> ms) | level <n> | picked <square|-> | panel <open|closed>"
 
 #include "boardgames.h"
 
@@ -44,7 +58,7 @@ struct ChessState {
   bool made = false;
   chess::Position pos;
   boards::ChessEnd end = boards::END_NONE;
-  bool thinking = false, promoting = false, resignArmed = false;
+  bool thinking = false, promoting = false, resignArmed = false, panel = false;  // panel: the side panel is open
   int8_t sel = -1;                   // the picked square
   uint8_t promoFrom = 0, promoTo = 0;
   int plies = 0;                     // moves in hist; keys holds plies + 1 positions
@@ -60,7 +74,7 @@ struct ChessState {
 };
 static ChessState *chessS = nullptr;
 
-enum : int16_t { CH_LEVEL0 = 10, CH_UNDO = 20, CH_RESIGN = 21, CH_PROMO0 = 30, CH_SQ0 = 100 };
+enum : int16_t { CH_LEVEL0 = 10, CH_UNDO = 20, CH_RESIGN = 21, CH_PROMO0 = 30, CH_PANEL = 40, CH_SQ0 = 100 };
 
 static const uint8_t *chessArt(int type, bool solid, bool small) {
   using namespace chessart;
@@ -148,7 +162,7 @@ static void chessNew() {
   chess::setStartPosition(chessS->pos);
   chessS->plies = 0;
   chessS->keys[0] = chess::positionKey(chessS->pos);
-  chessS->thinking = chessS->promoting = chessS->resignArmed = false;
+  chessS->thinking = chessS->promoting = chessS->resignArmed = chessS->panel = false;
   chessS->sel = -1;
   chessS->boardSan[0] = 0;
   chessS->thinkMs = chessS->thinkNodes = 0;
@@ -177,7 +191,7 @@ static void chessFinish() {
   else if (lost) p.chessLosses++, beep(800, 200);
   else p.chessDraws++;
   gamesChanged();
-  chessS->sel = -1, chessS->promoting = chessS->resignArmed = false;
+  chessS->sel = -1, chessS->promoting = chessS->resignArmed = chessS->panel = false;  // the result and New game show without it
   gs->gFocusId = -1;
 }
 
@@ -195,7 +209,7 @@ static void chessReply() {
 
 // Your move, then the board's: two partial refreshes (yours and "Thinking...", then its reply), a full one at the end.
 static void chessPlay(const chess::Move &m) {
-  chessS->sel = -1, chessS->promoting = chessS->resignArmed = false;
+  chessS->sel = -1, chessS->promoting = chessS->resignArmed = chessS->panel = false;
   chessApply(m);
   if (chessOver()) return chessFinish(), render(true);
   chessS->thinking = true;
@@ -243,9 +257,12 @@ static void chessTapSquare(int sq) {
 
 // ---- drawing
 
+// Full screen (the usual case, chessFullScreen()) the board starts at the top; else under the status bar.
+static int chessTop() { return fullScreenOn() ? 0 : BODY_Y; }
 static void chessGeometry(int &x0, int &y0, int &s) {
-  if (TALL) s = 56, x0 = (W - 8 * s) / 2, y0 = BODY_Y + 96;
-  else s = 52, x0 = 16, y0 = BODY_Y + (BODY_H - 8 * s) / 2;
+  int top = chessTop();
+  if (TALL) s = W / 8, x0 = (W - 8 * s) / 2, y0 = top + 48;
+  else s = min(58, (H - top - 16) / 8), x0 = 8, y0 = top + (H - top - 8 * s) / 2;
 }
 
 static void chessPiece(int x, int y, uint8_t piece) {
@@ -292,12 +309,102 @@ static String chessSay() {
   return T(check ? S_CHESS_CHECK : S_CHESS_START);
 }
 
+// The Menu toggle: three bars and a word; filled while the panel is open.
+static void chessToggle(int x, int y, int w, int h) {
+  bool open = chessS->panel;
+  pillButton(x, y, w, h, "", open, &FreeSansBold12pt7b);
+  uint16_t c = open ? PAPER : INK;
+  int bx = x + 20, bw = 24;
+  for (int i = 0; i < 3; i++) canvas->fillRect(bx, y + h / 2 - 10 + i * 8, bw, 4, c);
+  canvas->setTextColor(c);
+  text(bx + bw + 12, y + h / 2 + 8, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, T(open ? S_CHESS_CLOSE : S_CHESS_MENU), w - bw - 44).c_str());
+  canvas->setTextColor(INK);
+  gTarget(x, y, w, h, CH_PANEL);
+}
+
+static void chessLevels(int x, int y, int w) {
+  static const StrId LEVELS[3] = {S_CHESS_EASY, S_CHESS_MEDIUM, S_CHESS_HARD};
+  int lw = (w - 20) / 3;
+  for (int l = 0; l < 3; l++) {
+    int lx = x + l * (lw + 10);
+    pillButton(lx, y, lw, 48, fitted(&FreeSansBold9pt7b, T(LEVELS[l]), lw - 12).c_str(), l == gameProgress().chessLevel, &FreeSansBold9pt7b);
+    gTarget(lx, y, lw, 48, CH_LEVEL0 + l);
+  }
+}
+
+static void chessTally(int cx, int y, int w) {
+  GameProgress &p = gameProgress();
+  String tally = TF(S_CHESS_TALLY, p.chessWins, p.chessDraws, p.chessLosses);
+  const GFXfont *tf = textW(&FreeSans12pt7b, tally.c_str()) <= w ? &FreeSans12pt7b : &FreeSans9pt7b;
+  textCentre(cx, y, tf, fitted(tf, tally, w).c_str());
+}
+
+// Undo, and Resign while a game is on (else New game), side by side.
+static void chessUndoResign(int x, int y, int w) {
+  int uw = (w - 12) * 2 / 5;
+  if (chessCanUndo()) gButton(x, y, uw, 56, T(S_CHESS_UNDO), false, CH_UNDO);
+  else pillButton(x, y, uw, 56, "", false, &FreeSansBold12pt7b), textCentre(x + uw / 2, y + 36, &FreeSans12pt7b, T(S_CHESS_UNDO));  // not now: outline, light type
+  if (!chessOver() && chessS->plies > 0) gButton(x + uw + 12, y, w - uw - 12, 56, T(S_CHESS_RESIGN), chessS->resignArmed, CH_RESIGN);
+  else gButton(x + uw + 12, y, w - uw - 12, 56, T(S_G_NEW_GAME), chessOver(), ID_NEW);
+}
+
+// What's happening, centred in w from baseline y; bold 18pt for the result, else 12pt.
+static void chessStatus(int cx, int y, int w, int maxLines) {
+  bool big = chessOver() && !TALL;
+  gCentred(cx, y, big ? &FreeSansBold18pt7b : &FreeSansBold12pt7b, chessSay(), w, big ? 34 : 27, maxLines);
+}
+
+// The panel, open: beside the board sideways, a sheet under it upright.
+static void chessPanel(int x0, int y0, int s) {
+  int top = chessTop();
+  if (TALL) {
+    int sy = y0 + 8 * s + 10, bx = 16 + 140 + 10;
+    canvas->fillRect(0, sy, W, H - sy, PAPER);
+    canvas->fillRect(0, sy, W, 3, INK);
+    chessToggle(16, H - 76, 140, 56);
+    gButton(16, sy + 14, 104, 48, T(S_G_BACK), false, ID_BACK);
+    int tx = 16 + 104 + 16, tw = W - 16 - tx, n = min<int>(2, wrapped(&FreeSansBold12pt7b, chessSay(), tw).size());
+    chessStatus(tx + tw / 2, n > 1 ? sy + 34 : sy + 46, tw, 2);
+    chessLevels(16, sy + 80, W - 32);
+    chessTally(W / 2, sy + 160, W - 32);
+    chessUndoResign(bx, H - 76, W - 16 - bx);
+  } else {
+    int px = x0 + 8 * s + 16, pw = W - 12 - px;
+    chessToggle(px, top + 8, 140, 56);
+    gButton(px + 150, top + 8, pw - 150, 56, T(S_G_BACK), false, ID_BACK);
+    chessLevels(px, top + 82, pw);
+    chessTally(px + pw / 2, top + 162, pw);
+    chessStatus(px + pw / 2, top + 200, pw, 3);
+    chessUndoResign(px, H - 68, pw);
+  }
+}
+
+// The panel closed: the toggle, what's happening, the pieces taken; at the end, New game.
+static void chessSide(int x0, int y0, int s) {
+  int top = chessTop();
+  if (TALL) {
+    chessCapturedRow(x0 + 8, y0 - 34, W - 8, true);  // the board's catch (your pieces) over the board, yours under it
+    chessCapturedRow(x0 + 8, y0 + 8 * s + 8, W - 8, false);
+    chessStatus(W / 2, y0 + 8 * s + 66, W - 32, 2);
+    chessToggle(16, H - 76, 140, 56);
+    if (chessOver()) gButton(166, H - 76, W - 16 - 166, 56, T(S_G_NEW_GAME), true, ID_NEW);
+  } else {
+    int px = x0 + 8 * s + 16, pw = W - 12 - px;
+    chessToggle(px, top + 8, 140, 56);
+    chessStatus(px + pw / 2, top + 110, pw, 3);
+    chessCapturedRow(px, top + 216, px + pw, true);
+    chessCapturedRow(px, top + 246, px + pw, false);
+    if (chessOver()) gButton(px, H - 76, pw, 56, T(S_G_NEW_GAME), true, ID_NEW);
+  }
+}
+
 static void drawChess() {
   chessEnsure();
   if (!chessS->made) chessNew();
-  GameProgress &p = gameProgress();
   int x0, y0, s;
   chessGeometry(x0, y0, s);
+  bool open = chessS->panel;
+  if (open) chessPanel(x0, y0, s);  // first: its buttons come first in the ring
   const chess::Position &pos = chessS->pos;
   bool yours = chessYourTurn() && !chessS->promoting;
   int lastFrom = -1, lastTo = -1, king = -1;
@@ -358,42 +465,7 @@ static void drawChess() {
     gTarget(x0 + (sq & 7) * s + 6, y0 + (7 - (sq >> 3)) * s + 6, s - 12, s - 12, CH_SQ0 + sq);  // put it back
   }
 
-  // The rest: what's happening, the pieces taken, the level, the tally, Undo and Resign (or New game), Back.
-  String say = chessSay();
-  int px, pw, py;
-  if (TALL) {
-    px = x0, pw = 8 * s;
-    int tx = 16 + 104 + 16, tw = W - 16 - tx;
-    auto lines = wrapped(&FreeSansBold12pt7b, say, tw);
-    int ly = lines.size() > 1 ? BODY_Y + 29 : BODY_Y + 42;
-    for (int i = 0; i < (int)lines.size() && i < 2; i++, ly += 26) textCentre(tx + tw / 2, ly, &FreeSansBold12pt7b, lines[i].c_str());
-    chessCapturedRow(x0, y0 - 30, x0 + pw, true);  // the board's catch (your pieces) over the board, yours under it
-    chessCapturedRow(x0, y0 + 8 * s + 6, x0 + pw, false);
-    py = y0 + 8 * s + 42;
-  } else {
-    px = x0 + 8 * s + 24, pw = W - 16 - px;
-    gCentred(px + pw / 2, BODY_Y + 96, &FreeSansBold12pt7b, say, pw, 28, 3);
-    chessCapturedRow(px, BODY_Y + 172, px + pw, true);
-    chessCapturedRow(px, BODY_Y + 200, px + pw, false);
-    py = BODY_Y + 236;
-  }
-  static const StrId LEVELS[3] = {S_CHESS_EASY, S_CHESS_MEDIUM, S_CHESS_HARD};
-  int lw = (pw - 20) / 3;
-  for (int l = 0; l < 3; l++) {
-    int lx = px + l * (lw + 10);
-    pillButton(lx, py, lw, 48, fitted(&FreeSansBold9pt7b, T(LEVELS[l]), lw - 12).c_str(), l == p.chessLevel, &FreeSansBold9pt7b);
-    gTarget(lx, py, lw, 48, CH_LEVEL0 + l);
-  }
-  String tally = TF(S_CHESS_TALLY, p.chessWins, p.chessDraws, p.chessLosses);
-  const GFXfont *tf = textW(&FreeSans12pt7b, tally.c_str()) <= pw ? &FreeSans12pt7b : &FreeSans9pt7b;
-  textCentre(px + pw / 2, py + 78, tf, fitted(tf, tally, pw).c_str());
-  int by = H - 76, uw = (pw - 12) * 2 / 5;
-  if (chessCanUndo()) gButton(px, by, uw, 56, T(S_CHESS_UNDO), false, CH_UNDO);
-  else pillButton(px, by, uw, 56, "", false, &FreeSansBold12pt7b), textCentre(px + uw / 2, by + 36, &FreeSans12pt7b, T(S_CHESS_UNDO));  // not now: outline, light type
-  if (!chessOver() && chessS->plies > 0) gButton(px + uw + 12, by, pw - uw - 12, 56, T(S_CHESS_RESIGN), chessS->resignArmed, CH_RESIGN);
-  else gButton(px + uw + 12, by, pw - uw - 12, 56, T(S_G_NEW_GAME), chessOver(), ID_NEW);
-  if (TALL) gButton(16, BODY_Y + 10, 104, 48, T(S_G_BACK), false, ID_BACK);
-  else gButton(px, BODY_Y + 10, 116, 48, T(S_G_BACK), false, ID_BACK);
+  if (!open) chessSide(x0, y0, s);
 }
 
 // ---- the hooks
@@ -402,8 +474,9 @@ static void actChess(int id) {
   chessEnsure();
   if (!chessS->made) chessNew();
   if (id != CH_RESIGN) chessS->resignArmed = false;
-  if (id == ID_BACK) return gs->gGame = -1, gs->gFocusId = -1, render(false);
+  if (id == ID_BACK) return chessS->panel = false, gs->gGame = -1, gs->gFocusId = -1, render(false);
   if (id == ID_NEW) return chessNew(), gs->gFocusId = -1, render(true);
+  if (id == CH_PANEL) return chessS->panel = !chessS->panel, gs->gFocusId = -1, render(false);
   if (id >= CH_LEVEL0 && id < CH_LEVEL0 + 3) {
     gameProgress().chessLevel = id - CH_LEVEL0;
     gamesChanged();
@@ -440,7 +513,7 @@ static void actChess(int id) {
 static void chessOpen() {
   chessEnsure();
   if (!chessS->made || chessOver() || demoMode) chessNew();  // else the game where it was left
-  chessS->promoting = chessS->resignArmed = false;
+  chessS->promoting = chessS->resignArmed = chessS->panel = false;
 }
 
 // A knight.
@@ -478,7 +551,12 @@ static void chessPeek(String &s) {
   s += " (" + String(chessS->thinkNodes) + " nodes, " + String(chessS->thinkMs) + " ms) | level " + String(gameProgress().chessLevel) + " | picked ";
   if (chessS->sel >= 0) squareName(chessS->sel, u), s += u;
   else s += "-";
+  s += chessS->panel ? " | panel open" : " | panel closed";
 }
+
+// sticky-os.ino's fullScreenOn(): Chess on screen hides the status bar, its board taking that room too.
+// Not static, like booksFullScreen(): the generated prototype lets sticky-os.ino call it.
+bool chessFullScreen() { return gs && gs->gGame == GAME_CHESS && !gs->gTyping; }
 
 // OK with nothing ringed: your first piece that can move, or the picked one's first move; a queen when promoting.
 static bool chessOk() {

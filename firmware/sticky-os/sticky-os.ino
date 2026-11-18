@@ -972,6 +972,7 @@ static bool fullScreenApp(int a) { return a == APP_PHOTOS || a == APP_QUOTE; }
 // back for that: the four-grey picture would cover a badge.
 static bool fullScreenOn() {
   if (screen == SCREEN_APP && app == APP_BOOKS && booksFullScreen() && !setupMode && !updScreen && !revertNotice) return true;  // a book's pages
+  if (screen == SCREEN_APP && app == APP_GAMES && chessFullScreen() && !setupMode && !updScreen && !revertNotice) return true;  // a chess board (games_chess.ino)
   return screen == SCREEN_APP && fullScreenApp(app) && (settings.fullScreen >> app & 1) && !setupMode && !updScreen && !revertNotice &&
          !(sleepingNow && app == APP_PHOTOS);
 }

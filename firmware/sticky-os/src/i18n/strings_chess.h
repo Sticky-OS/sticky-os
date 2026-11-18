@@ -21,6 +21,8 @@ S(S_CHESS_HARD, "Hard")
 S(S_CHESS_TALLY, "Won %d   Drawn %d   Lost %d")  // one line, 12pt, ~320 px
 S(S_CHESS_UNDO, "Undo")  // a button, ~125 px: takes back your last move and the board's reply
 S(S_CHESS_RESIGN, "Resign")  // a button, ~190 px: give up the game (counts as lost)
+S(S_CHESS_MENU, "Menu")  // beside three bars, ~140 px with them: opens the panel (levels, Undo, Resign, Back)
+S(S_CHESS_CLOSE, "Close")  // the same button while the panel is open
 S(S_CHESS_L_MOVE, "Move %d")  // the launcher's line under the name (9pt, ~120 px): a game under way, its move number
 S(S_CHESS_L_TALLY, "Won %d, drawn %d")
 S(S_CHESS_L_HINT, "You play White")
