@@ -25,4 +25,6 @@ run chess test_chess.cpp "$SRC/chess/ChessCore.cpp" "$SRC/chess/ChessEngine.cpp"
 run connectfour test_connectfour.cpp
 run minesweeper test_minesweeper.cpp
 run solitaire test_solitaire.cpp "$SRC/solitaire/SolitaireCore.cpp"
+# Sticky OS's own logic around Four in a Row and Chess (boardgames.h), and the on-device test's scripted games.
+run boardgames -I../../sticky-os test_boardgames.cpp "$SRC/chess/ChessCore.cpp" "$SRC/chess/ChessEngine.cpp"
 echo "games: all passed"
