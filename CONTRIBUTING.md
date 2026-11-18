@@ -48,7 +48,7 @@ without touching the board:
 | `shot` | the screen as drawn, as hex: `SHOT 800 480 <rotation>`, 480 rows, `END` |
 | `shot4` | the four-grey frame last sent to the panel (a photo with its status bar): `SHOT4 800 480 <rotation> <on screen 0/1>`, 480 rows of 2 bits a pixel (0 black), `END` |
 | `about` | everything About shows: the website, source and videos, then the device |
-| `gauge` | the battery gauge's registers as read (`gauge: 0x0C Current -1234 (0xFB2E)` ...), then `gauge: design capacity <n>, scale <1 or 10>`. A DesignCapacity of 5000 or more (Seeed's 750 mAh cell reads 7500) means the gauge counts in tenths, and the board divides current, capacity and power by 10 everywhere it shows or sends them |
+| `gauge` | the battery gauge's registers as read (`gauge: 0x0C Current -1234 (0xFB2E)` ...), then `gauge: design capacity <n>, scale 10`. The board's 100 mOhm sense resistor makes the gauge count current, capacity and power in tenths, so the board always divides them by 10 where it shows or sends them; DesignCapacity (7500 on Seeed's 750 mAh cell) is shown as a check: another value means the gauge lost its setup |
 | `update check`, `update install` | Settings → Software update: Check now, and Install |
 | `fsget <path>` | a LittleFS file as `FSGET <path> <bytes> <base64>` (up to 3 KB) |
 | `fsput <path> <base64>` | writes that file whole (`FSPUT <path> <bytes>`); restart afterwards |

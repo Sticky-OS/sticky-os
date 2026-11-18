@@ -679,19 +679,22 @@ static bool gaugeWord(uint8_t reg, int16_t &value) {
   return true;
 }
 
-// The gauge counts in units set by its sense resistor. Seeed's stock board
-// (750 mAh cell, 100 mOhm) reads DesignCapacity 7500: current, capacity and
-// power come in tenths of a mA, mAh and mW. Below 5000 the counts are taken
-// as whole units. Voltage, percentages and cycles never scale. Read once, when it answers.
+// The gauge counts in units set by its sense resistor, which is part of the
+// board: the reTerminal Sticky's 100 mOhm (R46) makes current, capacity and
+// power come in tenths of a mA, mAh and mW (Seeed: the 750 mAh cell is set up
+// as DesignCapacity 7500). So they are always divided by 10. DesignCapacity is
+// read only to say so in the log: a gauge that lost its setup (a flat battery,
+// one taken out) reads its default there, and that mustn't turn the scaling off.
+// Voltage, percentages and cycles never scale.
 static int gaugeDesign = -1;  // DesignCapacity 0x3C as read, -1 until it answers
-static int gaugeScale = 1;    // what current, capacity and power are divided by
+static const int gaugeScale = 10;  // what current, capacity and power are divided by
 
 static void gaugeCheckScale() {
   int16_t v;
   if (gaugeDesign >= 0 || !gaugeWord(0x3C, v)) return;
   gaugeDesign = (uint16_t)v;
-  gaugeScale = gaugeDesign >= 5000 ? 10 : 1;
-  Serial.printf("battery: design capacity %d, current and capacity divided by %d\n", gaugeDesign, gaugeScale);
+  Serial.printf("battery: design capacity %d%s; current, capacity and power divided by %d\n", gaugeDesign,
+                gaugeDesign == 7500 ? "" : " (not the stock 7500: the gauge may have lost its setup)", gaugeScale);
 }
 
 // A raw count in real units, rounded to the nearest.
@@ -746,13 +749,16 @@ static void readSensors() {
     now.cycles = gaugeWord(0x2A, v) ? v : -1;
     now.health = gaugeWord(0x2E, v) ? v : -1;
   }
-  // An SSD2677 picks its waveforms for a temperature. Give it the SHT40's,
-  // once, from the first reading there is (as Seeed's driver does). Untested:
-  // our board has an SSD1677, which ignores this.
-  static bool panelTempSet;
-  if (panel && panelSsd2677 && now.climate && !panelTempSet) {
-    panelTempSet = seeed_epaper_panel_set_external_temperature(panel, now.tempC) == ESP_OK;
-    Serial.printf("screen: SSD2677 waveforms for %.1f C from the SHT40\n", now.tempC);
+  // An SSD2677 picks its waveforms for a temperature. Give it the SHT40's
+  // (as Seeed's driver does), and again whenever the room has changed by a
+  // degree, so a board that started warm doesn't keep warm waveforms in a cold
+  // room. Untested: our board has an SSD1677, which ignores this.
+  static float panelTempC = -100;
+  if (panel && panelSsd2677 && now.climate && fabsf(now.tempC - panelTempC) >= 1.0f) {
+    if (seeed_epaper_panel_set_external_temperature(panel, now.tempC) == ESP_OK) {
+      panelTempC = now.tempC;
+      Serial.printf("screen: SSD2677 waveforms for %.1f C from the SHT40\n", now.tempC);
+    }
   }
   Serial.printf("sensors: climate %s %.1f C %.0f %%, battery %s %d mV %d %% %d mA, usb power %d, charger enable %d (0 = on)\n",
                 now.climate ? "ok" : "MISSING", now.tempC, now.humidity,
