@@ -15,8 +15,11 @@
 #define VIDEOS_URL_SHORT "youtube.com/@stickyosapp"
 
 // The panel's SPI clock for an SSD1677, which is only written to. (The
-// SSD2677 is also read, at 2.5 MHz at most, so it stays at 2 MHz.)
-#define PANEL_WRITE_HZ 8000000
+// SSD2677 is also read, at 2.5 MHz at most, so it stays at 2 MHz.) 20 MHz is
+// the SSD1677's write limit and what FreeInk drives the Sticky at; Seeed's
+// own example uses 10 MHz. The microSD card is its own device on the bus,
+// with its own clock, so this doesn't touch it.
+#define PANEL_WRITE_HZ 20000000
 
 // Photos are read from this folder on the microSD card, or from the card's
 // top folder when it doesn't exist. Baseline JPEG only.
