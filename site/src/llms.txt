@@ -1,6 +1,6 @@
 # Sticky OS
 
-> Free, open-source (MIT) firmware for the Seeed reTerminal Sticky, the 3.97-inch 800 x 480 touch e-paper board with an ESP32-S3. It gives the board a home screen of glanceable apps: clock, weather, calendar (Google, iCloud or Outlook iCal links), notes and voice notes, timer, photos, quote of the day, an e-reader (EPUB, MOBI, AZW3, FB2, PDF), recipes and eight games. Set up from the browser over USB or Bluetooth; no account and no cloud. It does not run on the reTerminal E1001 or E1002. Independent; not made by or affiliated with Seeed Studio.
+> Free, open-source (MIT) firmware for the Seeed reTerminal Sticky, the 3.97-inch 800 x 480 touch e-paper board with an ESP32-S3. It gives the board a home screen of glanceable apps: clock, weather, calendar (Google, iCloud or Outlook iCal links), notes and voice notes, timer, photos, quote of the day, an e-reader (EPUB, MOBI, AZW3, FB2, PDF), recipes and twelve games (among them Solitaire, Mines, Four in a Row and Chess). Set up from the browser over USB or Bluetooth; no account and no cloud. It does not run on the reTerminal E1001 or E1002. Independent; not made by or affiliated with Seeed Studio.
 
 - [Home: tour, apps, install, FAQ](https://sticky-os.space.fast/)
 - [Setup app (Chrome or Edge)](https://sticky-os.space.fast/setup/)

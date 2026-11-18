@@ -63,11 +63,11 @@ without touching the board:
 | `recipe test` | the recipe parser against good and broken replies (a fenced reply, words around it, odd shapes, trailing commas, cut short, not JSON, a refusal, too many ingredients): `recipe test <name> PASS/FAIL` lines, then `recipe test: <n> failed` |
 | `recipe sample`, `recipe sample save` | a sample recipe on screen (and saved), to check the pages without the AI |
 | `recipe ask <words>`, `recipe voice <seconds>` | a recipe request, typed or spoken, as the app sends it |
-| `game`, `game <n>` | Games: the launcher, or game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor), where it was left |
-| `game peek` | the game on screen as one line of text: 2048's board, Memory's cards (`*` matched), the maths or quiz question with its answer, the story's scene, the X and O board, Tutor's screen and the language of its content (`tutor7 question lang en ...`) and its exercise with its options (`*` the right one); then the ids of what can be tapped |
+| `game`, `game <n>` | Games: the launcher, or game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor, 8 Solitaire, 9 Mines, 10 Four in a Row, 11 Chess), where it was left |
+| `game peek` | the game on screen as one line of text: 2048's board, Memory's cards (`*` matched), the maths or quiz question with its answer, the story's scene, the X and O board, Tutor's screen and the language of its content (`tutor7 question lang en ...`) and its exercise with its options (`*` the right one); Solitaire's draw, moves, state, piles (`10H`, `KS`; `##` face down) and the move a hint would make (`hint <id> <id>`); Mines' size, Dig / Flag, state, counts, a safe square and a mine (`next`, `mine`) and the cells (`.` covered, `x` a covered mine, `F` / `f` a flag on a mine / a safe square); Four in a Row's rows (top first, `X` you, `O` the board), whose turn or the result, the level and the last column; Chess's position (FEN), its state, both sides' last moves (with the board's nodes and milliseconds), the level, the picked square and whether the panel is open. The top of each `games_*.ino` has the exact format. Then the ids of what can be tapped |
 | `game right`, `game wrong` | answer the question on screen right or wrong (Maths, Quiz); Memory: turn over a pair, or two that don't match |
 | `game type <words>` | Quiz or Adventure on screen: the words as if typed for *Your own theme* / *Your own idea* |
-| `game slide <0-3>`, `game pick <id>` | 2048: slide left, right, up, down; press what has that id (a card, an answer, a choice, a level, a square; 900 Back, 901 New game, 902 Again, 903 Games, 904 Next, 905 Cancel, 906 the built-in quiz or story, 907 Practice, 908 Play, 909 Try again; Tutor: 25 the class, 30 the subject, 40 to 48 the lessons, 20 / 21 / 22 a lesson's summary, examples and exercises, 0 to 3 an exercise's answers, 10 its clues; `game peek` lists the ids on screen) |
+| `game slide <0-3>`, `game pick <id>` | 2048: slide left, right, up, down; press what has that id (a card, an answer, a choice, a level, a square; 900 Back, 901 New game, 902 Again, 903 Games, 904 Next, 905 Cancel, 906 the built-in quiz or story, 907 Practice, 908 Play, 909 Try again; Tutor: 25 the class, 30 the subject, 40 to 48 the lessons, 20 / 21 / 22 a lesson's summary, examples and exercises, 0 to 3 an exercise's answers, 10 its clues; Solitaire: pile x 30 + a card's place in it from the bottom (piles 0 the stock, 1 the waste, 2 to 5 the foundations, 6 to 12 the columns), pile x 30 + 29 the pile itself (29 turns the stock), 400 Undo, 410 / 411 deal draw 1 / draw 3; Mines: 0 up a square (row x columns + column, held upright), 200 Dig, 201 Flag, 210 to 212 a new small, medium or large board; Four in a Row: 0 to 6 a column, 10 to 12 the level; Chess: 100 + a square (a1 = 0 to h8 = 63, so e2 is 112), 30 to 33 promote to a queen, rook, bishop or knight, 10 to 12 the level, 20 Undo, 21 Resign, 40 Menu, and 1000 + from x 64 + to plays that move at once (e2e4 is 1796); `game peek` lists the ids on screen) |
 | `lang <code>` | Settings → Language: `en`, `es`, `pt`, `fr`, `de`, `it`, `ru`, `tr`, `pl`, `ro` (kept, as the setting) |
 | `settings language` | Settings, on its Language page |
 | `keyboard`, `keyboard accents` | Notes' keyboard; `accents`: on its page of accented letters (in Russian: the Latin letters) |
@@ -105,6 +105,7 @@ What each section needs:
 | Translations | every translation: ids, placeholders, plurals, letters the fonts can draw | `firmware/test/i18n/run.sh` |
 | Calendar | the iCalendar parser and repeating events | `firmware/test/ics/run.sh` |
 | Books | the readers (EPUB, MOBI, AZW3, PDF), pages, library, fonts | `firmware/test/ebook/run.sh`, `firmware/test/ebook/fonts.sh` |
+| Games | the rules of Solitaire, Mines, Four in a Row and Chess (CrossPlay's own tests), and Sticky OS's code around them: Solitaire's taps, Mines' sizes, the board's play at each level | `firmware/test/games/run.sh` |
 | Tutor | every exercise and lesson, in every language | `firmware/test/tutor7/run.sh` |
 | Setup app and site | the setup app against a simulated board, the pages | `node test/run.mjs` in `site/` |
 
@@ -153,6 +154,14 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
   questions, the built-in quiz and story, X and O's moves, the AI's
   quiz and scene JSON, the progress file) and `games.ino` how they look and
   take taps (a second tab of the sketch, so it shares the screen helpers);
+  Solitaire, Mines, Four in a Row and Chess each have their own tab
+  (`games_solitaire.ino`, `games_mines.ino`, `games_four.ino`,
+  `games_chess.ino`; the top of each lists its ids and its `game peek`
+  line), over CrossPlay's rules in `src/crossplay/` and Sticky OS's plain
+  C++ around them, tested on a computer (`firmware/test/games/run.sh`):
+  `solui.h` what a Solitaire tap does, `minesgrid.h` Mines' three sizes,
+  `boardgames.h` how hard the board plays Four in a Row and Chess (the
+  one place to tune the levels);
   `json.*` JSON by key; `glyphs.*` UTF-8 and the letters beyond ASCII
   (`textFold()` for text from outside, `foldCodePoint()` for what the fonts
   can't draw); `i18n.*` and `src/i18n/` the languages (see
@@ -188,6 +197,10 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
   checks, `tutor7_lessons.*` each lesson's plan, `tutor7_text.*` and `src/tutor/` the words (see
   [Tutor's languages](#tutors-languages)).
 - `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), unchanged.
+- `src/crossplay/`: the rules of Solitaire, Mines, Four in a Row and Chess from
+  [CrossPlay](https://github.com/ma-r-s/crossplay) by Mario Ruiz (MIT), and the
+  "celtic" chess pieces by Maurizio Monge (MIT), unchanged; its README says
+  from which commit and how to take a newer one.
 - `src/brand/brand.h`: the Sticky OS logo as 1-bit bitmaps (the boot screen, About), made
   from the brand's SVGs in `site/src/brand/assets/svg/` by `firmware/tools/gen_brand.py`
   (Pillow and rsvg-convert); run it again when the brand changes.
