@@ -229,7 +229,7 @@ the swipe up from the bottom edge and UP + DOWN still go home.
 
 A status bar tops every screen: the time and the app's name on the left;
 microSD card, Bluetooth, WiFi strength, USB power and battery on the right.
-On USB power the battery charges, asleep or awake. Bluetooth is on only in setup mode; otherwise its icon shows crossed out. A running
+Bluetooth is on only in setup mode; otherwise its icon shows crossed out. A running
 timer adds an hourglass and its minutes left when there is room.
 
 | App | What it shows | Where the data comes from |
