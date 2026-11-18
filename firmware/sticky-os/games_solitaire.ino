@@ -291,10 +291,13 @@ static void drawSolitaire() {
       gButton(W - 16 - 124, y, 124, 48, T(S_G_NEW_GAME), s.stuck, ID_NEW, f9);
     }
     int mid = (116 + W - 16 - 124 - 10 - 96) / 2, mw = W - 16 - 124 - 10 - 96 - 116 - 12;
-    const GFXfont *mf = textW(&FreeSansBold12pt7b, solMovesText().c_str()) <= mw ? &FreeSansBold12pt7b : f9;
-    textCentre(mid, y + 20, mf, fitted(mf, solMovesText(), mw).c_str());
-    String sub = s.stuck ? String(T(S_SOL_STUCK)) : String(T(s.g.drawThree() ? S_SOL_DRAW3 : S_SOL_DRAW1));
-    textCentre(mid, y + 44, s.stuck ? f9 : &FreeSans9pt7b, fitted(f9, sub, mw).c_str());
+    if (s.stuck) {  // in place of the moves: "No moves left", on two lines if it needs them
+      gCentred(mid, wrapped(f9, T(S_SOL_STUCK), mw).size() > 1 ? y + 20 : y + 31, f9, T(S_SOL_STUCK), mw, 22, 2);
+    } else {
+      const GFXfont *mf = textW(&FreeSansBold12pt7b, solMovesText().c_str()) <= mw ? &FreeSansBold12pt7b : f9;
+      textCentre(mid, y + 20, mf, fitted(mf, solMovesText(), mw).c_str());
+      textCentre(mid, y + 44, &FreeSans9pt7b, fitted(&FreeSans9pt7b, T(s.g.drawThree() ? S_SOL_DRAW3 : S_SOL_DRAW1), mw).c_str());
+    }
   } else {  // the panel on the left: Back, Undo, New game; the moves; what's happening
     int x = 16, pw = 116, y = BODY_Y + 10;
     gButton(x, y, pw, 48, T(S_G_BACK), false, ID_BACK);
@@ -305,8 +308,9 @@ static void drawSolitaire() {
     gLeft(x, y + 200, &FreeSansBold12pt7b, solMovesText(), pw, 24, 2);
     text(x, y + 252, &FreeSans9pt7b, T(s.g.drawThree() ? S_SOL_DRAW3 : S_SOL_DRAW1));
     StrId say = s.stuck ? S_SOL_STUCK_HINT : s.sel.any() ? S_SOL_WHERE : S_SOL_HOW;
-    if (s.stuck) text(x, y + 290, f9, fitted(f9, T(S_SOL_STUCK), pw).c_str());
-    gLeft(x, y + (s.stuck ? 314 : 290), &FreeSans9pt7b, T(say), pw, 20, 6);
+    int sy = y + 290;
+    if (s.stuck) sy = gLeft(x, sy, f9, T(S_SOL_STUCK), pw, 20, 2) + 4;
+    gLeft(x, sy, &FreeSans9pt7b, T(say), pw, 20, s.stuck ? 4 : 6);
   }
   solDrawPiles(targets);
   if (card) solCard();

@@ -10,7 +10,7 @@ S(S_SOL_WON, "You won!")  // the card over the board at the end (bold 18pt)
 S(S_SOL_WON_MOVES, "In 1 move|In %ld moves")
 S(S_SOL_BEST, "Best: 1 move|Best: %ld moves")  // the fewest moves in a win so far
 S(S_SOL_NEW_BEST, "Your best yet!")  // this win took the fewest moves so far
-S(S_SOL_STUCK, "No moves left")  // the deal can't get anywhere (bold 9pt, ~106 px upright)
+S(S_SOL_STUCK, "No moves left")  // the deal can't get anywhere: upright in place of the moves (bold 9pt, ~106 px, wraps to 2 lines); sideways 116 px, 2 lines
 S(S_SOL_STUCK_HINT, "Undo, or start a new game.")  // sideways, under it (9pt, 116 px wide, wraps)
 S(S_SOL_HOW, "Tap a card to move it. Tap the stock to turn a card.")  // sideways, beside the cards (9pt, 116 px wide, wraps)
 S(S_SOL_WHERE, "Now tap where it goes.")  // a card was picked up (drawn black)

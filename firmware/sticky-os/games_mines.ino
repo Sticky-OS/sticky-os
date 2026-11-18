@@ -265,10 +265,11 @@ static void drawMines() {
     if (targets) gButton(px, BODY_Y + 10, 116, 48, T(S_G_BACK), false, ID_BACK);
     if (targets && !ended) minesSwitch(px, BODY_Y + 76, pw, 52);
     minesCounter(px, W - 16, BODY_Y + 178);
-    gLeft(px, BODY_Y + 222, ended ? &FreeSansBold12pt7b : &FreeSans12pt7b, minesSay(), pw, 28, 4);
+    gLeft(px, BODY_Y + 222, ended ? &FreeSansBold12pt7b : &FreeSans12pt7b, minesSay(), pw, 28, 3);
     const Size &z = kSize[m.level];
-    String size = String(T(minesSizeName(m.level))) + ": " + TF(S_MINES_SIZE_LINE, z.cols, z.rows, z.mines);
-    text(px, H - 92, &FreeSans9pt7b, fitted(&FreeSans9pt7b, size, pw).c_str());
+    // the size: its name, and under it its columns, rows and mines
+    text(px, H - 116, &FreeSansBold9pt7b, fitted(&FreeSansBold9pt7b, T(minesSizeName(m.level)), pw).c_str());
+    text(px, H - 92, &FreeSans9pt7b, fitted(&FreeSans9pt7b, TF(S_MINES_SIZE_LINE, z.cols, z.rows, z.mines), pw).c_str());
     if (targets) gButton(px, H - 76, pw, 60, T(S_G_NEW_GAME), ended, ID_NEW);
   }
   if (m.choosing) minesChooser();
