@@ -103,6 +103,17 @@
 #include "tutor7_core.h"
 #include "tutor7_lessons.h"
 #include "tutor7_ui.h"
+// The games from CrossPlay (github.com/ma-r-s/crossplay, MIT): their rules, as CrossPlay wrote
+// them; games_solitaire.ino, games_mines.ino, games_four.ino and games_chess.ino draw them. See src/crossplay/README.md.
+#include "src/crossplay/solitaire/SolitaireCore.h"
+#include "src/crossplay/minesweeper/MinesweeperCore.h"
+#include "src/crossplay/minesweeper/MinesweeperFlow.h"
+#include "src/crossplay/connectfour/ConnectFourCore.h"
+#include "src/crossplay/connectfour/ConnectFourBrain.h"
+#include "src/crossplay/connectfour/ConnectFourFlow.h"
+#include "src/crossplay/chess/ChessCore.h"
+#include "src/crossplay/chess/ChessEngine.h"
+#include "src/crossplay/chess/ChessPieces.h"
 #include "glyphs.h"
 #include "i18n.h"
 #include "calendar.h"
