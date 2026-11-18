@@ -30,12 +30,13 @@ static void tutor7Peek(String &s);
 // serial port's "game peek"; <g>Ok: OK with no ring (true when taken).
 #define CROSSPLAY_GAME(G, g) \
   static void g##Open(); static void draw##G(); static void act##G(int id); static void g##Icon(int cx, int cy, int s, int t); \
-  static String g##Line(); static void g##Peek(String &s); static bool g##Ok();
+  static String g##Line(); static void g##Peek(String &s); static bool g##Ok(); static void g##Forget();
 CROSSPLAY_GAME(Solitaire, solitaire)
 CROSSPLAY_GAME(Mines, mines)
 CROSSPLAY_GAME(Four, four)
 CROSSPLAY_GAME(Chess, chess)
 #undef CROSSPLAY_GAME
+
 
 // Everything the games hold while the board runs, in one place in PSRAM
 // (gamesUiBegin()): only the pointer takes internal RAM.
@@ -96,6 +97,19 @@ static GState *gs;
 static void gamesUiBegin() {
   void *p = heap_caps_malloc(sizeof(GState), MALLOC_CAP_SPIRAM);
   gs = p ? new (p) GState() : new GState();
+}
+
+// Demo mode has ended (setDemo): the four games drop the boards dealt for the
+// screenshots, so a demo board can't be finished for real and save a made-up
+// best or tally; the one on screen deals afresh now. (Not static: sticky-os.ino calls it.)
+void crossplayDemoEnded() {
+  solitaireForget(), minesForget(), fourForget(), chessForget();
+  switch (gs->gGame) {
+    case GAME_SOLITAIRE: solitaireOpen(); break;
+    case GAME_MINES: minesOpen(); break;
+    case GAME_FOUR: fourOpen(); break;
+    case GAME_CHESS: chessOpen(); break;
+  }
 }
 
 // ---- what can be tapped, and the ring

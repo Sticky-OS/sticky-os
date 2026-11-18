@@ -192,6 +192,11 @@ static void actFour(int id) {
   if (id >= 0 && id < connectfour::kColumns) fourDrop(id);
 }
 
+// Demo mode ended (crossplayDemoEnded): the next open deals afresh.
+static void fourForget() {
+  if (fourS) fourS->made = false;
+}
+
 static void fourOpen() {
   fourEnsure();
   if (!fourS->made || fourOver() || demoMode) fourNew();  // else the game where it was left

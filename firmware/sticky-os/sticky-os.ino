@@ -6020,6 +6020,7 @@ static void setDemo(bool on) {
   notesDemo(on);
   recipesDemo(on);
   gamesDemo(on);
+  if (!on) crossplayDemoEnded();
   if (recipeMode == RM_OPEN) recipeMode = RM_LIST;
   quoteReset();
   xSemaphoreTake(dataLock, portMAX_DELAY);

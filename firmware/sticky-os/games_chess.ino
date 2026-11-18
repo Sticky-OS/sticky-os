@@ -513,6 +513,11 @@ static void actChess(int id) {
   }
 }
 
+// Demo mode ended (crossplayDemoEnded): the next open deals afresh.
+static void chessForget() {
+  if (chessS) chessS->made = false;
+}
+
 static void chessOpen() {
   chessEnsure();
   if (!chessS->made || chessOver() || demoMode) chessNew();  // else the game where it was left

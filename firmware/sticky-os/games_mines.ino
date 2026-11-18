@@ -69,6 +69,11 @@ static void minesStart(int level) {
   if (p.minesLevel != m.level) p.minesLevel = m.level, gamesChanged();
 }
 
+// Demo mode ended (crossplayDemoEnded): the next open deals afresh.
+static void minesForget() {
+  if (minesS) minesS->live = false;
+}
+
 static void minesOpen() {
   minesEnsure();
   minesS->choosing = false;

@@ -70,6 +70,11 @@ static void solDemo() {
   s.stuck = solui::stuck(s.g);
 }
 
+// Demo mode ended (crossplayDemoEnded): the next open deals afresh.
+static void solitaireForget() {
+  if (solitaireS) solitaireS->live = false;
+}
+
 static void solitaireOpen() {
   solitaireEnsure();
   solitaireS->choosing = false;

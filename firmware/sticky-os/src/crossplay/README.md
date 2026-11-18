@@ -16,6 +16,11 @@ Copied from commit `152f5d346e1445ebaf9636c436e07a6a70fb921b` (2026-11-18),
 | `connectfour/ConnectFourCore.h`, `ConnectFourBrain.h`, `ConnectFourFlow.h` | `connectfour/` |
 | `chess/ChessCore.{h,cpp}`, `ChessEngine.{h,cpp}`, `ChessPieces.h` | `chess/` |
 
+`LICENSE` is CrossPlay's, word for word. Its last paragraph (GPLv3 for the
+combined executable because of wolfSSL, and `licenses/README.md`) is about
+CrossPlay's own firmware build, not about these files: the MIT licence above
+it is what covers the code copied here.
+
 `chess/ChessPieces.h` is generated from the "celtic" piece set by Maurizio
 Monge (github.com/maurimo/chess-art), MIT: `chess/LICENSE-pieces`.
 

@@ -104,6 +104,14 @@ void gamesBegin() {
   store->progress.minesLevel = constrain(store->progress.minesLevel, 0, 2);
   store->progress.fourLevel = constrain(store->progress.fourLevel, 0, 2);
   store->progress.chessLevel = constrain(store->progress.chessLevel, 0, 2);
+  {  // counts and bests from a damaged file: never negative (a negative best could never be beaten)
+    GameProgress &p = store->progress;
+    for (int *v : {&p.solPlayed, &p.solWon, &p.solBest, &p.minesLost, &p.fourWins, &p.fourDraws, &p.fourLosses, &p.chessWins,
+                   &p.chessDraws, &p.chessLosses})
+      *v = max(*v, 0);
+    for (int i = 0; i < 3; i++) p.minesWon[i] = max(p.minesWon[i], 0), p.minesBest[i] = max(p.minesBest[i], 0);
+    p.solWon = min(p.solWon, p.solPlayed);
+  }
 
   // Practice: "text\tanswer\to1\to2\to3\to4\thint" a line.
   f = LittleFS.open(PRACTICE, "r");
