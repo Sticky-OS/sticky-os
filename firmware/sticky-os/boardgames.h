@@ -32,7 +32,10 @@ constexpr int kFourDepth[3] = {2, 4, connectfour::kDepth};
 // for ~49000 nodes (~1 us a node). At 15-30x slower, 40000 nodes is about
 // 0.6-1.3 s on the board.
 constexpr int kChessDepth[3] = {1, 3, 4};
-constexpr uint32_t kChessBudget[3] = {40000, 40000, 40000};
+// Measured on the board (ESP32-S3, 240 MHz): about 50-75 us a node at depth 4, so
+// 18000 nodes keep the board's worst move to about 1.3 s. A move the budget cuts
+// short is still legal, the best found so far.
+constexpr uint32_t kChessBudget[3] = {18000, 18000, 18000};
 
 inline int clampLevel(int level) { return level < 0 ? 0 : level > 2 ? 2 : level; }
 
