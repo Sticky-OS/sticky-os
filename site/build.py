@@ -20,7 +20,8 @@ Until a file is there, its frame shows a "screenshot coming" placeholder.
 (home-landscape.png also replaces the Timer picture in the hero.)
 Captures must hold demo data only: no names, WiFi names, addresses or places.
 The board's black-and-white captures (480x800 or 800x480, or those doubled)
-are drawn smooth at build time: shots/<name>.<width>.webp at 1x, 2x and 3x,
+are drawn smooth at build time: shots/smooth/<name>.<width>.<fingerprint>.webp
+at 1x, 2x and 3x (kept by browsers for a year: the name changes with the picture),
 offered to the browser by srcset, so the screens read like a print at any size
 instead of showing their pixels unevenly when scaled (smooth_shots(); needs Pillow).
 
@@ -44,6 +45,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+import hashlib
 
 try:  # the screenshots' smooth versions (smooth_shots); --publish refuses without it
     from PIL import Image, ImageFilter
@@ -193,10 +195,15 @@ def smooth_versions(png):
     big = im.resize((im.width * k, im.height * k), Image.NEAREST).filter(ImageFilter.GaussianBlur(0.55 * k))
     lo, hi = 96, 160
     big = big.point([0 if v <= lo else 255 if v >= hi else (v - lo) * 255 // (hi - lo) for v in range(256)])
+    # In shots/smooth/, named with a fingerprint of the capture: a changed capture gets new
+    # names, so the browser may keep these for a year (src/_headers) and never shows a stale one.
+    tag = hashlib.sha256(png.read_bytes()).hexdigest()[:10]
+    folder = png.parent / "smooth"
+    folder.mkdir(exist_ok=True)
     out = []
     for scale in (1, 2, 3):
         w, h = im.width * scale, im.height * scale
-        path = png.with_name(f"{png.stem}.{w}.webp")
+        path = folder / f"{png.stem}.{w}.{tag}.webp"
         big.resize((w, h), Image.LANCZOS).save(path, "WEBP", quality=88, method=6)
         out.append((w, path))
     return out
@@ -222,14 +229,14 @@ def smooth_shots():
             if not found or found.group(2) not in made or "srcset=" in tag:
                 return tag
             base, versions = found.group(1), made[found.group(2)]
-            srcset = ", ".join(f"{base}{p.name} {i + 1}x" for i, (w, p) in enumerate(versions))
+            srcset = ", ".join(f"{base}smooth/{p.name} {i + 1}x" for i, (w, p) in enumerate(versions))
             return tag[:-1].rstrip("/").rstrip() + f' srcset="{srcset}">'
 
         def link(m):
             found = shot.search(m.group(0))
             if not found or found.group(2) not in made:
                 return m.group(0)
-            return m.group(0).replace(found.group(2), made[found.group(2)][-1][1].name)
+            return m.group(0).replace(found.group(2), "smooth/" + made[found.group(2)][-1][1].name)
 
         text = re.sub(r"<img\b[^>]*>", img, text)
         text = re.sub(r'<a\b[^>]*href="[^"]*shots/[a-z0-9-]+\.png"', link, text)

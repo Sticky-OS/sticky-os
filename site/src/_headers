@@ -5,3 +5,9 @@
   X-Content-Type-Options: nosniff
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(self), bluetooth=(self)
+
+# The screenshots drawn smooth by build.py: their names carry a fingerprint of the
+# picture, so a browser keeps them for a year without asking again; a new
+# screenshot gets a new name. Everything else is checked on each visit.
+/shots/smooth/*
+  Cache-Control: public, max-age=31536000, immutable
