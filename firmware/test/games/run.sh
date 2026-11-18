@@ -25,4 +25,6 @@ run chess test_chess.cpp "$SRC/chess/ChessCore.cpp" "$SRC/chess/ChessEngine.cpp"
 run connectfour test_connectfour.cpp
 run minesweeper test_minesweeper.cpp
 run solitaire test_solitaire.cpp "$SRC/solitaire/SolitaireCore.cpp"
+# Sticky OS's own code around them: Solitaire's taps (solui.h).
+run solui -I../../sticky-os test_solui.cpp "$SRC/solitaire/SolitaireCore.cpp"
 echo "games: all passed"
