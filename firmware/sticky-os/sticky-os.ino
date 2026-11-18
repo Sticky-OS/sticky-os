@@ -449,8 +449,8 @@ static void powerLatch() {
     gpio_set_level((gpio_num_t)pin, 1);
   }
   gpio_deep_sleep_hold_dis();
-  for (int pin : {PIN_POWER_HOLD, PIN_POWER_LOCK, PIN_BTN_OK, PIN_EPD_EN, PIN_TOUCH_EN,
-                  PIN_TOUCH_RST, PIN_SD_EN, PIN_BUZZER, PIN_BAT_CHG_EN})
+  for (int pin : {PIN_POWER_HOLD, PIN_POWER_LOCK, PIN_BTN_OK, PIN_EPD_EN, PIN_EPD_RST, PIN_EPD_DC,
+                  PIN_EPD_CS, PIN_TOUCH_EN, PIN_TOUCH_RST, PIN_SD_EN, PIN_MIC_EN, PIN_BUZZER, PIN_BAT_CHG_EN})
     gpio_hold_dis((gpio_num_t)pin);
 }
 
@@ -5374,6 +5374,14 @@ static void deepSleep() {
   holdAt(PIN_POWER_LOCK, 1);
   holdAt(PIN_BAT_CHG_EN, 0);  // keep charging while asleep, if USB power is there
   for (int pin : {PIN_EPD_EN, PIN_TOUCH_EN, PIN_TOUCH_RST, PIN_SD_EN, PIN_BUZZER}) holdAt(pin, 0);
+  // The panel's supply is off now: a reset, data/command or select line left
+  // high would power it through its protection diodes (FreeInk's PowerManager
+  // notes this on the Sticky). Hold them low, and the microphone's switch off.
+  // CS belongs to the SPI driver: make it a plain pin first, with no pull-up
+  // working against the low. powerLatch() lets go of them all at boot.
+  gpio_reset_pin((gpio_num_t)PIN_EPD_CS);
+  gpio_pullup_dis((gpio_num_t)PIN_EPD_CS);
+  for (int pin : {PIN_EPD_RST, PIN_EPD_DC, PIN_EPD_CS, PIN_MIC_EN}) holdAt(pin, 0);
   gpio_hold_dis((gpio_num_t)PIN_BTN_OK);
   gpio_set_direction((gpio_num_t)PIN_BTN_OK, GPIO_MODE_INPUT);
   gpio_pullup_en((gpio_num_t)PIN_BTN_OK);
