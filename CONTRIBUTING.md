@@ -197,13 +197,13 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
   checks, `tutor7_lessons.*` each lesson's plan, `tutor7_text.*` and `src/tutor/` the words (see
   [Tutor's languages](#tutors-languages)).
 - `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), unchanged.
+- `src/brand/brand.h`: the Sticky OS logo as 1-bit bitmaps (the boot screen, About), made
+  from the brand's SVGs in `site/src/brand/assets/svg/` by `firmware/tools/gen_brand.py`
+  (Pillow and rsvg-convert); run it again when the brand changes.
 - `src/crossplay/`: the rules of Solitaire, Mines, Four in a Row and Chess from
   [CrossPlay](https://github.com/ma-r-s/crossplay) by Mario Ruiz (MIT), and the
   "celtic" chess pieces by Maurizio Monge (MIT), unchanged; its README says
   from which commit and how to take a newer one.
-- `src/brand/brand.h`: the Sticky OS logo as 1-bit bitmaps (the boot screen, About), made
-  from the brand's SVGs in `site/src/brand/assets/svg/` by `firmware/tools/gen_brand.py`
-  (Pillow and rsvg-convert); run it again when the brand changes.
 - `site/`: the website and the browser setup app (`site/src/setup/`), with
   tests in `site/test/` (`node test/run.mjs`). The app's photo code (crop,
   scale, dither, pack, upload) is plain functions at the top of `app.js`, so
