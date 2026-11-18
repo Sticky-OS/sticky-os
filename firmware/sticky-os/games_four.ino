@@ -155,16 +155,22 @@ static void drawFour() {
     py = gCentred(px + pw / 2, BODY_Y + 104, sayFont, T(fourS->say), pw, 32, 3) - 6;
     py = max(py, BODY_Y + 150);
   }
+  // The levels: a row of three when every name fits its button, else one under
+  // another (beside the board, "Medium" and longer languages don't fit a third).
   static const StrId LEVELS[3] = {S_FOUR_EASY, S_FOUR_MEDIUM, S_FOUR_HARD};
   int lw = (pw - 20) / 3;
+  bool row = true;
+  for (int l = 0; l < 3; l++) row = row && textW(&FreeSansBold9pt7b, T(LEVELS[l])) <= lw - 16;
+  int lh = row ? 48 : 46, step = row ? 0 : lh + 8;
   for (int l = 0; l < 3; l++) {
-    int lx = px + l * (lw + 10);
-    pillButton(lx, py, lw, 48, fitted(&FreeSansBold9pt7b, T(LEVELS[l]), lw - 12).c_str(), l == p.fourLevel, &FreeSansBold9pt7b);
-    gTarget(lx, py, lw, 48, FOUR_LEVEL0 + l);
+    int lx = row ? px + l * (lw + 10) : px, ly = py + l * step, bw = row ? lw : pw;
+    pillButton(lx, ly, bw, lh, fitted(&FreeSansBold9pt7b, T(LEVELS[l]), bw - 12).c_str(), l == p.fourLevel, &FreeSansBold9pt7b);
+    gTarget(lx, ly, bw, lh, FOUR_LEVEL0 + l);
   }
+  py += row ? 0 : 2 * step;
   String tally = TF(S_FOUR_TALLY, p.fourWins, p.fourDraws, p.fourLosses);
   const GFXfont *tf = textW(&FreeSans12pt7b, tally.c_str()) <= pw ? &FreeSans12pt7b : &FreeSans9pt7b;
-  textCentre(px + pw / 2, py + 90, tf, fitted(tf, tally, pw).c_str());
+  textCentre(px + pw / 2, py + (row ? 90 : 84), tf, fitted(tf, tally, pw).c_str());
   gButton(px, H - 80, pw, 60, T(S_G_NEW_GAME), fourOver(), ID_NEW);
   if (TALL) gHeader(gameName(GAME_FOUR));
   else gButton(px, BODY_Y + 10, 116, 48, T(S_G_BACK), false, ID_BACK);

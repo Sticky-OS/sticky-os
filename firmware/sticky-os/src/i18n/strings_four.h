@@ -6,7 +6,7 @@ S(S_FOUR_YOUR_TURN, "Your turn.")
 S(S_FOUR_WIN, "You win!")  // bold 18pt
 S(S_FOUR_LOSE, "The board wins.")  // bold 18pt
 S(S_FOUR_DRAW, "A draw.")  // bold 18pt: the board filled up and nobody made four
-S(S_FOUR_EASY, "Easy")  // the levels: three pill buttons in a row, ~75 px each in landscape (bold 9pt)
+S(S_FOUR_EASY, "Easy")  // the levels: three pill buttons (bold 9pt), in a row when they fit, else stacked
 S(S_FOUR_MEDIUM, "Medium")
 S(S_FOUR_HARD, "Hard")
 S(S_FOUR_TALLY, "Won %d   Drawn %d   Lost %d")  // one line, 12pt (9pt when it doesn't fit ~250 px)
