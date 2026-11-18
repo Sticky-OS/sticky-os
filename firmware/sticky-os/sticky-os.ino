@@ -677,6 +677,41 @@ static bool gaugeWord(uint8_t reg, int16_t &value) {
   return true;
 }
 
+// The gauge counts in units set by its sense resistor. Seeed's stock board
+// (750 mAh cell, 100 mOhm) reads DesignCapacity 7500: current, capacity and
+// power come in tenths of a mA, mAh and mW. Below 5000 the counts are taken
+// as whole units. Voltage, percentages and cycles never scale. Read once, when it answers.
+static int gaugeDesign = -1;  // DesignCapacity 0x3C as read, -1 until it answers
+static int gaugeScale = 1;    // what current, capacity and power are divided by
+
+static void gaugeCheckScale() {
+  int16_t v;
+  if (gaugeDesign >= 0 || !gaugeWord(0x3C, v)) return;
+  gaugeDesign = (uint16_t)v;
+  gaugeScale = gaugeDesign >= 5000 ? 10 : 1;
+  Serial.printf("battery: design capacity %d, current and capacity divided by %d\n", gaugeDesign, gaugeScale);
+}
+
+// A raw count in real units, rounded to the nearest.
+static int gaugeScaled(int16_t raw) {
+  return gaugeScale == 1 ? raw : (raw + (raw < 0 ? -gaugeScale / 2 : gaugeScale / 2)) / gaugeScale;
+}
+
+// The `gauge` serial command: the registers as read, and the scale chosen.
+static void gaugeDump() {
+  static const struct { uint8_t reg; const char *name; } REGS[] = {
+    {0x08, "Voltage"}, {0x0C, "Current"}, {0x10, "RemainingCapacity"}, {0x12, "FullChargeCapacity"},
+    {0x14, "AverageCurrent"}, {0x16, "TimeToEmpty"}, {0x24, "AveragePower"}, {0x2A, "CycleCount"},
+    {0x2C, "StateOfCharge"}, {0x2E, "StateOfHealth"}, {0x3C, "DesignCapacity"}};
+  gaugeCheckScale();
+  for (const auto &r : REGS) {
+    int16_t v;
+    if (gaugeWord(r.reg, v)) Serial.printf("gauge: 0x%02X %s %d (0x%04X)\n", r.reg, r.name, v, (uint16_t)v);
+    else Serial.printf("gauge: 0x%02X %s no answer\n", r.reg, r.name);
+  }
+  Serial.printf("gauge: design capacity %d, scale %d (current, capacity and power divided by it)\n", gaugeDesign, gaugeScale);
+}
+
 static void readSensors() {
   now = {};
   now.usb = digitalRead(PIN_EXTERNAL_POWER);
@@ -692,19 +727,20 @@ static void readSensors() {
   }
 
   int16_t mv, soc, ma;  // BQ27220: Voltage 0x08, Current 0x0C, StateOfCharge 0x2C
+  gaugeCheckScale();
   if (gaugeWord(0x08, mv) && gaugeWord(0x2C, soc) && gaugeWord(0x0C, ma)) {
     now.battery = true;
     now.millivolts = mv;
     now.percent = soc;
-    now.milliamps = ma;
+    now.milliamps = gaugeScaled(ma);
     // BQ27220: RemainingCapacity 0x10, FullChargeCapacity 0x12, AverageCurrent 0x14, TimeToEmpty 0x16,
-    // AveragePower 0x24, CycleCount 0x2A, StateOfHealth 0x2E.
+    // AveragePower 0x24, CycleCount 0x2A, StateOfHealth 0x2E. Only current, capacity and power scale.
     int16_t v;
-    now.remainingMah = gaugeWord(0x10, v) ? v : -1;
-    now.fullMah = gaugeWord(0x12, v) ? v : -1;
-    now.averageMa = gaugeWord(0x14, v) ? v : 0;
+    now.remainingMah = gaugeWord(0x10, v) ? gaugeScaled(v) : -1;
+    now.fullMah = gaugeWord(0x12, v) ? gaugeScaled(v) : -1;
+    now.averageMa = gaugeWord(0x14, v) ? gaugeScaled(v) : 0;
     now.minutesLeft = gaugeWord(0x16, v) ? (uint16_t)v : 65535;  // 65535: not discharging
-    now.averageMw = gaugeWord(0x24, v) ? v : 0;
+    now.averageMw = gaugeWord(0x24, v) ? gaugeScaled(v) : 0;
     now.cycles = gaugeWord(0x2A, v) ? v : -1;
     now.health = gaugeWord(0x2E, v) ? v : -1;
   }
@@ -6323,6 +6359,8 @@ static void devCommands() {
       render(false);
     } else if (line == "about") {
       dumpAbout();
+    } else if (line == "gauge") {  // the battery gauge's registers as read, and the scale chosen
+      gaugeDump();
     } else if (line.startsWith("fetch ")) {  // fetch now for that app (1 Weather, 2 Calendar, 6 Claude), as OK in it does
       fetchFor(constrain(line.substring(6).toInt(), 0, APP_COUNT - 1), true);
     } else if (line == "wifi scan") {  // Settings -> WiFi -> Add network: the network task scans
