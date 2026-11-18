@@ -44,7 +44,9 @@ jobs:
         run: node test/run.mjs
       - name: Build the website
         working-directory: site
-        run: python3 build.py
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 build.py
 
   secrets:
     runs-on: ubuntu-latest
