@@ -1689,9 +1689,18 @@ static void drawLauncher() {
     canvas->drawRoundRect(cx - TILE / 2, y, TILE, TILE, 22, INK);
     canvas->drawRoundRect(cx - TILE / 2 + 1, y + 1, TILE - 2, TILE - 2, 21, INK);
     gameIcon(g, cx, y + TILE / 2, 58);
-    const GFXfont *nf = textW(&FreeSansBold12pt7b, gameName(g)) <= cellW - 8 ? &FreeSansBold12pt7b : &FreeSans12pt7b;  // "Maths Quest" in portrait
-    textCentre(cx, y + TILE + 30, nf, fitted(nf, gameName(g), cellW - 8).c_str());
-    textCentre(cx, y + TILE + 54, &FreeSans9pt7b, fitted(&FreeSans9pt7b, launcherLine(g), cellW - 8).c_str());
+    // The name: bold, else regular, else small bold ("Maths Quest" upright; "Four in a Row"
+    // and longer languages in the six narrow columns sideways).
+    const GFXfont *nf = &FreeSansBold9pt7b;
+    for (const GFXfont *f : {&FreeSansBold12pt7b, &FreeSans12pt7b})
+      if (textW(f, gameName(g)) <= cellW - 8) { nf = f; break; }
+    if (textW(nf, gameName(g)) <= cellW - 8) {
+      textCentre(cx, y + TILE + 30, nf, gameName(g));
+      gCentred(cx, y + TILE + 54, &FreeSans9pt7b, launcherLine(g), cellW - 8, 20, 2);  // two lines when it needs them
+    } else {  // too long even small ("Vier in einer Reihe" sideways): the name on two lines, its line under them
+      int ny = gCentred(cx, y + TILE + 24, nf, gameName(g), cellW - 8, 19, 2);
+      gCentred(cx, ny + 3, &FreeSans9pt7b, launcherLine(g), cellW - 8, 20, 1);
+    }
     gTarget(cx - TILE / 2, y, TILE, TILE, g);
     gs->gHits.back() = {(int16_t)x, (int16_t)y, (int16_t)cellW, (int16_t)(cellH - 10), (int16_t)g};  // the label counts too
   }

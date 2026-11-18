@@ -174,16 +174,22 @@ static void minesSwitch(int x, int y, int w, int h) {
     uint16_t fg = on ? PAPER : INK;
     if (on) canvas->fillRoundRect(bx, y, half, h, rad, INK);
     else canvas->drawRoundRect(bx, y, half, h, rad, INK), canvas->drawRoundRect(bx + 1, y + 1, half - 2, h - 2, rad - 1, INK);
+    // A long word (some languages) takes the smaller font, then goes without its icon.
     const char *label = T(i ? S_MINES_FLAG : S_MINES_DIG);
-    int iconW = h * 40 / 100, tw = textW(&FreeSansBold12pt7b, label), left = bx + (half - tw - iconW - 8) / 2;
-    if (i) {
+    const GFXfont *f = &FreeSansBold12pt7b;
+    int iconW = h * 40 / 100, tw = textW(f, label);
+    if (tw + iconW + 8 > half - 12) f = &FreeSansBold9pt7b, tw = textW(f, label);
+    if (tw + iconW + 8 > half - 12) iconW = 0;
+    int left = bx + (half - tw - iconW - (iconW ? 8 : 0)) / 2;
+    if (!iconW) {
+    } else if (i) {
       minesFlag(left + iconW / 2, y + h / 2, h * 56 / 100, fg);
     } else {  // a spade's blade for Dig
       canvas->fillTriangle(left + iconW / 2, y + h * 26 / 100, left + 1, y + h / 2, left + iconW - 1, y + h / 2, fg);
       canvas->fillRect(left + iconW / 2 - 2, y + h / 2, 4, h * 26 / 100, fg);
     }
     canvas->setTextColor(fg);
-    text(left + iconW + 8, y + h / 2 + 8, &FreeSansBold12pt7b, label);
+    text(left + iconW + (iconW ? 8 : 0), y + h / 2 + (f == &FreeSansBold12pt7b ? 8 : 6), f, fitted(f, label, half - 12).c_str());
     canvas->setTextColor(INK);
     gTarget(bx, y, half, h, i ? MINES_FLAG : MINES_DIG);
   }
@@ -240,7 +246,10 @@ static void drawMines() {
     gHeader(gameName(GAME_MINES), "", 130);  // Back closes the card when it's up
     if (targets) gButton(W - 16 - 124, BODY_Y + 10, 124, 48, T(S_G_NEW_GAME), ended, ID_NEW, &FreeSansBold9pt7b);
     int sy = minesStripY();
-    if (ended) gLeft(16, sy + 26, &FreeSansBold12pt7b, minesSay(), 226, 24, 2);
+    if (ended) {  // two lines at 12pt, else three at 9pt
+      const GFXfont *ef = wrapped(&FreeSansBold12pt7b, minesSay(), 226).size() > 2 ? &FreeSansBold9pt7b : &FreeSansBold12pt7b;
+      gLeft(16, sy + (ef == &FreeSansBold12pt7b ? 26 : 20), ef, minesSay(), 226, ef == &FreeSansBold12pt7b ? 24 : 18, 3);
+    }
     else if (targets) minesSwitch(16, sy + 4, 210, 52);
     minesCounter(250, W - 20, sy + 44);
   }
@@ -265,7 +274,10 @@ static void drawMines() {
     if (targets) gButton(px, BODY_Y + 10, 116, 48, T(S_G_BACK), false, ID_BACK);
     if (targets && !ended) minesSwitch(px, BODY_Y + 76, pw, 52);
     minesCounter(px, W - 16, BODY_Y + 178);
-    gLeft(px, BODY_Y + 222, ended ? &FreeSansBold12pt7b : &FreeSans12pt7b, minesSay(), pw, 28, 3);
+    // Three lines at 12pt; a longer hint (French, German...) takes 9pt, up to five lines.
+    const GFXfont *sf = ended ? &FreeSansBold12pt7b : &FreeSans12pt7b;
+    if (wrapped(sf, minesSay(), pw).size() > 3) sf = ended ? &FreeSansBold9pt7b : &FreeSans9pt7b;
+    gLeft(px, BODY_Y + 222, sf, minesSay(), pw, sf == &FreeSans9pt7b || sf == &FreeSansBold9pt7b ? 20 : 28, 5);
     const Size &z = kSize[m.level];
     // the size: its name, and under it its columns, rows and mines
     text(px, H - 116, &FreeSansBold9pt7b, fitted(&FreeSansBold9pt7b, T(minesSizeName(m.level)), pw).c_str());

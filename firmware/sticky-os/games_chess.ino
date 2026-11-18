@@ -317,7 +317,10 @@ static void chessToggle(int x, int y, int w, int h) {
   int bx = x + 20, bw = 24;
   for (int i = 0; i < 3; i++) canvas->fillRect(bx, y + h / 2 - 10 + i * 8, bw, 4, c);
   canvas->setTextColor(c);
-  text(bx + bw + 12, y + h / 2 + 8, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, T(open ? S_CHESS_CLOSE : S_CHESS_MENU), w - bw - 44).c_str());
+  const char *word = T(open ? S_CHESS_CLOSE : S_CHESS_MENU);  // smaller when a language's word is long
+  int room = w - bw - 36;
+  const GFXfont *f = textW(&FreeSansBold12pt7b, word) <= room ? &FreeSansBold12pt7b : &FreeSansBold9pt7b;
+  text(bx + bw + 12, y + h / 2 + (f == &FreeSansBold12pt7b ? 8 : 6), f, fitted(f, word, room).c_str());
   canvas->setTextColor(INK);
   gTarget(x, y, w, h, CH_PANEL);
 }
