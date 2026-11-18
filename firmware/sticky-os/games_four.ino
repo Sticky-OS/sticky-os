@@ -161,7 +161,7 @@ static void drawFour() {
   int lw = (pw - 20) / 3;
   bool row = true;
   for (int l = 0; l < 3; l++) row = row && textW(&FreeSansBold9pt7b, T(LEVELS[l])) <= lw - 16;
-  int lh = row ? 48 : 46, step = row ? 0 : lh + 8;
+  int lh = row ? 48 : 42, step = row ? 0 : lh + 6;
   for (int l = 0; l < 3; l++) {
     int lx = row ? px + l * (lw + 10) : px, ly = py + l * step, bw = row ? lw : pw;
     pillButton(lx, ly, bw, lh, fitted(&FreeSansBold9pt7b, T(LEVELS[l]), bw - 12).c_str(), l == p.fourLevel, &FreeSansBold9pt7b);
@@ -170,7 +170,9 @@ static void drawFour() {
   py += row ? 0 : 2 * step;
   String tally = TF(S_FOUR_TALLY, p.fourWins, p.fourDraws, p.fourLosses);
   const GFXfont *tf = textW(&FreeSans12pt7b, tally.c_str()) <= pw ? &FreeSans12pt7b : &FreeSans9pt7b;
-  textCentre(px + pw / 2, py + (row ? 90 : 84), tf, fitted(tf, tally, pw).c_str());
+  // Under the levels, but always clear of New game (its top is at H - 80): the
+  // status above can take two or three lines.
+  textCentre(px + pw / 2, min(py + lh + 36, H - 80 - 14), tf, fitted(tf, tally, pw).c_str());
   gButton(px, H - 80, pw, 60, T(S_G_NEW_GAME), fourOver(), ID_NEW);
   if (TALL) gHeader(gameName(GAME_FOUR));
   else gButton(px, BODY_Y + 10, 116, 48, T(S_G_BACK), false, ID_BACK);
