@@ -135,6 +135,11 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
 **Also:**
 
 - New text goes through `S()` with all ten languages (see [Languages](#languages)).
+- `src/sticky_drivers/` holds Seeed's screen and touch drivers. Keep them as
+  close to Seeed's as you can, but changing them is fine when the change works
+  on a board: say in the pull request how you tested it (the timings from the
+  serial log, screenshots), and add a line to `src/sticky_drivers/README.md`
+  saying what changed and where it came from.
 - If something a user sees or does changes, update [docs/guide.md](docs/guide.md)
   and the README in the same pull request.
 - Never commit private values: WiFi names and passwords, keys, tokens, your
@@ -188,7 +193,7 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
   kind per language to read): `tutor7_core.*` and `tutor7_u4.cpp` the exercise generators and their
   checks, `tutor7_lessons.*` each lesson's plan, `tutor7_text.*` and `src/tutor/` the words (see
   [Tutor's languages](#tutors-languages)).
-- `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), unchanged.
+- `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), kept close to Seeed's; what we changed is listed in their README.
 - `src/brand/brand.h`: the Sticky OS logo as 1-bit bitmaps (the boot screen, About), made
   from the brand's SVGs in `site/src/brand/assets/svg/` by `firmware/tools/gen_brand.py`
   (Pillow and rsvg-convert); run it again when the brand changes.

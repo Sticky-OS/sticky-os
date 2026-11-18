@@ -1,6 +1,6 @@
 # Vendored drivers
 
-Copied unchanged, MIT (see LICENSE):
+Copied from Seeed's code, MIT (see LICENSE), and kept as close to it as we can:
 
 - the e-paper panel component (SSD1677 / SSD2677 / UC8179), from
   https://github.com/limengdu/reterminal_sticky_handwriting_pad, commit c01e2d6;
@@ -10,6 +10,9 @@ Copied unchanged, MIT (see LICENSE):
   before it reports touches; the older copy skipped that and never saw one. They use ESP-IDF
 APIs only (spi_master, i2c_master), which arduino-esp32 3.x ships.
 
-Changed here since: from Seeed's https://github.com/Seeed-Projects/sticky-esp-idf-peripherals
-(commit 2c43a26), `seeed_epaper_panel_set_external_temperature()` (and `_clear_`): the
-SSD2677 picks its waveforms for the board's SHT40 reading instead of its own sensor.
+Changed here since (CONTRIBUTING.md says how a change gets in):
+
+- from Seeed's https://github.com/Seeed-Projects/sticky-esp-idf-peripherals
+  (commit 2c43a26), `seeed_epaper_panel_set_external_temperature()` (and `_clear_`): the
+  SSD2677 picks its waveforms for the board's SHT40 reading instead of its own sensor.
+  Not yet tried on an SSD2677 board (ours have SSD1677s); it only runs on one.
