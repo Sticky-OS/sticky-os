@@ -220,6 +220,7 @@ static bool greyShown;     // the panel holds greys: the next black-and-white dr
 static int partials;       // ghosting since the last full refresh, in fifths of a partial (see show())
 static seeed_epaper_panel_handle_t panel;
 static const char *panelName = "none";
+static bool panelSsd2677;  // newer boards: it takes its waveform temperature from the SHT40
 static const seeed_epaper_area_t FULL = {0, 0, NW, NH};
 
 static i2c_master_bus_handle_t sensorBus, touchBus;
@@ -631,7 +632,8 @@ static bool screenBegin() {
   }
   seeed_epaper_panel_model_t model;
   seeed_epaper_panel_get_model(panel, &model);
-  panelName = model == SEEED_EPAPER_PANEL_SSD2677 ? "SSD2677" : "SSD1677";
+  panelSsd2677 = model == SEEED_EPAPER_PANEL_SSD2677;
+  panelName = panelSsd2677 ? "SSD2677" : "SSD1677";
   if (model == SEEED_EPAPER_PANEL_SSD1677 && PANEL_WRITE_HZ > dev.clock_speed_hz) {
     // Known now, and never read again: open it again on a faster clock.
     // Sending a frame is about half of a refresh at 2 MHz.
@@ -743,6 +745,14 @@ static void readSensors() {
     now.averageMw = gaugeWord(0x24, v) ? gaugeScaled(v) : 0;
     now.cycles = gaugeWord(0x2A, v) ? v : -1;
     now.health = gaugeWord(0x2E, v) ? v : -1;
+  }
+  // An SSD2677 picks its waveforms for a temperature. Give it the SHT40's,
+  // once, from the first reading there is (as Seeed's driver does). Untested:
+  // our board has an SSD1677, which ignores this.
+  static bool panelTempSet;
+  if (panel && panelSsd2677 && now.climate && !panelTempSet) {
+    panelTempSet = seeed_epaper_panel_set_external_temperature(panel, now.tempC) == ESP_OK;
+    Serial.printf("screen: SSD2677 waveforms for %.1f C from the SHT40\n", now.tempC);
   }
   Serial.printf("sensors: climate %s %.1f C %.0f %%, battery %s %d mV %d %% %d mA, usb power %d, charger enable %d (0 = on)\n",
                 now.climate ? "ok" : "MISSING", now.tempC, now.humidity,
