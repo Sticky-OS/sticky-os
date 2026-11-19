@@ -243,7 +243,7 @@ timer adds an hourglass and its minutes left when there is room.
 | Quote | Quote of the Day in large serif italic, the author under it; a long quote wraps and gets smaller type. It changes at local midnight. *New quote* (or OK) shows another. Double-tap the quote for full screen: only the words, larger (up to 40 pt, still smaller for a long one), and the author, with ZenQuotes' credit in small type at the foot when it's theirs; double-tap again to bring back the heading and the button | Today's quote from ZenQuotes (`zenquotes.io/api/today`, free, no key), fetched once a day and kept in the board's flash (`/quote.txt`), so it shows offline too; *New quote* asks `/api/random`. Its quotes show ZenQuotes' attribution, as its free API asks. Without WiFi, with `quotes.online` off, or when ZenQuotes asks for a pause (it allows 5 requests in 30 s; the board waits 7 s between them), a quote comes from the board's own list of 54 public-domain quotes, and a quiet line under it says so |
 | Recipes | Say what you'd like to cook ("a quick vegetarian pasta for two") or type it, and the AI writes a recipe: the title, the time and how many it serves, the ingredients with tick boxes (tap one while you cook; the ticks last until another recipe is opened), the numbered steps, tips. A page at a time: large type (18 pt) with the board sideways, 12 pt held upright. Saved recipes are a list, newest first; *Delete* (tap twice) | Speech to text as for Notes (OpenAI or your relay), then the model in `notes.ai_model` answers as strict JSON (OpenAI structured outputs). The board reads it defensively (code fences and words around it, trailing commas, numbers as text, ingredients as plain strings, all capped, and anything the fonts lack folded to a look-alike) and keeps up to 30 in its flash (`/recipes/`; the 31st replaces the oldest). Failures say why: *AI key rejected: it's expired or wrong*, *The AI's recipe came back garbled. Try again.* |
 | Books | An e-reader for the books on the microSD card: a library, then each book's cover and pages in a serif typeface, full screen, a page at a time (see [Books](#books)) | The card's `books` folder (EPUB, MOBI and AZW3 without DRM, FB2, PDF, plain text, Markdown, HTML); the board keeps where you are in each, and your bookmarks, on the card |
-| Games | A folder of eight games (see Games below): 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor | The board; Quiz and Adventure also the model in `notes.ai_model` when there's a key, WiFi and `games.ai` is on. Progress in the board's flash (`/games.txt`, `/games-practice.txt`) |
+| Games | A folder of twelve games (see Games below): 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row, Chess | The board; Quiz and Adventure also the model in `notes.ai_model` when there's a key, WiFi and `games.ai` is on. Progress in the board's flash (`/games.txt`, `/games-practice.txt`) |
 | Claude | This week's Claude Code usage, all models and Fable alone, with reset times | Retained numbers under `claude.topic` on your MQTT broker: `…/seven_day/percent`, `…/seven_day/resets_at_unix`, `…/weekly_scoped/percent`, `…/age_seconds` |
 | Settings | Laid out like Android's: headings (Display, Sound and power, Connections, Apps, System), an icon, title and summary on each row. Tap a row with `>` for a page of choices (rotation, temperature, sleep on battery, which apps the home screen shows); tap a switch to turn it on or off; WiFi has the saved networks and adds new ones; *Connect to the setup app* starts Bluetooth setup | Kept in the board's flash |
 | About | First, the project: the Sticky OS logo, that it's free, open-source firmware not made by or affiliated with Seeed Studio, and where it lives: the website (sticky-os.space.fast, with a QR code to scan), the source code (github.com/Sticky-OS/sticky-os) and the videos (youtube.com/@stickyosapp). Then, a page at a time: firmware, chip, memory, network, screen, touch, battery, sensors, card, uptime, in large type with each value under its label | The board itself; OK also prints it on the serial port |
@@ -343,12 +343,14 @@ Controls inside an app:
 ## Games
 
 **Games** on the home screen is a folder: it opens its own grid of games,
-each with a line of how you're doing (your best, your level, the daily
-streak). Tap one; *Back* (top left) returns to the grid, the status bar
+all twelve on one page (three across upright, six sideways), each with a
+line of how you're doing (your best, your level, the daily streak, your
+wins). Tap one; *Back* (top left) returns to the grid, the status bar
 goes home. UP / DOWN move a ring from game to game (and, inside a game,
 from button to button), OK presses it; sideways swipes stay in the game
 rather than changing app. A game left half-played (2048, X and O, a quiz,
-a story) is where you left it when you come back. Settings > Home screen
+a story, Solitaire, Mines, Four in a Row, Chess) is where you left it when
+you come back. Settings > Home screen
 hides Games, or any game in it.
 
 | Game | How it plays |
@@ -361,6 +363,10 @@ hides Games, or any game in it.
 | Adventure | Pick a world (pirates, space, a castle...) or type your own idea, and the AI tells a story a scene at a time; you choose what happens next from two or three ways, and it ends happily after about eight scenes. *The Lighthouse Key* is a story built into the board, with its own turns and ending, for when there's no AI |
 | X and O | You're X against the board, at Easy, Medium, Hard or Best (it can't be beaten, only drawn). Who starts takes turns; your wins, draws and losses are kept |
 | Tutor | A school tutor: class, then subject, then lessons. Now 7th grade maths, geometry: all of Unit 4 (the quadrilateral: 4.1 to 4.8) and 7.2, the Pythagorean theorem (the numbers follow the Romanian textbook). Each lesson has a summary, three worked examples and 6 to 8 exercises with four answers; a wrong one says why, *Hints* gives two clues that never give the answer away, *Solution* shows the whole solution. The exercises are made from numbers each time and checked a second way before they're shown. A lesson's best score is kept; *Clear progress* (tap twice) clears it. **Languages:** the lessons and exercises are in Romanian and English. With the board in Romanian, Tutor is in Romanian; in English, or any other language, its lessons and exercises are in English (never half one language and half another), and its buttons follow the board's language where they're translated. Change the language with an exercise open and the same exercise, with the same numbers and the same right answer, comes back in the new language |
+| Solitaire | Klondike. Tap a card and it goes to its foundation, or to the only column it fits; if it could go to more than one place it's picked up (drawn black) and your next tap says where. Tap the stock to turn a card: one at a time (*Draw 1*) or three (*Draw 3*, harder), chosen on the *New game* card. *Undo* takes back a move at a time. Once every card in the columns is face up, the game plays itself out. When no move can get anywhere, the screen says *No moves left*: Undo, or start a new game. Your wins (of games played) and the fewest moves in a win are kept |
+| Mines | Find the mines without digging one up. Three sizes, chosen on the *New game* card with the best time for each: Small (8 x 10, 10 mines), Medium (9 x 12, 16) and Large (10 x 13, 20). The *Dig* / *Flag* switch says what a tap does (OK swaps them): dig a square, or flag it as a mine (tap again to take the flag off). The first square you dig is always safe and opens a patch. Tap a number that already has its flags around it to open the squares left around it. A counter shows the mines still to flag, a clock the time. The quickest win at each size is kept |
+| Four in a Row | Against the board, at Easy, Medium or Hard. Tap a column to drop a disc: yours are rings, the board's are solid, and the disc played last has a dot. Four in a line (across, down or slanting) wins and is struck through. Who starts takes turns, a game each; your wins, draws and losses are kept |
+| Chess | You play White against the board, at Easy, Medium or Hard. The board fills the screen (no status bar). Tap a piece: its moves show as dots, its captures as corners; tap where it goes (or the piece again to put it back). A pawn that reaches the last row asks what to become. The board shows *Thinking...*, then its move (on Hard it takes up to about 1.3 seconds). *Menu* opens a panel with *Back*, the levels, your wins, draws and losses, *Undo* (your last move and the board's reply) and *Resign* (tap twice), or *New game* once a game is over; tap it again to close it. A game ends in checkmate, stalemate, or a draw (the same position three times, fifty moves with no capture or pawn move, or too few pieces to checkmate). Home is a swipe up from the bottom edge, or UP and DOWN together |
 
 While the AI writes a quiz or a scene the screen says so, with *Cancel*
 (OK cancels too); every wait is bounded (45 s for a quiz, 30 s for a scene).
@@ -371,9 +377,14 @@ structured outputs), read defensively as a recipe is: capped, folded to
 the letters the fonts have, and a question without four answers is left out.
 
 The progress is kept in the board's flash and written by the loop only:
-`/games.txt` (best scores, levels, stars, the daily streak, the X and O
-tally) and `/games-practice.txt` (up to 30 maths questions to practise).
+`/games.txt` (best scores, levels, stars, the daily streak, the X and O,
+Four in a Row and Chess tallies, Solitaire's wins and fewest moves, Mines'
+wins and best times) and `/games-practice.txt` (up to 30 maths questions to practise).
 Demo mode shows made-up progress and saves nothing.
+
+The rules of Solitaire, Mines, Four in a Row and Chess come from
+[CrossPlay](https://github.com/ma-r-s/crossplay) by Mario Ruiz (MIT); the
+chess pieces are the "celtic" set by Maurizio Monge (MIT).
 
 ## Books
 

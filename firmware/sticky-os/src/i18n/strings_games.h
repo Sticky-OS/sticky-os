@@ -20,6 +20,10 @@ S(S_G_DAILY, "Daily maths")
 S(S_G_QUIZ, "Quiz")
 S(S_G_ADVENTURE, "Adventure")
 S(S_G_XO, "X and O")
+S(S_G_SOLITAIRE, "Solitaire")  // Klondike patience, one player
+S(S_G_MINES, "Mines")  // the classic mine-finding puzzle (not called Minesweeper: a trademark)
+S(S_G_FOUR, "Four in a Row")  // drop discs, four in a line wins (not called Connect Four: a trademark)
+S(S_G_CHESS, "Chess")
 S(S_G_TUTOR7, "Tutor")  // a school tutor, class by class and subject by subject (now: 7th grade maths, geometry); its lessons are in Romanian and English (src/tutor/)
 S(S_G_GAMES, "Games")  // the status bar on the launcher; a button back to it
 

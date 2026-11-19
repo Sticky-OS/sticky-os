@@ -103,6 +103,17 @@
 #include "tutor7_core.h"
 #include "tutor7_lessons.h"
 #include "tutor7_ui.h"
+// The games from CrossPlay (github.com/ma-r-s/crossplay, MIT): their rules, as CrossPlay wrote
+// them; games_solitaire.ino, games_mines.ino, games_four.ino and games_chess.ino draw them. See src/crossplay/README.md.
+#include "src/crossplay/solitaire/SolitaireCore.h"
+#include "src/crossplay/minesweeper/MinesweeperCore.h"
+#include "src/crossplay/minesweeper/MinesweeperFlow.h"
+#include "src/crossplay/connectfour/ConnectFourCore.h"
+#include "src/crossplay/connectfour/ConnectFourBrain.h"
+#include "src/crossplay/connectfour/ConnectFourFlow.h"
+#include "src/crossplay/chess/ChessCore.h"
+#include "src/crossplay/chess/ChessEngine.h"
+#include "src/crossplay/chess/ChessPieces.h"
 #include "glyphs.h"
 #include "i18n.h"
 #include "calendar.h"
@@ -1013,6 +1024,7 @@ static bool fullScreenApp(int a) { return a == APP_PHOTOS || a == APP_QUOTE; }
 // back for that: the four-grey picture would cover a badge.
 static bool fullScreenOn() {
   if (screen == SCREEN_APP && app == APP_BOOKS && booksFullScreen() && !setupMode && !updScreen && !revertNotice) return true;  // a book's pages
+  if (screen == SCREEN_APP && app == APP_GAMES && chessFullScreen() && !setupMode && !updScreen && !revertNotice) return true;  // a chess board (games_chess.ino)
   return screen == SCREEN_APP && fullScreenApp(app) && (settings.fullScreen >> app & 1) && !setupMode && !updScreen && !revertNotice &&
          !(sleepingNow && app == APP_PHOTOS);
 }
@@ -6068,6 +6080,7 @@ static void setDemo(bool on) {
   notesDemo(on);
   recipesDemo(on);
   gamesDemo(on);
+  if (!on) crossplayDemoEnded();
   if (recipeMode == RM_OPEN) recipeMode = RM_LIST;
   quoteReset();
   xSemaphoreTake(dataLock, portMAX_DELAY);

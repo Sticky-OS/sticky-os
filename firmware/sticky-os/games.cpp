@@ -12,8 +12,10 @@
 #include "provjson.h"
 #include "recipes.h"  // aiText(), aiJsonObject()
 
-const char *const GAME_NAMES[GAME_COUNT] = {"2048", "Memory", "Maths Quest", "Daily maths", "Quiz", "Adventure", "X and O", "Tutor"};
-static const StrId GAME_STR[GAME_COUNT] = {S_G_2048, S_G_MEMORY, S_G_MATHS, S_G_DAILY, S_G_QUIZ, S_G_ADVENTURE, S_G_XO, S_G_TUTOR7};
+const char *const GAME_NAMES[GAME_COUNT] = {"2048", "Memory", "Maths Quest", "Daily maths", "Quiz", "Adventure", "X and O", "Tutor",
+                                           "Solitaire", "Mines", "Four in a Row", "Chess"};
+static const StrId GAME_STR[GAME_COUNT] = {S_G_2048, S_G_MEMORY, S_G_MATHS, S_G_DAILY, S_G_QUIZ, S_G_ADVENTURE, S_G_XO, S_G_TUTOR7,
+                                           S_G_SOLITAIRE, S_G_MINES, S_G_FOUR, S_G_CHESS};
 const char *gameName(int g) { return g >= 0 && g < GAME_COUNT ? T(GAME_STR[g]) : ""; }
 
 // ---------------------------------------------------------------- random numbers
@@ -70,6 +72,12 @@ void gamesBegin() {
     else if (k == "quizBest") p.quizBest = n;
     else if (k == "stories") p.stories = n;
     else if (k == "xo") sscanf(v.c_str(), "%d %d %d %d", &p.xoWins, &p.xoDraws, &p.xoLosses, &p.xoLevel);
+    else if (k == "sol") sscanf(v.c_str(), "%d %d %d", &p.solPlayed, &p.solWon, &p.solBest);
+    else if (k == "mines")
+      sscanf(v.c_str(), "%d %d %d %d %d %d %d %d", &p.minesWon[0], &p.minesWon[1], &p.minesWon[2], &p.minesLost, &p.minesLevel,
+             &p.minesBest[0], &p.minesBest[1], &p.minesBest[2]);
+    else if (k == "four") sscanf(v.c_str(), "%d %d %d %d", &p.fourWins, &p.fourDraws, &p.fourLosses, &p.fourLevel);
+    else if (k == "chess") sscanf(v.c_str(), "%d %d %d %d", &p.chessWins, &p.chessDraws, &p.chessLosses, &p.chessLevel);
     else if (k == "tutor7") {
       int from = 0;
       for (int i = 0; i < 16 && from < (int)v.length(); i++) {
@@ -93,6 +101,17 @@ void gamesBegin() {
   }
   if (f) f.close();
   store->progress.xoLevel = constrain(store->progress.xoLevel, 0, XO_LEVELS - 1);
+  store->progress.minesLevel = constrain(store->progress.minesLevel, 0, 2);
+  store->progress.fourLevel = constrain(store->progress.fourLevel, 0, 2);
+  store->progress.chessLevel = constrain(store->progress.chessLevel, 0, 2);
+  {  // counts and bests from a damaged file: never negative (a negative best could never be beaten)
+    GameProgress &p = store->progress;
+    for (int *v : {&p.solPlayed, &p.solWon, &p.solBest, &p.minesLost, &p.fourWins, &p.fourDraws, &p.fourLosses, &p.chessWins,
+                   &p.chessDraws, &p.chessLosses})
+      *v = max(*v, 0);
+    for (int i = 0; i < 3; i++) p.minesWon[i] = max(p.minesWon[i], 0), p.minesBest[i] = max(p.minesBest[i], 0);
+    p.solWon = min(p.solWon, p.solPlayed);
+  }
 
   // Practice: "text\tanswer\to1\to2\to3\to4\thint" a line.
   f = LittleFS.open(PRACTICE, "r");
@@ -138,6 +157,9 @@ void gamesSave() {
   f.print("tutor7");
   for (int i = 0; i < 16; i++) f.printf(" %d", p.tutor7Best[i]);
   f.print("\n");
+  f.printf("sol %d %d %d\nmines %d %d %d %d %d %d %d %d\nfour %d %d %d %d\nchess %d %d %d %d\n", p.solPlayed, p.solWon, p.solBest,
+           p.minesWon[0], p.minesWon[1], p.minesWon[2], p.minesLost, p.minesLevel, p.minesBest[0], p.minesBest[1], p.minesBest[2],
+           p.fourWins, p.fourDraws, p.fourLosses, p.fourLevel, p.chessWins, p.chessDraws, p.chessLosses, p.chessLevel);
   f.close();
   f = LittleFS.open(PRACTICE, "w");
   if (f) {
@@ -168,6 +190,10 @@ void gamesDemo(bool on) {
   for (int i = 0; i < 3; i++) p.mathsStars[i] = stars[i], p.mathsBest[i] = best[i];
   p.quizPlayed = 6, p.quizBest = 7, p.stories = 3;
   p.xoWins = 5, p.xoDraws = 3, p.xoLosses = 2, p.xoLevel = 2;
+  p.solPlayed = 12, p.solWon = 4, p.solBest = 118;
+  p.minesWon[0] = 7, p.minesWon[1] = 2, p.minesLost = 5, p.minesLevel = 1, p.minesBest[0] = 64, p.minesBest[1] = 241;
+  p.fourWins = 6, p.fourDraws = 1, p.fourLosses = 4, p.fourLevel = 1;
+  p.chessWins = 2, p.chessDraws = 1, p.chessLosses = 5, p.chessLevel = 0;
   time_t t = time(nullptr) - 86400;  // done yesterday: today's still to do, the streak alive
   struct tm d = *localtime(&t);
   p.dailyDay = (d.tm_year + 1900) * 10000L + (d.tm_mon + 1) * 100 + d.tm_mday;

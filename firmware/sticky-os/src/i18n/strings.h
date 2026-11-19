@@ -487,5 +487,9 @@ S(S_BT_DIDNT_START, "Bluetooth didn't start")
 // ---- the keyboard's layers
 S(S_KB_ABC, "ABC")  // the key back to the letters, ~110 px, bold 12pt (Russian: the Cyrillic letters, АБВ)
 #include "strings_games.h"  // the Games folder
+#include "strings_solitaire.h"  // Games: Solitaire (games_solitaire.ino)
+#include "strings_mines.h"  // Games: Mines (games_mines.ino)
+#include "strings_four.h"  // Games: Four in a Row (games_four.ino)
+#include "strings_chess.h"  // Games: Chess (games_chess.ino)
 #include "strings_net.h"  // the network side: errors, statuses, the AI's own replies
 #include "strings_books.h"  // the Books app

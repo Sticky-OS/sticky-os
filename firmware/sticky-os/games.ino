@@ -23,6 +23,21 @@ static void actTutor7(int id);
 static void tutor7Open();
 static void tutor7Peek(String &s);
 
+// The games from CrossPlay (src/crossplay: their rules, MIT): each has its tab, which keeps
+// its own state in PSRAM and gives the launcher these. <g>Open: the game opened from the
+// launcher (where it was left, else a new one); draw<G> / act<G>: the screen and its taps;
+// <g>Icon: its little picture; <g>Line: the launcher's line under its name; <g>Peek: the
+// serial port's "game peek"; <g>Ok: OK with no ring (true when taken).
+#define CROSSPLAY_GAME(G, g) \
+  static void g##Open(); static void draw##G(); static void act##G(int id); static void g##Icon(int cx, int cy, int s, int t); \
+  static String g##Line(); static void g##Peek(String &s); static bool g##Ok(); static void g##Forget();
+CROSSPLAY_GAME(Solitaire, solitaire)
+CROSSPLAY_GAME(Mines, mines)
+CROSSPLAY_GAME(Four, four)
+CROSSPLAY_GAME(Chess, chess)
+#undef CROSSPLAY_GAME
+
+
 // Everything the games hold while the board runs, in one place in PSRAM
 // (gamesUiBegin()): only the pointer takes internal RAM.
 struct GTarget { int16_t x, y, w, h, id; };
@@ -82,6 +97,19 @@ static GState *gs;
 static void gamesUiBegin() {
   void *p = heap_caps_malloc(sizeof(GState), MALLOC_CAP_SPIRAM);
   gs = p ? new (p) GState() : new GState();
+}
+
+// Demo mode has ended (setDemo): the four games drop the boards dealt for the
+// screenshots, so a demo board can't be finished for real and save a made-up
+// best or tally; the one on screen deals afresh now. (Not static: sticky-os.ino calls it.)
+void crossplayDemoEnded() {
+  solitaireForget(), minesForget(), fourForget(), chessForget();
+  switch (gs->gGame) {
+    case GAME_SOLITAIRE: solitaireOpen(); break;
+    case GAME_MINES: minesOpen(); break;
+    case GAME_FOUR: fourOpen(); break;
+    case GAME_CHESS: chessOpen(); break;
+  }
 }
 
 // ---- what can be tapped, and the ring
@@ -262,6 +290,10 @@ static void gameIcon(int g, int cx, int cy, int s) {
       gGlyphX(cx + c, cy + c, c / 3, t);
       break;
     }
+    case GAME_SOLITAIRE: solitaireIcon(cx, cy, s, t); break;
+    case GAME_MINES: minesIcon(cx, cy, s, t); break;
+    case GAME_FOUR: fourIcon(cx, cy, s, t); break;
+    case GAME_CHESS: chessIcon(cx, cy, s, t); break;
     case GAME_TUTOR7: {  // a right triangle with its right angle marked
       int x0 = cx - r + s / 8, x1 = cx + r - s / 8, y0 = cy + r - s / 8, y1 = cy - r + s / 8, m = max(6, s / 5);
       thickLine(x0, y0, x1, y0, t + 1);
@@ -1645,6 +1677,10 @@ static String launcherLine(int g) {
       for (int i = 0; i < t7::LESSON_COUNT; i++) done += p.tutor7Best[t7::lesson(i).slot] > 0;
       return done ? TF(S_G_L_LESSONS, done, t7::LESSON_COUNT) : String(T(S_G_L_GRADE7_MATHS));
     }
+    case GAME_SOLITAIRE: return solitaireLine();
+    case GAME_MINES: return minesLine();
+    case GAME_FOUR: return fourLine();
+    case GAME_CHESS: return chessLine();
   }
   return "";
 }
@@ -1655,7 +1691,11 @@ static void drawLauncher() {
     drawSetupCard(T(S_G_NO_GAMES), {T(S_G_NO_GAMES_1), "", T(S_G_NO_GAMES_2)});
     return;
   }
-  int cols = TALL ? 3 : 4, cellW = (W - 32) / cols, cellH = TALL ? 196 : 186, top = BODY_Y + (TALL ? 30 : 22);
+  // As many columns and rows as the games need: 3 wide upright, up to 6 sideways; rows shrink
+  // (to no less than the tile, its name and its line) so twelve games still fit on one page.
+  int n = games.size(), cols = TALL ? 3 : constrain((n + 1) / 2, 4, 6), rows = (n + cols - 1) / cols;
+  int top = BODY_Y + (TALL ? 30 : 22), cellW = (W - 32) / cols;
+  int cellH = constrain((BODY_Y + BODY_H - top - 8) / max(rows, 1), 162, TALL ? 196 : 186);
   const int TILE = 96;
   if (gs->gFocusId < 0 || !std::count(games.begin(), games.end(), gs->gFocusId)) gs->gFocusId = games[0];  // the ring is always on one, as at home
   for (int i = 0; i < (int)games.size(); i++) {
@@ -1663,9 +1703,18 @@ static void drawLauncher() {
     canvas->drawRoundRect(cx - TILE / 2, y, TILE, TILE, 22, INK);
     canvas->drawRoundRect(cx - TILE / 2 + 1, y + 1, TILE - 2, TILE - 2, 21, INK);
     gameIcon(g, cx, y + TILE / 2, 58);
-    const GFXfont *nf = textW(&FreeSansBold12pt7b, gameName(g)) <= cellW - 8 ? &FreeSansBold12pt7b : &FreeSans12pt7b;  // "Maths Quest" in portrait
-    textCentre(cx, y + TILE + 30, nf, fitted(nf, gameName(g), cellW - 8).c_str());
-    textCentre(cx, y + TILE + 54, &FreeSans9pt7b, fitted(&FreeSans9pt7b, launcherLine(g), cellW - 8).c_str());
+    // The name: bold, else regular, else small bold ("Maths Quest" upright; "Four in a Row"
+    // and longer languages in the six narrow columns sideways).
+    const GFXfont *nf = &FreeSansBold9pt7b;
+    for (const GFXfont *f : {&FreeSansBold12pt7b, &FreeSans12pt7b})
+      if (textW(f, gameName(g)) <= cellW - 8) { nf = f; break; }
+    if (textW(nf, gameName(g)) <= cellW - 8) {
+      textCentre(cx, y + TILE + 30, nf, gameName(g));
+      gCentred(cx, y + TILE + 54, &FreeSans9pt7b, launcherLine(g), cellW - 8, 20, 2);  // two lines when it needs them
+    } else {  // too long even small ("Vier in einer Reihe" sideways): the name on two lines, its line under them
+      int ny = gCentred(cx, y + TILE + 24, nf, gameName(g), cellW - 8, 19, 2);
+      gCentred(cx, ny + 3, &FreeSans9pt7b, launcherLine(g), cellW - 8, 20, 1);
+    }
     gTarget(cx - TILE / 2, y, TILE, TILE, g);
     gs->gHits.back() = {(int16_t)x, (int16_t)y, (int16_t)cellW, (int16_t)(cellH - 10), (int16_t)g};  // the label counts too
   }
@@ -1690,6 +1739,10 @@ static void gameOpen(int g) {
       if (std::count(gs->xoBoard, gs->xoBoard + 9, ' ') == 9 || demoMode) gs->xoPlayerStarts = !gs->xoPlayerStarts, xoNew();
       break;
     case GAME_TUTOR7: tutor7Open(); break;
+    case GAME_SOLITAIRE: solitaireOpen(); break;
+    case GAME_MINES: minesOpen(); break;
+    case GAME_FOUR: fourOpen(); break;
+    case GAME_CHESS: chessOpen(); break;
   }
   render(true);
 }
@@ -1719,6 +1772,10 @@ static void drawGames() {
     case GAME_ADVENTURE: drawAdventure(); break;
     case GAME_XO: drawXo(); break;
     case GAME_TUTOR7: drawTutor7(); break;
+    case GAME_SOLITAIRE: drawSolitaire(); break;
+    case GAME_MINES: drawMines(); break;
+    case GAME_FOUR: drawFour(); break;
+    case GAME_CHESS: drawChess(); break;
     default: drawLauncher(); break;
   }
 }
@@ -1736,6 +1793,10 @@ static void gamesActivate(int id) {
     case GAME_ADVENTURE: return actAdventure(id);
     case GAME_XO: return actXo(id);
     case GAME_TUTOR7: return actTutor7(id);
+    case GAME_SOLITAIRE: return actSolitaire(id);
+    case GAME_MINES: return actMines(id);
+    case GAME_FOUR: return actFour(id);
+    case GAME_CHESS: return actChess(id);
     default:
       if (id >= 0 && id < GAME_COUNT) gameOpen(id);
   }
@@ -1784,6 +1845,10 @@ static void gamesOk() {
   if (gs->gGame == GAME_QUIZ && gs->qScreen == QS_QUESTION && gs->qPicked >= 0) return quizNext();
   if (gs->gGame == GAME_QUIZ && gs->qScreen == QS_WAIT) return actQuiz(ID_CANCEL);
   if (gs->gGame == GAME_ADVENTURE && gs->aWaiting) return actAdventure(ID_CANCEL);
+  if (gs->gGame == GAME_SOLITAIRE && solitaireOk()) return;
+  if (gs->gGame == GAME_MINES && minesOk()) return;
+  if (gs->gGame == GAME_FOUR && fourOk()) return;
+  if (gs->gGame == GAME_CHESS && chessOk()) return;
   for (int id : {ID_NEXT, ID_AGAIN, ID_PLAY, ID_OFFLINE, ID_NEW})  // an end screen: its main button
     if (gHas(id)) return gamesActivate(id);
 }
@@ -1831,7 +1896,8 @@ static void gamesAiArrived(const String &say, const String &raw) {
 // ======================================================================== the serial port's game commands
 
 // game                  the launcher
-// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor)
+// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor,
+//                       8 Solitaire, 9 Mines, 10 Four in a Row, 11 Chess)
 // game peek             what's on the screen, as text: the board, the cards, the right answer
 // game right / wrong    answer the question on screen right (or wrong): Maths, Quiz; Memory: a pair (or a miss)
 // game slide <0-3>      2048: left, right, up, down
@@ -1876,6 +1942,14 @@ static void gamesCommand(const String &arg) {
       s += String(" ") + i18nRaw(L_EN, gs->xoSay);
     } else if (gs->gGame == GAME_TUTOR7) {
       tutor7Peek(s);
+    } else if (gs->gGame == GAME_SOLITAIRE) {
+      solitairePeek(s);
+    } else if (gs->gGame == GAME_MINES) {
+      minesPeek(s);
+    } else if (gs->gGame == GAME_FOUR) {
+      fourPeek(s);
+    } else if (gs->gGame == GAME_CHESS) {
+      chessPeek(s);
     } else {
       s += String("screen of ") + (gs->gGame < 0 ? "the launcher" : GAME_NAMES[gs->gGame]);
     }

@@ -14,7 +14,9 @@
 #include <new>
 #include <vector>
 
-enum GameId : uint8_t { GAME_2048, GAME_MEMORY, GAME_MATHS, GAME_DAILY, GAME_QUIZ, GAME_ADVENTURE, GAME_XO, GAME_TUTOR7, GAME_COUNT };
+// New games go at the end: Settings keeps hidden games as one bit each, by this number.
+enum GameId : uint8_t { GAME_2048, GAME_MEMORY, GAME_MATHS, GAME_DAILY, GAME_QUIZ, GAME_ADVENTURE, GAME_XO, GAME_TUTOR7,
+                        GAME_SOLITAIRE, GAME_MINES, GAME_FOUR, GAME_CHESS, GAME_COUNT };
 extern const char *const GAME_NAMES[GAME_COUNT];  // English, for the serial port's lines
 const char *gameName(int g);  // in the board's language, for the screen
 
@@ -39,6 +41,12 @@ struct GameProgress {
   int stories = 0;          // adventures played to the end
   int xoWins = 0, xoDraws = 0, xoLosses = 0, xoLevel = 1;  // level 0 easy .. 3 can't be beaten
   uint8_t tutor7Best[16] = {};  // Tutor7: the most exercises right first time in each lesson (of its practice)
+  // The games from CrossPlay (src/crossplay): Solitaire (Klondike), Mines, Four in a Row, Chess.
+  int solPlayed = 0, solWon = 0, solBest = 0;  // deals played, won; the fewest moves in a win (0: none yet)
+  int minesWon[3] = {}, minesLost = 0, minesLevel = 0;  // wins per board size (0 small .. 2 large); the size last played
+  int minesBest[3] = {};  // the quickest win per size, in seconds (0: none yet)
+  int fourWins = 0, fourDraws = 0, fourLosses = 0, fourLevel = 1;  // level 0 easy .. 2 hard
+  int chessWins = 0, chessDraws = 0, chessLosses = 0, chessLevel = 0;  // level 0 easy .. 2 hard
 };
 GameProgress &gameProgress();
 void gamesBegin();     // after LittleFS is mounted: reads what's saved
