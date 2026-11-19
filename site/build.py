@@ -19,6 +19,11 @@ Until a file is there, its frame shows a "screenshot coming" placeholder.
   calendar-day.png   calendar-week.png   notes.png   keyboard.png
 (home-landscape.png also replaces the Timer picture in the hero.)
 Captures must hold demo data only: no names, WiFi names, addresses or places.
+The board's black-and-white captures (480x800 or 800x480, or those doubled)
+are drawn smooth at build time: shots/smooth/<name>.<width>.<fingerprint>.webp
+at 1x, 2x and 3x (kept by browsers for a year: the name changes with the picture),
+offered to the browser by srcset, so the screens read like a print at any size
+instead of showing their pixels unevenly when scaled (smooth_shots(); needs Pillow).
 
 Blog posts live in src/blog/<permalink>/index.html, listed in src/blog/index.html.
 A permalink is the title's keywords, lower case and hyphenated, without small
@@ -40,6 +45,12 @@ import shutil
 import subprocess
 import sys
 import zipfile
+import hashlib
+
+try:  # the screenshots' smooth versions (smooth_shots); --publish refuses without it
+    from PIL import Image, ImageFilter
+except ImportError:
+    Image = None
 
 NAME = "Sticky OS"   # working name: change it here only
 
@@ -159,6 +170,80 @@ def brand_kit():
             z.writestr(info, f.read_bytes())
 
 
+# ---- screenshots, smooth
+
+PANEL = {(480, 800), (800, 480)}
+
+
+def smooth_versions(png):
+    """The smooth 1x/2x/3x versions of a board capture: [(width, path)], or [] if it isn't one.
+
+    A capture is the board's 1-bit frame (sometimes saved doubled). Scaled by a
+    browser, its pixels come out uneven (some rows two pixels, some three) or
+    blurred. Drawn here instead: enlarged 6x, softened by about half a board
+    pixel, and the soft edge pulled back into a clean anti-aliased contour, then
+    reduced to each size: the letters keep their shapes and read like print."""
+    im = Image.open(png)
+    if im.mode not in ("1", "L", "P") or len(im.convert("L").getcolors(256) or range(3)) > 2:
+        return []  # photos, covers, anything with greys: as they are
+    im = im.convert("L")
+    if (im.width // 2, im.height // 2) in PANEL and im.size not in PANEL:
+        im = im.resize((im.width // 2, im.height // 2), Image.NEAREST)  # saved doubled: the board's own pixels
+    if im.size not in PANEL:
+        return []
+    k = 6
+    big = im.resize((im.width * k, im.height * k), Image.NEAREST).filter(ImageFilter.GaussianBlur(0.55 * k))
+    lo, hi = 96, 160
+    big = big.point([0 if v <= lo else 255 if v >= hi else (v - lo) * 255 // (hi - lo) for v in range(256)])
+    # In shots/smooth/, named with a fingerprint of the capture: a changed capture gets new
+    # names, so the browser may keep these for a year (src/_headers) and never shows a stale one.
+    tag = hashlib.sha256(png.read_bytes()).hexdigest()[:10]
+    folder = png.parent / "smooth"
+    folder.mkdir(exist_ok=True)
+    out = []
+    for scale in (1, 2, 3):
+        w, h = im.width * scale, im.height * scale
+        path = folder / f"{png.stem}.{w}.{tag}.webp"
+        big.resize((w, h), Image.LANCZOS).save(path, "WEBP", quality=88, method=6)
+        out.append((w, path))
+    return out
+
+
+def smooth_shots():
+    """Makes the smooth versions and points the pages at them (srcset; lightbox links at 3x)."""
+    if Image is None:
+        print("build: Pillow missing, screenshots left as captured (pip install pillow)")
+        return 0
+    made = {}
+    for png in sorted((DIST / "shots").glob("*.png")):
+        versions = smooth_versions(png)
+        if versions:
+            made[png.name] = versions
+    shot = re.compile(r'((?:\.\./)*shots/)([a-z0-9-]+\.png)')
+    for page in DIST.rglob("*.html"):
+        text = page.read_text()
+
+        def img(m):
+            tag = m.group(0)
+            found = shot.search(tag)
+            if not found or found.group(2) not in made or "srcset=" in tag:
+                return tag
+            base, versions = found.group(1), made[found.group(2)]
+            srcset = ", ".join(f"{base}smooth/{p.name} {i + 1}x" for i, (w, p) in enumerate(versions))
+            return tag[:-1].rstrip("/").rstrip() + f' srcset="{srcset}">'
+
+        def link(m):
+            found = shot.search(m.group(0))
+            if not found or found.group(2) not in made:
+                return m.group(0)
+            return m.group(0).replace(found.group(2), "smooth/" + made[found.group(2)][-1][1].name)
+
+        text = re.sub(r"<img\b[^>]*>", img, text)
+        text = re.sub(r'<a\b[^>]*href="[^"]*shots/[a-z0-9-]+\.png"', link, text)
+        page.write_text(text)
+    return len(made)
+
+
 def main():
     keep = {".spacefast", ".gitignore"}   # sf's link to the Space survives a rebuild
     DIST.mkdir(exist_ok=True)
@@ -175,8 +260,9 @@ def main():
             text = text.replace("{{LATEST}}", latest_posts())
         page.write_text(touch_icon(text).replace("{{NAME}}", NAME))
     brand_kit()
+    smooth = smooth_shots()
     shots = sorted(p.name for p in (DIST / "shots").glob("*.png"))
-    print(f"built {DIST} as {NAME!r}; screenshots: {', '.join(shots)}")
+    print(f"built {DIST} as {NAME!r}; screenshots ({smooth} drawn smooth): {', '.join(shots)}")
 
 
 def publish_settings():
@@ -199,6 +285,8 @@ def publish_settings():
 if __name__ == "__main__":
     if "--publish" in sys.argv[1:]:
         space, profile = publish_settings()   # checked before building: a clear error first
+        if Image is None:
+            sys.exit("build: --publish needs Pillow (pip install pillow): without it the screenshots go out unsmoothed")
         main()
         subprocess.run(["sf", "publish", str(DIST), "--profile", profile, "--space", space,
                         "--mode", "website", "-y", "--wait"], check=True)
