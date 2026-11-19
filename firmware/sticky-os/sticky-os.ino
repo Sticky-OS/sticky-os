@@ -220,6 +220,7 @@ static bool greyShown;     // the panel holds greys: the next black-and-white dr
 static int partials;       // ghosting since the last full refresh, in fifths of a partial (see show())
 static seeed_epaper_panel_handle_t panel;
 static const char *panelName = "none";
+static bool panelSsd2677;  // newer boards: it takes its waveform temperature from the SHT40
 static const seeed_epaper_area_t FULL = {0, 0, NW, NH};
 
 static i2c_master_bus_handle_t sensorBus, touchBus;
@@ -449,8 +450,8 @@ static void powerLatch() {
     gpio_set_level((gpio_num_t)pin, 1);
   }
   gpio_deep_sleep_hold_dis();
-  for (int pin : {PIN_POWER_HOLD, PIN_POWER_LOCK, PIN_BTN_OK, PIN_EPD_EN, PIN_TOUCH_EN,
-                  PIN_TOUCH_RST, PIN_SD_EN, PIN_BUZZER, PIN_BAT_CHG_EN})
+  for (int pin : {PIN_POWER_HOLD, PIN_POWER_LOCK, PIN_BTN_OK, PIN_EPD_EN, PIN_EPD_RST, PIN_EPD_DC,
+                  PIN_EPD_CS, PIN_TOUCH_EN, PIN_TOUCH_RST, PIN_SD_EN, PIN_MIC_EN, PIN_BUZZER, PIN_BAT_CHG_EN})
     gpio_hold_dis((gpio_num_t)pin);
 }
 
@@ -631,7 +632,8 @@ static bool screenBegin() {
   }
   seeed_epaper_panel_model_t model;
   seeed_epaper_panel_get_model(panel, &model);
-  panelName = model == SEEED_EPAPER_PANEL_SSD2677 ? "SSD2677" : "SSD1677";
+  panelSsd2677 = model == SEEED_EPAPER_PANEL_SSD2677;
+  panelName = panelSsd2677 ? "SSD2677" : "SSD1677";
   if (model == SEEED_EPAPER_PANEL_SSD1677 && PANEL_WRITE_HZ > dev.clock_speed_hz) {
     // Known now, and never read again: open it again on a faster clock.
     // Sending a frame is about half of a refresh at 2 MHz.
@@ -677,6 +679,44 @@ static bool gaugeWord(uint8_t reg, int16_t &value) {
   return true;
 }
 
+// The gauge counts in units set by its sense resistor, which is part of the
+// board: the reTerminal Sticky's 100 mOhm (R46) makes current, capacity and
+// power come in tenths of a mA, mAh and mW (Seeed: the 750 mAh cell is set up
+// as DesignCapacity 7500). So they are always divided by 10. DesignCapacity is
+// read only to say so in the log: a gauge that lost its setup (a flat battery,
+// one taken out) reads its default there, and that mustn't turn the scaling off.
+// Voltage, percentages and cycles never scale.
+static int gaugeDesign = -1;  // DesignCapacity 0x3C as read, -1 until it answers
+static const int gaugeScale = 10;  // what current, capacity and power are divided by
+
+static void gaugeCheckScale() {
+  int16_t v;
+  if (gaugeDesign >= 0 || !gaugeWord(0x3C, v)) return;
+  gaugeDesign = (uint16_t)v;
+  Serial.printf("battery: design capacity %d%s; current, capacity and power divided by %d\n", gaugeDesign,
+                gaugeDesign == 7500 ? "" : " (not the stock 7500: the gauge may have lost its setup)", gaugeScale);
+}
+
+// A raw count in real units, rounded to the nearest.
+static int gaugeScaled(int16_t raw) {
+  return gaugeScale == 1 ? raw : (raw + (raw < 0 ? -gaugeScale / 2 : gaugeScale / 2)) / gaugeScale;
+}
+
+// The `gauge` serial command: the registers as read, and the scale chosen.
+static void gaugeDump() {
+  static const struct { uint8_t reg; const char *name; } REGS[] = {
+    {0x08, "Voltage"}, {0x0C, "Current"}, {0x10, "RemainingCapacity"}, {0x12, "FullChargeCapacity"},
+    {0x14, "AverageCurrent"}, {0x16, "TimeToEmpty"}, {0x24, "AveragePower"}, {0x2A, "CycleCount"},
+    {0x2C, "StateOfCharge"}, {0x2E, "StateOfHealth"}, {0x3C, "DesignCapacity"}};
+  gaugeCheckScale();
+  for (const auto &r : REGS) {
+    int16_t v;
+    if (gaugeWord(r.reg, v)) Serial.printf("gauge: 0x%02X %s %d (0x%04X)\n", r.reg, r.name, v, (uint16_t)v);
+    else Serial.printf("gauge: 0x%02X %s no answer\n", r.reg, r.name);
+  }
+  Serial.printf("gauge: design capacity %d, scale %d (current, capacity and power divided by it)\n", gaugeDesign, gaugeScale);
+}
+
 static void readSensors() {
   now = {};
   now.usb = digitalRead(PIN_EXTERNAL_POWER);
@@ -692,21 +732,33 @@ static void readSensors() {
   }
 
   int16_t mv, soc, ma;  // BQ27220: Voltage 0x08, Current 0x0C, StateOfCharge 0x2C
+  gaugeCheckScale();
   if (gaugeWord(0x08, mv) && gaugeWord(0x2C, soc) && gaugeWord(0x0C, ma)) {
     now.battery = true;
     now.millivolts = mv;
     now.percent = soc;
-    now.milliamps = ma;
+    now.milliamps = gaugeScaled(ma);
     // BQ27220: RemainingCapacity 0x10, FullChargeCapacity 0x12, AverageCurrent 0x14, TimeToEmpty 0x16,
-    // AveragePower 0x24, CycleCount 0x2A, StateOfHealth 0x2E.
+    // AveragePower 0x24, CycleCount 0x2A, StateOfHealth 0x2E. Only current, capacity and power scale.
     int16_t v;
-    now.remainingMah = gaugeWord(0x10, v) ? v : -1;
-    now.fullMah = gaugeWord(0x12, v) ? v : -1;
-    now.averageMa = gaugeWord(0x14, v) ? v : 0;
+    now.remainingMah = gaugeWord(0x10, v) ? gaugeScaled(v) : -1;
+    now.fullMah = gaugeWord(0x12, v) ? gaugeScaled(v) : -1;
+    now.averageMa = gaugeWord(0x14, v) ? gaugeScaled(v) : 0;
     now.minutesLeft = gaugeWord(0x16, v) ? (uint16_t)v : 65535;  // 65535: not discharging
-    now.averageMw = gaugeWord(0x24, v) ? v : 0;
+    now.averageMw = gaugeWord(0x24, v) ? gaugeScaled(v) : 0;
     now.cycles = gaugeWord(0x2A, v) ? v : -1;
     now.health = gaugeWord(0x2E, v) ? v : -1;
+  }
+  // An SSD2677 picks its waveforms for a temperature. Give it the SHT40's
+  // (as Seeed's driver does), and again whenever the room has changed by a
+  // degree, so a board that started warm doesn't keep warm waveforms in a cold
+  // room. Untested: our board has an SSD1677, which ignores this.
+  static float panelTempC = -100;
+  if (panel && panelSsd2677 && now.climate && fabsf(now.tempC - panelTempC) >= 1.0f) {
+    if (seeed_epaper_panel_set_external_temperature(panel, now.tempC) == ESP_OK) {
+      panelTempC = now.tempC;
+      Serial.printf("screen: SSD2677 waveforms for %.1f C from the SHT40\n", now.tempC);
+    }
   }
   Serial.printf("sensors: climate %s %.1f C %.0f %%, battery %s %d mV %d %% %d mA, usb power %d, charger enable %d (0 = on)\n",
                 now.climate ? "ok" : "MISSING", now.tempC, now.humidity,
@@ -5338,6 +5390,14 @@ static void deepSleep() {
   holdAt(PIN_POWER_LOCK, 1);
   holdAt(PIN_BAT_CHG_EN, 0);  // keep charging while asleep, if USB power is there
   for (int pin : {PIN_EPD_EN, PIN_TOUCH_EN, PIN_TOUCH_RST, PIN_SD_EN, PIN_BUZZER}) holdAt(pin, 0);
+  // The panel's supply is off now: a reset, data/command or select line left
+  // high would power it through its protection diodes (FreeInk's PowerManager
+  // notes this on the Sticky). Hold them low, and the microphone's switch off.
+  // CS belongs to the SPI driver: make it a plain pin first, with no pull-up
+  // working against the low. powerLatch() lets go of them all at boot.
+  gpio_reset_pin((gpio_num_t)PIN_EPD_CS);
+  gpio_pullup_dis((gpio_num_t)PIN_EPD_CS);
+  for (int pin : {PIN_EPD_RST, PIN_EPD_DC, PIN_EPD_CS, PIN_MIC_EN}) holdAt(pin, 0);
   gpio_hold_dis((gpio_num_t)PIN_BTN_OK);
   gpio_set_direction((gpio_num_t)PIN_BTN_OK, GPIO_MODE_INPUT);
   gpio_pullup_en((gpio_num_t)PIN_BTN_OK);
@@ -6323,6 +6383,8 @@ static void devCommands() {
       render(false);
     } else if (line == "about") {
       dumpAbout();
+    } else if (line == "gauge") {  // the battery gauge's registers as read, and the scale chosen
+      gaugeDump();
     } else if (line.startsWith("fetch ")) {  // fetch now for that app (1 Weather, 2 Calendar, 6 Claude), as OK in it does
       fetchFor(constrain(line.substring(6).toInt(), 0, APP_COUNT - 1), true);
     } else if (line == "wifi scan") {  // Settings -> WiFi -> Add network: the network task scans

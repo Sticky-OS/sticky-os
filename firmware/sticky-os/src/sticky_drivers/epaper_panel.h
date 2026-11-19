@@ -167,6 +167,15 @@ esp_err_t seeed_epaper_panel_clear(seeed_epaper_panel_handle_t panel,
 // 关闭快速局刷之间保留的屏幕模拟电源；书写空闲后调用一次即可，已断电时不做任何操作。
 esp_err_t seeed_epaper_panel_power_off(seeed_epaper_panel_handle_t panel);
 
+// SSD2677: the temperature its waveforms are picked for, from a sensor of the
+// board's, in place of the controller's own reading (clamped to 0..127 C).
+// From Seeed's sticky-esp-idf-peripherals 2c43a26. The other drivers ignore it.
+esp_err_t seeed_epaper_panel_set_external_temperature(seeed_epaper_panel_handle_t panel,
+                                                      float temperature_c);
+
+esp_err_t seeed_epaper_panel_clear_external_temperature(seeed_epaper_panel_handle_t panel);
+
+
 // Enters controller deep sleep; the e-paper image remains visible without power.
 // 让控制器进入深度睡眠；电子纸断电后仍会保留当前画面。
 esp_err_t seeed_epaper_panel_sleep(seeed_epaper_panel_handle_t panel);

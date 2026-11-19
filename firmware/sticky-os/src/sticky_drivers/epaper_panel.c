@@ -1158,6 +1158,23 @@ esp_err_t seeed_epaper_panel_get_model(seeed_epaper_panel_handle_t panel,
     return ESP_OK;
 }
 
+esp_err_t seeed_epaper_panel_set_external_temperature(seeed_epaper_panel_handle_t panel,
+                                                      float temperature_c)
+{
+    ESP_RETURN_ON_FALSE(panel != NULL, ESP_ERR_INVALID_ARG, TAG, "panel is null");
+    panel->external_temperature_c = temperature_c;
+    panel->external_temperature_valid = true;
+    return ESP_OK;
+}
+
+esp_err_t seeed_epaper_panel_clear_external_temperature(seeed_epaper_panel_handle_t panel)
+{
+    ESP_RETURN_ON_FALSE(panel != NULL, ESP_ERR_INVALID_ARG, TAG, "panel is null");
+    panel->external_temperature_valid = false;
+    panel->external_temperature_c = 0.0f;
+    return ESP_OK;
+}
+
 esp_err_t seeed_epaper_panel_prepare(seeed_epaper_panel_handle_t panel,
                                      seeed_epaper_refresh_mode_t mode)
 {

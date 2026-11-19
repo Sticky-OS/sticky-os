@@ -48,6 +48,7 @@ without touching the board:
 | `shot` | the screen as drawn, as hex: `SHOT 800 480 <rotation>`, 480 rows, `END` |
 | `shot4` | the four-grey frame last sent to the panel (a photo with its status bar): `SHOT4 800 480 <rotation> <on screen 0/1>`, 480 rows of 2 bits a pixel (0 black), `END` |
 | `about` | everything About shows: the website, source and videos, then the device |
+| `gauge` | the battery gauge's registers as read (`gauge: 0x0C Current -1234 (0xFB2E)` ...), then `gauge: design capacity <n>, scale 10`. The board's 100 mOhm sense resistor makes the gauge count current, capacity and power in tenths, so the board always divides them by 10 where it shows or sends them; DesignCapacity (7500 on Seeed's 750 mAh cell) is shown as a check: another value means the gauge lost its setup |
 | `update check`, `update install` | Settings → Software update: Check now, and Install |
 | `fsget <path>` | a LittleFS file as `FSGET <path> <bytes> <base64>` (up to 3 KB) |
 | `fsput <path> <base64>` | writes that file whole (`FSPUT <path> <bytes>`); restart afterwards |
@@ -134,6 +135,11 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
 **Also:**
 
 - New text goes through `S()` with all ten languages (see [Languages](#languages)).
+- `src/sticky_drivers/` holds Seeed's screen and touch drivers. Keep them as
+  close to Seeed's as you can, but changing them is fine when the change works
+  on a board: say in the pull request how you tested it (the timings from the
+  serial log, screenshots), and add a line to `src/sticky_drivers/README.md`
+  saying what changed and where it came from.
 - If something a user sees or does changes, update [docs/guide.md](docs/guide.md)
   and the README in the same pull request.
 - Never commit private values: WiFi names and passwords, keys, tokens, your
@@ -187,7 +193,7 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
   kind per language to read): `tutor7_core.*` and `tutor7_u4.cpp` the exercise generators and their
   checks, `tutor7_lessons.*` each lesson's plan, `tutor7_text.*` and `src/tutor/` the words (see
   [Tutor's languages](#tutors-languages)).
-- `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), unchanged.
+- `src/sticky_drivers/`: Seeed's screen and touch drivers (MIT), kept close to Seeed's; what we changed is listed in their README.
 - `src/brand/brand.h`: the Sticky OS logo as 1-bit bitmaps (the boot screen, About), made
   from the brand's SVGs in `site/src/brand/assets/svg/` by `firmware/tools/gen_brand.py`
   (Pillow and rsvg-convert); run it again when the brand changes.
