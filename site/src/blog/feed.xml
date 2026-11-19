@@ -5,8 +5,16 @@
   <link href="https://sticky-os.space.fast/blog/feed.xml" rel="self"/>
   <link href="https://sticky-os.space.fast/blog/"/>
   <id>https://sticky-os.space.fast/blog/</id>
-  <updated>2026-11-17T12:00:00Z</updated>
+  <updated>2026-11-19T09:00:00Z</updated>
   <author><name>Sticky OS</name></author>
+  <entry>
+    <title>Sticky OS 1.8: Solitaire, Mines, Four in a Row and Chess</title>
+    <link href="https://sticky-os.space.fast/blog/sticky-os-1-8-solitaire-mines-four-in-a-row-chess/"/>
+    <id>https://sticky-os.space.fast/blog/sticky-os-1-8-solitaire-mines-four-in-a-row-chess/</id>
+    <published>2026-11-19T09:00:00Z</published>
+    <updated>2026-11-19T09:00:00Z</updated>
+    <summary>Four new games on the e-paper board: Klondike Solitaire, Mines in three sizes, Four in a Row and Chess against the board at three levels.</summary>
+  </entry>
   <entry>
     <title>AI recipes by voice: ask the fridge door what’s for dinner</title>
     <link href="https://sticky-os.space.fast/blog/ai-recipes-voice-ask-fridge-door-dinner/"/>
