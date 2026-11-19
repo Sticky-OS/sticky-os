@@ -25,7 +25,7 @@ jobs:
         run: firmware/test/i18n/run.sh
       - name: Books (readers, pager, library, fonts)
         run: firmware/test/ebook/run.sh
-      - name: Games (CrossPlay's rules: Solitaire, Mines, Four in a Row, Chess)
+      - name: "Games (CrossPlay's rules: Solitaire, Mines, Four in a Row, Chess)"
         run: firmware/test/games/run.sh
       - name: Tutor (exercises and lessons, in every language)
         run: firmware/test/tutor7/run.sh
