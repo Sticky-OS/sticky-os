@@ -4,6 +4,7 @@
 
 - [Home: tour, apps, install, FAQ](https://sticky-os.space.fast/)
 - [Setup app (Chrome or Edge)](https://sticky-os.space.fast/setup/)
+- [How to play the games](https://sticky-os.space.fast/games/): the twelve games (2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row, Chess): goal, steps, tips and what is kept, with the board's screens step by step.
 - [Source, README and install steps](https://github.com/Sticky-OS/sticky-os)
 - [Latest release](https://github.com/Sticky-OS/sticky-os/releases/latest)
 

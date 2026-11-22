@@ -819,7 +819,7 @@ test('published files hold no private data and point at real files', async () =>
 
 test('site: links to other websites open in a new tab, without opener or referrer', async () => {
   const { readFile } = await import('node:fs/promises');
-  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', ...BLOG_PAGES]) {
+  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', 'games/index.html', ...BLOG_PAGES]) {
     const html = await readFile(new URL('../src/' + f, import.meta.url), 'utf8');
     for (const [tag] of html.matchAll(/<a\s[^>]*href="https?:\/\/[^"]*"[^>]*>/g)) {
       assert.match(tag, /target="_blank"/, `${f}: ${tag}`);
@@ -873,7 +873,7 @@ test('menu: every page gets the one menu from build.py, and its links work', asy
   const labels = (html) => [...html.match(/<nav aria-label="Site">[\s\S]*?<\/nav>/)[0]
     .matchAll(/<a [^>]*>([^<]+)<\/a>/g)].map((m) => m[1]);
   let first;
-  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', ...BLOG_PAGES]) {
+  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', 'games/index.html', ...BLOG_PAGES]) {
     const src = await readFile(new URL('../src/' + f, import.meta.url), 'utf8');
     assert.ok(src.includes('{{HEADER}}') && !/<header class="top"/.test(src), `${f}: says {{HEADER}}, no menu of its own`);
     const page = new URL('../dist/' + f, import.meta.url);
@@ -911,7 +911,7 @@ test('brand: the page passes the CSP, every file it links is published, and ever
   const zip = await readFile(new URL('../dist/brand/sticky-os-brand-kit.zip', import.meta.url));
   execFileSync('python3', [new URL('../build.py', import.meta.url).pathname], { stdio: 'ignore' });
   assert.ok(zip.equals(await readFile(new URL('../dist/brand/sticky-os-brand-kit.zip', import.meta.url))), 'brand: the zip is reproducible');
-  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', ...BLOG_PAGES]) {
+  for (const f of ['index.html', 'setup/index.html', 'brand/index.html', 'games/index.html', ...BLOG_PAGES]) {
     const out = new URL('../dist/' + f, import.meta.url);
     const built = await readFile(out, 'utf8');
     const footer = built.match(/<footer>[\s\S]*?<\/footer>/)[0];
@@ -940,6 +940,64 @@ test('home: "Latest from the blog" shows the newest posts of the blog list, and 
   for (const [, ref] of news.matchAll(/(?:href|src)="([^"#?:]+)"/g)) {   // throws if a file is missing
     await readFile(new URL(ref.endsWith('/') ? ref + 'index.html' : ref, page));
   }
+});
+
+test('games: the help page has every game, passes the CSP, its demos and links work, and is linked', async () => {
+  const { readFile, readdir } = await import('node:fs/promises');
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('python3', [new URL('../build.py', import.meta.url).pathname], { stdio: 'ignore' });
+  const SLUGS = ['2048', 'memory', 'maths-quest', 'daily-maths', 'quiz', 'adventure', 'xo', 'tutor', 'solitaire', 'mines', 'four', 'chess'];
+  const src = await readFile(new URL('../src/games/index.html', import.meta.url), 'utf8');
+  const page = new URL('../dist/games/index.html', import.meta.url);
+  const html = (await readFile(page, 'utf8')).replace(/<!--[\s\S]*?-->/g, '');   // a comment isn't published
+  assert.ok(!/<script(?![^>]*\ssrc=)(?![^>]*type="application\/ld\+json")[^>]*>/i.test(html), 'games: an inline script');
+  for (const [, json] of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) JSON.parse(json);
+  assert.ok(!/<style[\s>]|\sstyle="|\son[a-z]+="|image-rendering/i.test(html), 'games: inline style, an event handler or pixelated pictures');
+  assert.match(html, /Not made by or affiliated with Seeed Studio\./, 'games: the disclaimer');
+  assert.ok(!/youtube\.com\/embed|<iframe/i.test(html), 'games: nothing embedded');
+  const og = src.match(/<meta property="og:image" content="https:\/\/sticky-os\.space\.fast\/(shots\/[^"]+\.(?:png|jpg))">/);
+  await readFile(new URL('../src/' + og[1], import.meta.url));
+  // every game: its section, its contents link, its demo block (one screenshot, or the steps)
+  const contents = html.match(/<ul class="game-index">[\s\S]*?<\/ul>/)[0];
+  assert.deepEqual([...contents.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]), SLUGS, 'games: the contents, in order');
+  for (const slug of SLUGS) {
+    assert.match(html, new RegExp(`<section class="game" id="${slug}"`), `games: a section for ${slug}`);
+    assert.ok(src.includes(`<!-- demo:${slug} -->`) && src.includes(`<!-- /demo:${slug} -->`), `games: a demo block for ${slug}`);
+    const demo = html.match(new RegExp(`<div class="demo[^"]*" data-demo="${slug}">[\\s\\S]*?</ol>`))?.[0];
+    assert.ok(demo, `games: the demo of ${slug}`);
+    const manifest = await readFile(new URL(`../src/shots/demo/${slug}/manifest.json`, import.meta.url), 'utf8').catch(() => null);
+    const steps = [...demo.matchAll(/<li class="demo-step">/g)].length;
+    if (manifest) {
+      const m = JSON.parse(manifest);
+      assert.equal(steps, m.steps.length, `games: ${slug} shows every step`);
+      assert.equal([...demo.matchAll(/class="demo-tap"/g)].length, m.steps.filter((s) => s.tap).length, `games: ${slug}'s tap rings`);
+      assert.match(demo, new RegExp(`Step ${m.steps.length} of ${m.steps.length}\\.`));
+    } else assert.equal(steps, 1, `games: ${slug}, one screenshot until its captures come`);
+    for (const [img] of demo.matchAll(/<img\b[^>]*>/g)) {
+      assert.match(img, /\salt="[^"]{10,}"/, `games: ${slug}: alt text`);
+      assert.match(img, /loading="lazy"/, `games: ${slug}: lazy`);
+      if (!/shots\/(?:demo\/)?[a-z0-9-]+(?:\/[a-z0-9-]+)?\.png/.test(img)) continue;
+      assert.match(img, /srcset="[^"]*smooth\/[^"]+\.webp 1x/, `games: ${slug}: drawn smooth`);
+    }
+  }
+  for (const [, ref] of html.matchAll(/(?:href|src|srcset)="([^"#?:]+)"/g)) {   // throws if a file is missing
+    for (const one of ref.split(',').map((r) => r.trim().split(' ')[0])) {
+      await readFile(new URL(one.endsWith('/') ? one + 'index.html' : one, page));
+    }
+  }
+  const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+  for (const [, id] of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.has(id), `games: #${id} goes nowhere`);
+  // the demos' manifests are the build's, not published
+  const demoDir = new URL('../dist/shots/demo/', import.meta.url);
+  for (const d of await readdir(demoDir).catch(() => [])) {
+    assert.ok(!(await readdir(new URL(d + '/', demoDir))).includes('manifest.json'), `games: ${d}'s manifest published`);
+  }
+  // linked from the home page's Games, the 1.8 post, the sitemap and llms.txt
+  const home = await readFile(new URL('../src/index.html', import.meta.url), 'utf8');
+  assert.match(home, /<a href="games\/">How to play each game<\/a>/);
+  assert.match(await readFile(new URL('../src/blog/sticky-os-1-8-solitaire-mines-four-in-a-row-chess/index.html', import.meta.url), 'utf8'), /href="\.\.\/\.\.\/games\/"/);
+  assert.match(await readFile(new URL('../src/sitemap.xml', import.meta.url), 'utf8'), /<loc>https:\/\/sticky-os\.space\.fast\/games\/<\/loc>/);
+  assert.match(await readFile(new URL('../src/llms.txt', import.meta.url), 'utf8'), /\(https:\/\/sticky-os\.space\.fast\/games\/\)/);
 });
 
 // ------------------------------------------------------------------ run
