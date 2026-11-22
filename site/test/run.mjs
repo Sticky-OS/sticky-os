@@ -975,7 +975,7 @@ test('games: the help page has every game, passes the CSP, its demos and links w
     if (manifest) {
       const m = JSON.parse(manifest);
       assert.equal(steps, m.steps.length, `games: ${slug} shows every step`);
-      assert.equal([...demo.matchAll(/class="demo-tap"/g)].length, m.steps.filter((s) => s.tap).length, `games: ${slug}'s tap rings`);
+      assert.equal([...demo.matchAll(/class="demo-tap"/g)].length, m.steps.slice(1).filter((s) => s.tap).length, `games: ${slug}'s tap rings, each on the screen it was made on`);
       assert.match(demo, new RegExp(`Step ${m.steps.length} of ${m.steps.length}\\.`));
     } else assert.equal(steps, 1, `games: ${slug}, one screenshot until its captures come`);
     for (const [img] of demo.matchAll(/<img\b[^>]*>/g)) {

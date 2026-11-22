@@ -273,7 +273,7 @@ def demo_player(slug, up):
 
     Written as what it is without JavaScript: a numbered list of the steps, each a
     capture in the board's frame with its caption ("Step 3 of 8. Tap the stock.").
-    Where the finger tapped, a ring is drawn over the capture as an SVG of the
+    Where the finger taps next, a ring is drawn over the capture as an SVG of the
     panel's own size, so it sits on the right spot at any width and needs no
     inline style (the CSP allows none). games.js makes the list a player."""
     path = DEMOS / slug / "manifest.json"
@@ -292,7 +292,9 @@ def demo_player(slug, up):
         src = DEMOS / slug / s["file"]
         if not src.exists():
             sys.exit(f"build: {src.relative_to(HERE)} is in its manifest but missing")
-        tap = s.get("tap")
+        # A step's tap is the one that led to it, made on the screen before; the ring goes
+        # where the finger touched, so each screen shows the next step's tap.
+        tap = steps[i].get("tap") if i < len(steps) else None
         ring = ""
         if tap:
             x, y = int(tap["x"]), int(tap["y"])
