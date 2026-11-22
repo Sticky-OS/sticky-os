@@ -1,0 +1,45 @@
+{
+ "game": "2048",
+ "orientation": "portrait",
+ "steps": [
+  {
+   "file": "01-new.png",
+   "caption": "Tap New game: two tiles to start",
+   "tap": {
+    "x": 128,
+    "y": 674
+   },
+   "shows": "Empty board with two 2 tiles, score 0"
+  },
+  {
+   "file": "02-slide.png",
+   "caption": "Swipe on the board: every tile slides that way",
+   "tap": null,
+   "shows": "Swiped down: the two 2s at the bottom, a new 4 appeared; score 0"
+  },
+  {
+   "file": "03-merge.png",
+   "caption": "Two the same meet and merge, and the score goes up",
+   "tap": null,
+   "shows": "Swiped left: the two 2s merged into a 4; score 4, best 4"
+  },
+  {
+   "file": "04-128.png",
+   "caption": "Tiles get bolder as they grow; from 128 they're white on black",
+   "tap": null,
+   "shows": "After more swipes: a 128 tile (white on black) in the corner, score 1000"
+  },
+  {
+   "file": "06-256.png",
+   "caption": "Keep your biggest tile in a corner and build towards it",
+   "tap": null,
+   "shows": "A 256 tile in the corner, score 1820"
+  },
+  {
+   "file": "07-over.png",
+   "caption": "When nothing can slide, the game's over; your best score is kept",
+   "tap": null,
+   "shows": "'No moves left. A new best: 2948. Press OK for a new game' over a full board; New game filled"
+  }
+ ]
+}

@@ -57,6 +57,11 @@ def check(slug, folder):
         if not f.endswith(".png") or "/" in f or not (folder / f).is_file():
             bad(f"step {i}: no capture {f!r}")
         im = Image.open(folder / f)
+        if im.size in ((h, w), (h * 2, w * 2)):
+            # a capture of the board turned the other way (taken for the Shorts): a player
+            # keeps one frame shape, so it is left out here rather than resizing mid-demo
+            print(f"{slug}: step {i}: {f} is the board turned the other way; left out of the demo")
+            continue
         if im.size not in ((w, h), (w * 2, h * 2)):
             bad(f"step {i}: {f} is {im.size[0]} x {im.size[1]}, not the {orient} screen ({w} x {h})")
         if len(im.convert("L").getcolors(256) or range(3)) > 2:
