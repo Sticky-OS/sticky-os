@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to play the games on {{NAME}}</title>
-<meta name="description" content="How to play the twelve games of {{NAME}} on the reTerminal Sticky e-paper board: 2048, Memory, Maths Quest, Daily (Sudoku and Daily maths), Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, step by step on the board's own screens.">
+<meta name="description" content="How to play the twelve games of {{NAME}} on the reTerminal Sticky e-paper board: 2048, Memory, Maths Quest, Daily (Daily maths and Sudoku), Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, step by step on the board's own screens.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
@@ -231,13 +231,13 @@
   </div>
 </section>
 
-<!-- 1.9: the Daily tile opens a Daily screen with Daily maths and Sudoku (issue #18). Before 1.9
-     this section was Daily maths alone (id="daily-maths"); that anchor still works below. Sudoku's
-     rules are kept to what is certain until the firmware's guide.md row lands. -->
+<!-- 1.9 (hold until 1.9 is tagged): the Daily tile opens a Daily screen with Daily maths and
+     Sudoku (issue #18). Before 1.9 this section was Daily maths alone (id="daily-maths"); that
+     anchor still works below. Sudoku's facts: docs/guide.md and games_sudoku.ino on games/sudoku. -->
 <section class="game" id="daily" aria-labelledby="g-daily">
   <div class="wrap">
     <h2 id="g-daily"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.5v5.5M9.25 15.25h5.5"/></svg></span>Daily <span class="tag">Sudoku new in 1.9</span></h2>
-    <p class="goal">The <strong>Daily</strong> tile opens today’s puzzles: a new daily puzzle, <a href="#sudoku">Sudoku</a>, next to <a href="#daily-maths">Daily maths</a>. Each is made on the board from the date, so it needs no internet, and every board has the same one that day.</p>
+    <p class="goal">The <strong>Daily</strong> tile opens the puzzles of the day: a new daily puzzle, <a href="#sudoku">Sudoku</a>, next to <a href="#daily-maths">Daily maths</a>. Both come from the date, so every board running the same version of {{NAME}} has the same ones that day, and each has its own streak of days in a row.</p>
   </div>
   <div class="wrap game-grid game-part" id="sudoku">
     <div class="game-copy">
@@ -245,18 +245,22 @@
       <p class="goal"><strong>Goal:</strong> fill the grid so that every row, every column and every 3 × 3 box holds the numbers 1 to 9 once each.</p>
       <h4>How to play</h4>
       <ol>
-        <li>Tap <em>Daily</em>, then <em>Sudoku</em>, and pick a level: <em>Easy</em>, <em>Medium</em> or <em>Hard</em>.</li>
-        <li>Tap a cell, then a number to put it there.</li>
-        <li>Pencil marks note the numbers a cell could still be.</li>
-        <li>A number that clashes with another in its row, column or box is marked.</li>
+        <li>Tap <em>Daily</em>, then <em>Sudoku</em>: <em>Today’s sudoku</em>. Pick a level: <em>Easy</em> (36 to 40 numbers given), <em>Medium</em> (30 to 34) or <em>Hard</em> (26 to 29).</li>
+        <li>Tap a square: it is ringed, and its row, column and box are lightly hatched.</li>
+        <li>Tap a number to put it in; the same number again takes it out. Given numbers are bold and can’t change.</li>
+        <li><em>Pencil</em> puts numbers in small, as notes. <em>Erase</em> clears a square, and <em>Undo</em> takes back a step.</li>
+        <li>A number of yours that clashes with another in its row, column or box is struck through, never refused.</li>
+        <li>Fill the last square: <em>Solved!</em>, with your time, a new best, your streak and <em>Come back tomorrow for a new one.</em></li>
       </ol>
       <h4>Tips</h4>
       <ul>
-        <li>There is a new puzzle every day, the same on every board: one to compare over breakfast.</li>
-        <li>Start with the rows, columns and boxes that are nearly full.</li>
+        <li>Every puzzle has exactly one solution. On Easy, a square with only one number left, or a number with only one place left in its row, column or box, always gets you to the end.</li>
+        <li>A number you place takes its pencil notes off its row, column and box. Once a number is placed nine times it fades on the pad.</li>
+        <li>The clock counts while the puzzle is on screen; a long gap between taps counts as ten minutes at most. <em>Levels</em> goes back to the levels card, which shows each level’s time and best, with a tick on those solved today.</li>
+        <li>The puzzle is made on the board from the date: no internet needed once the board knows the date, and every board running the same version of {{NAME}} has the same one that day. Without the date, the screen asks you to connect to WiFi.</li>
       </ul>
       <h4>What’s kept</h4>
-      <p class="kept">Your streak of days and your best times.</p>
+      <p class="kept">Your best time at each level, and your streak: days in a row with a sudoku solved, at any level. Today’s grids, notes and times are kept even when the board restarts or sleeps; a new day starts afresh.</p>
       <!-- short:sudoku -->
     </div>
 <!-- demo:sudoku -->
@@ -265,9 +269,9 @@
     <li class="demo-step">
       <figure>
         <div class="device portrait"><div class="screen">
-          <div class="slot"><strong>Sudoku</strong>The board’s screens are coming</div>
+          <img src="../shots/sudoku-play.png" width="480" height="800" loading="lazy" decoding="async" alt="Today's Easy sudoku at 1:02: the square in row 2, column 1 ringed and its 8 struck through, since the row already has an 8; pencil marks 2 and 3 in a square of the top row; the number pad, Erase, Pencil and Undo">
         </div></div>
-        <figcaption>Sudoku, step by step: coming with its captures</figcaption>
+        <figcaption>A clash struck through, and pencil marks</figcaption>
       </figure>
     </li>
   </ol>
@@ -280,9 +284,9 @@
       <p class="goal"><strong>Goal:</strong> answer today’s five questions, and keep a streak of days in a row.</p>
       <h4>How to play</h4>
       <ol>
-        <li>Open Daily maths: <em>Today’s five questions</em>, the same all day, since they come from the date.</li>
+        <li>Tap <em>Daily</em>, then <em>Daily maths</em>: <em>Today’s five questions</em>, the same all day, since they come from the date.</li>
         <li>Tap one of the four answers. They are mixed, at the Champion level, with three hearts as in Maths Quest.</li>
-        <li>Answer all five: <em>Daily done!</em>, and your streak grows by a day.</li>
+        <li>Answer all five: <em>Daily done!</em>, and your streak grows by a day. <em>Back</em> returns to the Daily screen.</li>
       </ol>
       <h4>Tips</h4>
       <ul>
@@ -301,9 +305,9 @@
     <li class="demo-step">
       <figure>
         <div class="device portrait"><div class="screen">
-          <img src="../shots/games-twelve.png" width="480" height="800" loading="lazy" decoding="async" alt="The Games folder: icons for 2048, Memory, Maths Quest, Daily (Sudoku and Daily maths), Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, each with a line of progress">
+          <img src="../shots/sudoku-daily.png" width="480" height="800" loading="lazy" decoding="async" alt="The Daily screen, Sunday, 22 November 2026: a row for Daily maths, 5 a day, and a row for Sudoku, Easy, Medium or Hard; at the foot: New puzzles every day, the same on every board">
         </div></div>
-        <figcaption>The Games folder, before 1.9: Daily maths, with your streak under it</figcaption>
+        <figcaption>The Daily screen: Daily maths and Sudoku</figcaption>
       </figure>
     </li>
   </ol>
@@ -649,6 +653,7 @@
         <p><a href="https://youtube.com/shorts/H9hcRsAU_AQ" target="_blank" rel="noopener noreferrer">Watch it on YouTube</a></p>
         <p class="short-note">It opens on YouTube; nothing from YouTube loads on this page.</p>
       </div>
+    </div>
     <p>The rules of Solitaire, Mines, Four in a Row and Chess come from <a href="https://github.com/ma-r-s/crossplay" target="_blank" rel="noopener noreferrer">CrossPlay</a> by Mario Ruiz (MIT); the chess pieces are Maurizio Monge’s “celtic” set (MIT). The games come with {{NAME}}, free; <a href="../#install">install it</a> on your board. Read what came in <a href="../blog/sticky-os-1-8-solitaire-mines-four-in-a-row-chess/">1.8: Solitaire, Mines, Four in a Row and Chess</a> and <a href="../blog/reterminal-sticky-games-2048-memory-maths-quiz/">the first eight games</a>, or the <a href="https://github.com/Sticky-OS/sticky-os/blob/main/docs/guide.md#games" target="_blank" rel="noopener noreferrer">user guide</a>.</p>
     <p class="post-end"><a class="button" href="../#install">Install {{NAME}}</a> <a href="../#tour">Take the tour</a></p>
   </div>

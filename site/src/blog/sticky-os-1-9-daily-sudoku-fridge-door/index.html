@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{NAME}} 1.9: a daily Sudoku for the fridge door</title>
-<meta name="description" content="{{NAME}} 1.9 adds a daily Sudoku to the reTerminal Sticky, under Daily next to Daily maths: a new puzzle every day, made on the board from the date, the same on every board, at three levels.">
+<meta name="description" content="{{NAME}} 1.9 adds a daily Sudoku to the reTerminal Sticky, under Daily next to Daily maths: a new puzzle every day, made on the board from the date, the same on every board running the same version, at three levels.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
@@ -37,7 +37,7 @@
   {
    "@type": "BlogPosting",
    "headline": "Sticky OS 1.9: a daily Sudoku for the fridge door",
-   "description": "Sticky OS 1.9 adds a daily Sudoku to the reTerminal Sticky, under Daily next to Daily maths: a new puzzle every day, made on the board from the date, the same on every board, at three levels.",
+   "description": "Sticky OS 1.9 adds a daily Sudoku to the reTerminal Sticky, under Daily next to Daily maths: a new puzzle every day, made on the board from the date, the same on every board running the same version, at three levels.",
    "datePublished": "2026-11-22",
    "dateModified": "2026-11-22",
    "image": "https://sticky-os.space.fast/shots/social-games.jpg",
@@ -93,9 +93,9 @@
 </script>
 </head>
 <body>
-<!-- 1.9 DRAFT: goes live only once the 1.9 firmware release is tagged. Captures to come
-     (screenshots below are placeholders); facts kept to what is certain until the firmware's
-     guide.md row for Daily Sudoku lands. -->
+<!-- 1.9 DRAFT (hold until 1.9 is tagged): goes live only once the 1.9 firmware release is
+     tagged. Facts from docs/guide.md and games_sudoku.ino on games/sudoku; pictures are the
+     board's captures (src/shots/sudoku-*.png). -->
 <a class="skip" href="#main">Skip to content</a>
 
 {{HEADER}}
@@ -109,13 +109,18 @@
   </header>
 
   <div class="post-body wrap narrow">
-    <!-- placeholder: the Games folder until the Sudoku captures come -->
     <div class="shots two-portrait">
       <figure class="device portrait">
         <div class="screen">
-          <a href="../../shots/games-twelve.png"><img src="../../shots/games-twelve.png" width="480" height="800" alt="The Games folder: icons for 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, each with a line of progress"></a>
+          <a href="../../shots/sudoku-daily.png"><img src="../../shots/sudoku-daily.png" width="480" height="800" alt="The Daily screen, Sunday, 22 November 2026: a row for Daily maths, 5 a day, and a row for Sudoku, Easy, Medium or Hard; at the foot: New puzzles every day, the same on every board"></a>
         </div>
-        <figcaption>The Games folder. Tap a screenshot to see it whole.</figcaption>
+        <figcaption>Daily: Daily maths and Sudoku</figcaption>
+      </figure>
+      <figure class="device portrait">
+        <div class="screen">
+          <a href="../../shots/sudoku-play.png"><img src="../../shots/sudoku-play.png" width="480" height="800" alt="Today's Easy sudoku at 1:02: the square in row 2, column 1 ringed and its 8 struck through, since the row already has an 8; pencil marks 2 and 3 in a square of the top row; the number pad, Erase, Pencil and Undo"></a>
+        </div>
+        <figcaption>A clash struck through, and pencil marks. Tap a screenshot to see it whole.</figcaption>
       </figure>
     </div>
 
@@ -125,13 +130,31 @@
          that nothing from YouTube loads on this page). -->
 
     <h2>A puzzle a day</h2>
-    <p>The Games folder’s <em>Daily</em> tile now opens today’s puzzles: Daily maths, as before, and Sudoku. Each day brings a new Sudoku, at three levels: Easy, Medium and Hard. The board makes it from the date, so it needs no internet and no account, and every board running {{NAME}} has the same puzzle that day: one to compare over breakfast. The board keeps a streak of days and your best times.</p>
+    <p>The <em>Daily</em> tile in the Games folder now opens the puzzles of the day: Daily maths, as before, and Sudoku. Each day brings a new Sudoku at three levels: Easy, with 36 to 40 numbers given, Medium with 30 to 34, and Hard with 26 to 29. Every puzzle has exactly one solution.</p>
+    <p>The board makes the puzzle itself, from the date. It needs no server and no account, only the date, and every board running the same version of {{NAME}} has the same puzzle that day: one to compare over breakfast. Each puzzle keeps its own streak of days in a row.</p>
 
     <h2>Why e-paper suits it</h2>
-    <p>Sudoku is a game of looking, not of speed: a grid that sits still, a number now and then. That is what e-paper does well. The puzzle stays on the screen all day without using power, sharp as print, and is there to pick up again each time you pass the fridge.</p>
+    <p>Sudoku is a game of looking, not of speed: a grid that sits still, a number now and then. That is what e-paper does well. The puzzle stays on the screen, sharp as print, and is there to pick up again each time you pass the fridge. Today’s grid, your notes and your time are kept even when the board restarts or sleeps on battery; a new day starts afresh.</p>
 
     <h2>How to play</h2>
-    <p>Fill the grid so that every row, every column and every 3 × 3 box holds the numbers 1 to 9 once each. Tap <em>Daily</em>, then <em>Sudoku</em>, and pick a level. Tap a cell, then a number. Pencil marks note the numbers a cell could still be, and a number that clashes with another in its row, column or box is marked. <a href="../../games/#sudoku">How to play the games</a> has every step, with the board’s own screens.</p>
+    <p>Fill the grid so that every row, every column and every 3 × 3 box holds the numbers 1 to 9 once each. Tap <em>Daily</em>, then <em>Sudoku</em>, and pick a level. Tap a square, then a number; the given numbers are bold and can’t change. <em>Pencil</em> puts numbers in small, as notes, <em>Erase</em> clears a square and <em>Undo</em> takes back a step. A number that clashes with another in its row, column or box is struck through, never refused.</p>
+    <p>The clock counts while the puzzle is on screen. Fill the last square and the board shows your time, a new best if it is one, your streak (days in a row with a sudoku solved, at any level) and <em>Come back tomorrow for a new one.</em> <a href="../../games/#sudoku">How to play the games</a> has every step, on the board’s own screens.</p>
+    <div class="shots two-portrait">
+      <figure class="device portrait">
+        <div class="screen">
+          <a href="../../shots/sudoku-solved.png"><img src="../../shots/sudoku-solved.png" width="480" height="800" loading="lazy" alt="The solved grid, and under it: Solved!, Solved in 2:28, A new best time!, 1 day in a row, Come back tomorrow for a new one"></a>
+        </div>
+        <figcaption>Solved: the time, a best and the streak</figcaption>
+      </figure>
+    </div>
+    <div class="shots single">
+      <figure class="device">
+        <div class="screen">
+          <a href="../../shots/sudoku-landscape.png"><img src="../../shots/sudoku-landscape.png" width="800" height="480" loading="lazy" alt="Sudoku held sideways: the solved grid on the left; on the right Back, Levels, Easy 2:28, Solved!, Solved in 2:28, A new best time!, 1 day in a row, Come back tomorrow for a new one"></a>
+        </div>
+        <figcaption>Held sideways: the grid on the left, the numbers or the result beside it</figcaption>
+      </figure>
+    </div>
 
     <h2>Get it</h2>
     <p>{{NAME}} 1.9 is on <a href="https://github.com/Sticky-OS/sticky-os/releases/latest" target="_blank" rel="noopener noreferrer">GitHub Releases</a>. On a board running {{NAME}}, open Settings → Software update, tap Check now, then Install. To install it the first time, see <a href="../../#install">Install</a>. Sudoku is under <em>Daily</em> in the Games folder.</p>
