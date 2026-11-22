@@ -6385,6 +6385,8 @@ static void devCommands() {
       booksCommand(line.length() > 5 ? line.substring(5) : String());
     } else if (line.startsWith("sdls") || line.startsWith("sdrm ") || line.startsWith("sdmkdir ")) {
       sdCommand(line);
+    } else if (line.startsWith("daily date ")) {  // the daily puzzles' today, test builds only: see dailyDateCommand()
+      dailyDateCommand(line.substring(11));
     } else if (line == "game" || line.startsWith("game ")) {  // the Games app: see gamesCommand()
       gamesCommand(line.length() > 5 ? line.substring(5) : String());
     } else if (line == "quote new") {  // the Quote app's New quote

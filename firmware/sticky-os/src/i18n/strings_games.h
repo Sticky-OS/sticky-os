@@ -16,7 +16,8 @@
 S(S_G_2048, "2048")
 S(S_G_MEMORY, "Memory")
 S(S_G_MATHS, "Maths Quest")
-S(S_G_DAILY, "Daily maths")
+S(S_G_DAILY_TILE, "Daily")  // a tile of daily puzzles: Daily maths and Sudoku (the Daily screen)
+S(S_G_DAILY, "Daily maths")  // a row on the Daily screen, and its title
 S(S_G_QUIZ, "Quiz")
 S(S_G_ADVENTURE, "Adventure")
 S(S_G_XO, "X and O")
