@@ -276,7 +276,7 @@ inline int next(const Puzzle &p, const uint8_t marks[kMaxCells], uint8_t *mark =
   uint8_t known[kMaxCells];
   for (int c = 0; c < cells(p); c++) {
     bool right = (marks[c] == kFilled && p.filled[c]) || (marks[c] == kCrossed && !p.filled[c]);
-    known[c] = right ? marks[c] : kUnknown;
+    known[c] = right ? marks[c] : (uint8_t)kUnknown;
   }
   int fill = -1, fix = -1, cross = -1;
   for (int l = 0; l < lines(p) && fill < 0; l++) {
