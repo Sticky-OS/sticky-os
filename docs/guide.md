@@ -345,7 +345,7 @@ Controls inside an app:
 **Games** on the home screen is a folder: it opens its own grid of games,
 all twelve on one page (three across upright, six sideways), each with a
 line of how you're doing (your best, your level, the daily streak, your
-wins). Tap one; *Back* (top left) returns to the grid, the status bar
+wins). Tap one; *Back* returns to the grid (top left upright; sideways at the top of the panel beside the board, where 2048 calls it *Games*; in Chess it is in the *Menu*), the status bar
 goes home. UP / DOWN move a ring from game to game (and, inside a game,
 from button to button), OK presses it; sideways swipes stay in the game
 rather than changing app. A game left half-played (2048, X and O, a quiz,
@@ -355,7 +355,7 @@ hides Games, or any game in it.
 
 | Game | How it plays |
 |---|---|
-| 2048 | Swipe on the board (or UP / DOWN) to slide every tile; two the same merge. Tiles get bolder as they grow, white on black from 128. *New game*; your best score is kept |
+| 2048 | Swipe on the board to slide every tile (UP and DOWN slide them up and down; left and right need a swipe); two the same merge. Tiles get bolder as they grow, white on black from 128. *New game*; your best score is kept |
 | Memory | Easy (12 cards) or Hard (20). Tap two cards; a pair stays up, a miss stays up until your next tap (e-paper doesn't flash them back for free). Fewest moves wins; the best for each is kept |
 | Maths Quest | Ten levels, from adding within 100 to fractions and the order of operations: eight questions and a boss each, three hearts, streaks and quick answers score more, up to three stars, and the next level opens. A wrong answer is struck through and gets a hint, never the answer. Questions you miss wait in *Practice* until you get them right first time |
 | Daily | A screen of puzzles of the day, each with its own streak of days in a row: *Daily maths* and *Sudoku*. Both come from the date, so every board has the same ones that day; they need the board to know the date (WiFi once) |
@@ -364,11 +364,15 @@ hides Games, or any game in it.
 | Quiz | Pick a theme (Science, Space, Nature, Geography, History, Words and numbers) or type your own: the AI writes eight questions on it, four answers each and a fact to read after. Without the AI (no key, no WiFi, the key rejected, or *AI in games* off) the board's own 48 questions play instead, and the screen says why. *A mix* is always the board's own |
 | Adventure | Pick a world (pirates, space, a castle...) or type your own idea, and the AI tells a story a scene at a time; you choose what happens next from two or three ways, and it ends happily after about eight scenes. *The Lighthouse Key* is a story built into the board, with its own turns and ending, for when there's no AI |
 | X and O | You're X against the board, at Easy, Medium, Hard or Best (it can't be beaten, only drawn). Who starts takes turns; your wins, draws and losses are kept |
-| Tutor | A school tutor: class, then subject, then lessons. Now 7th grade maths, geometry: all of Unit 4 (the quadrilateral: 4.1 to 4.8) and 7.2, the Pythagorean theorem (the numbers follow the Romanian textbook). Each lesson has a summary, three worked examples and 6 to 8 exercises with four answers; a wrong one says why, *Hints* gives two clues that never give the answer away, *Solution* shows the whole solution. The exercises are made from numbers each time and checked a second way before they're shown. A lesson's best score is kept; *Clear progress* (tap twice) clears it. **Languages:** the lessons and exercises are in Romanian and English. With the board in Romanian, Tutor is in Romanian; in English, or any other language, its lessons and exercises are in English (never half one language and half another), and its buttons follow the board's language where they're translated. Change the language with an exercise open and the same exercise, with the same numbers and the same right answer, comes back in the new language |
+| Tutor | A school tutor: class, then subject, then lessons. Now 7th grade maths, geometry: all of Unit 4 (the quadrilateral: 4.1 to 4.8) and 7.2, the Pythagorean theorem (the numbers follow the Romanian textbook). Each lesson has a summary, three worked examples and 6 to 8 exercises with four answers (three in 7.2's converse exercises); a wrong one says why, *Hints* gives two clues that never give the answer away, and after a wrong answer *Solution* shows the whole solution. The exercises are made from numbers each time and checked a second way before they're shown. A lesson's best score (right first time) is kept; once there is one, *Clear progress* clears it (the first tap asks *Sure? Tap again*). **Languages:** the lessons and exercises are in Romanian and English. With the board in Romanian, Tutor is in Romanian; in English, or any other language, its lessons and exercises are in English (never half one language and half another), and its buttons follow the board's language where they're translated. Change the language with an exercise open and the same exercise, with the same numbers and the same right answer, comes back in the new language |
 | Solitaire | Klondike. Tap a card and it goes to its foundation, or to the only column it fits; if it could go to more than one place it's picked up (drawn black) and your next tap says where. Tap the stock to turn a card: one at a time (*Draw 1*) or three (*Draw 3*, harder), chosen on the *New game* card. *Undo* takes back a move at a time. Once every card in the columns is face up, the game plays itself out. When no move can get anywhere, the screen says *No moves left*: Undo, or start a new game. Your wins (of games played) and the fewest moves in a win are kept |
 | Mines | Find the mines without digging one up. Three sizes, chosen on the *New game* card with the best time for each: Small (8 x 10, 10 mines), Medium (9 x 12, 16) and Large (10 x 13, 20). The *Dig* / *Flag* switch says what a tap does (OK swaps them): dig a square, or flag it as a mine (tap again to take the flag off). The first square you dig is always safe and opens a patch. Tap a number that already has its flags around it to open the squares left around it. A counter shows the mines still to flag, a clock the time. The quickest win at each size is kept |
 | Four in a Row | Against the board, at Easy, Medium or Hard. Tap a column to drop a disc: yours are rings, the board's are solid, and the disc played last has a dot. Four in a line (across, down or slanting) wins and is struck through. Who starts takes turns, a game each; your wins, draws and losses are kept |
-| Chess | You play White against the board, at Easy, Medium or Hard. The board fills the screen (no status bar). Tap a piece: its moves show as dots, its captures as corners; tap where it goes (or the piece again to put it back). A pawn that reaches the last row asks what to become. The board shows *Thinking...*, then its move (on Hard it takes up to about 1.3 seconds). *Menu* opens a panel with *Back*, the levels, your wins, draws and losses, *Undo* (your last move and the board's reply) and *Resign* (tap twice), or *New game* once a game is over; tap it again to close it. A game ends in checkmate, stalemate, or a draw (the same position three times, fifty moves with no capture or pawn move, or too few pieces to checkmate). Home is a swipe up from the bottom edge, or UP and DOWN together |
+| Chess | You play White against the board, at Easy, Medium or Hard. The board fills the screen (no status bar). Tap a piece: its moves show as dots, its captures as corners; tap where it goes (or the piece again to put it back). A pawn that reaches the last row asks what to become. The board shows *Thinking...*, then its move (on Hard it takes up to about 1.3 seconds). *Menu* opens a panel with *Back*, the levels, your wins, draws and losses, *Undo* (your last move and the board's reply) and *Resign* (tap twice), or *New game* before your first move and once a game is over; the button reads *Close* while the panel is open, and the panel also closes when you move. A game ends in checkmate, stalemate, or a draw (the same position three times, fifty moves with no capture or pawn move, or too few pieces to checkmate). Home is a swipe up from the bottom edge, or UP and DOWN together |
+
+Memory, a Maths Quest round and Tutor also pick up where you left them. A game
+left half-played is kept in memory, not in flash: a restart (or sleep on
+battery) starts it afresh, and only the progress below is saved.
 
 While the AI writes a quiz or a scene the screen says so, with *Cancel*
 (OK cancels too); every wait is bounded (45 s for a quiz, 30 s for a scene).
@@ -386,6 +390,12 @@ wins and best times, Sudoku's best time at each level), `/games-practice.txt`
 grids at each level: the numbers, the pencil marks and the time; a grid for
 another day is dropped).
 Demo mode shows made-up progress and saves nothing.
+
+`/games.txt` also holds Memory's fewest moves at each size, each Maths
+Quest level's best score, the quiz rounds played and the best of 8, the
+stories finished, Tutor's best for each lesson, the level chosen in X and O,
+Four in a Row and Chess, the last Mines size and Mines' losses, the
+Solitaire deals played and 2048's biggest tile.
 
 The rules of Solitaire, Mines, Four in a Row and Chess come from
 [CrossPlay](https://github.com/ma-r-s/crossplay) by Mario Ruiz (MIT); the
