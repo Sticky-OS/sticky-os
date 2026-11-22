@@ -1,627 +1,393 @@
-// Daily Sudoku (issue #18): today's puzzle made from the date, the same on every board that
-// runs this generator. Pure: no screen, no Arduino, no heap; tested on the computer by
-// firmware/test/games/test_sudokugrid.cpp.
+// Sudoku's rules, apart from the screen (games_sudoku.ino draws them): the puzzle of the day,
+// made on the board from the date (issue #18), its solver, its grader and the clash check. Plain
+// C++ with no Arduino, so firmware/test/games/test_sudokugrid.cpp runs it on a computer.
 //
-// How a day's puzzle is made (daily()):
-//   1. The seed is date * 2654435761u ^ salt, as Daily maths seeds its questions (mathDaily,
-//      games.cpp). The salt names the puzzle, the level and the generator's version (kSalt), so a
-//      changed generator changes the puzzles on purpose: bump the version digit with it.
-//   2. A full grid by backtracking, each cell trying 1-9 in its own seeded order.
-//   3. Digging, in a seeded order (dig()), so that each level is what it says, both ways:
-//        Easy   36-40 clues, solvable by naked and hidden singles alone;
-//        Medium 30-34 clues, solvable by singles, locked candidates (pointing, claiming) and
-//               naked and hidden pairs, and NOT by singles alone;
-//        Hard   26-29 clues, one solution, and NOT solvable by Medium's techniques.
-//      A puzzle the grader solves has one solution (every step is forced), so Easy and Medium need
-//      no search; Hard asks the grader first and only then the search.
-//   4. An attempt that isn't in range and hard enough tries the next sub-seed, up to kAttempts;
-//      after that the best attempt is taken (Stats::fallback, rare: see the test). Every puzzle
-//      returned has exactly one solution: a removal the search couldn't settle is put back.
+// The puzzle of the day, for a date (20261122) and a level:
+//  1. The random numbers are the games' own (games.cpp: gameSeed / gameRnd, xorshift32), seeded
+//     with seed(date, level) = date * 2654435761 ^ the level's salt. The salt carries a version
+//     digit ('SDK1'): a changed generator must change it, so puzzles change on purpose only.
+//     The caller passes gameRnd in (the host test has a copy), then calls gameSeed(0).
+//  2. A whole grid, filled by backtracking with 1-9 tried in a shuffled order.
+//  3. Cells taken away in a shuffled order, two at a time opposite each other (the usual
+//     symmetric look), each pair only while the puzzle still has exactly one solution (a
+//     counter that stops at 2, within a node budget) and the level's techniques still solve it
+//     (Easy: singles; Medium: singles and pairs), down to the level's fewest clues.
+//  4. A try that ends with too many clues, or that an easier level's techniques could solve
+//     (Medium wants a pair, Hard more than pairs), is made again from the next numbers, up to
+//     kTries[level] times; then the closest try is taken.
 //
-// Memory: no heap, no recursion. The deepest stack is daily() -> dig() -> tryRemove() ->
-// countSolutions() or grade(), about 1.7 KB in all (the 729-byte digit orders, two 81-byte cell
-// orders, a work grid, 81 search frames of 4 bytes or the grader's 250 bytes), well inside the
-// loop task's ~8 KB.
-//
-// Time: kWorkBudget caps one daily() (search nodes, and grader passes at kPassWork nodes each),
-// kSearchBudget one search, kAttempts the retries. test_sudokugrid.cpp prints the host's times
-// and counts, and the board estimate.
-//
-// A cell's id is row * 9 + col. Digits are 1-9, 0 is an empty cell.
+// Cells are 0..80, row * 9 + column; a value 0 is empty, else 1..9. Pencil marks are bits 1..9.
 #pragma once
 #include <stdint.h>
+#include <string.h>
 
 namespace sudokugrid {
 
-// ======================================================================== random numbers
-//
-// The firmware's own generator, so a puzzle can be checked by hand against gameRnd: xorshift32
-// with the same shifts, and range() is gameRnd(lo, hi) line for line (games.cpp). It is a copy,
-// not a call, because this header can't depend on games.cpp, and its state is its own: making a
-// puzzle never moves gameRnd's sequence, so there is no gameSeed(0) to restore afterwards.
-struct Rng {
-  uint32_t state;
-  explicit Rng(uint32_t seed) : state(seed ? seed : 1) {}  // gameSeed(0) means "random": never here
-  uint32_t next() {
-    state ^= state << 13;
-    state ^= state >> 17;
-    state ^= state << 5;
-    return state;
-  }
-  int range(int lo, int hi) {  // lo..hi inclusive, as gameRnd
-    uint32_t s = next();
-    return hi <= lo ? lo : lo + (int)(s % (uint32_t)(hi - lo + 1));
-  }
-};
+static const int kCells = 81, kLevels = 3;
+static const int kFewest[kLevels] = {36, 30, 26};  // clues: Easy 36-40, Medium 30-34, Hard 26-29
+static const int kMost[kLevels] = {40, 34, 29};
+static const uint32_t kSalt[kLevels] = {0x53444B31u, 0x53444B32u, 0x53444B33u};  // 'SDK1', 'SDK2', 'SDK3'
+// Tries a level may take (a fixed count, never a time limit: every board must make the same
+// puzzle). Measured on the board, a try takes about 32 ms (Easy), 42 ms (Medium) and 25 ms (Hard),
+// so the worst day stays under the 300 ms the loop can spare.
+static const int kTries[kLevels] = {1, 5, 8};
+static const uint32_t kNodeBudget = 20000;  // one count of solutions; over it the cell stays
 
-constexpr uint32_t fourcc(char a, char b, char c, char d) {
-  return (uint32_t)(uint8_t)a << 24 | (uint32_t)(uint8_t)b << 16 | (uint32_t)(uint8_t)c << 8 | (uint32_t)(uint8_t)d;
-}
-// 'S' 'K' for Sudoku, the level's letter, the generator's version digit last. Version 2: the
-// levels graded both ways (Medium needs more than singles, Hard more than Medium's techniques).
-static const uint32_t kSalt[3] = {fourcc('S', 'K', 'E', '2'), fourcc('S', 'K', 'M', '2'), fourcc('S', 'K', 'H', '2')};
+// The techniques a puzzle needs (grade()).
+enum Technique { SINGLES = 0, PAIRS = 1, MORE = 2 };
 
-// Sub-seed `attempt` of a date: attempt 0 is the issue's date * 2654435761u ^ salt, the retries
-// are spread by the golden ratio so they never land on another level's seed.
-inline uint32_t daySeed(long date, uint32_t salt, int attempt) {
-  uint32_t s = ((uint32_t)date * 2654435761u ^ salt) ^ ((uint32_t)attempt * 0x9E3779B9u);
-  return s ? s : 1;
-}
+inline uint32_t seed(long date, int level) { return (uint32_t)date * 2654435761u ^ kSalt[level]; }
 
-// ======================================================================== levels and budgets
+// gameRnd: lo..hi, both included.
+typedef int (*Rand)(int lo, int hi);
 
-static const int kLevels = 3;  // 0 Easy, 1 Medium, 2 Hard
-static const uint8_t kMinClues[kLevels] = {36, 30, 26};
-static const uint8_t kMaxClues[kLevels] = {40, 34, 29};
-// Sub-seeds per level. Over 3650 days (test_sudokugrid.cpp) Medium needed at most 37 when not
-// capped, 20 at the 99th percentile; Hard 16 and 8. Easy always takes the first.
-static const int kAttempts[kLevels] = {1, 24, 12};
-// Work is counted in search nodes; a grader pass costs about as much as kPassWork of them (host,
-// fitted over 2026: ~0.04 us a node, ~0.85 us a pass). kWorkBudget caps one daily(): when it runs
-// out, digging stops (the puzzle still unique) and the best attempt so far is taken.
-static const uint32_t kPassWork = 20;
-static const uint32_t kSearchBudget = 20000;  // one search (the fill, or a uniqueness check)
-// The worst day of ten years (2026-35), host, Apple M5 Max: ~3.8 ms (Hard) and ~3.7 ms (Medium,
-// its 24 attempts), so ~150 ms on the board if it is 40x slower. A 3x margin under 300 ms would
-// need ~2.5 ms: with these techniques that costs more than 1 % fallbacks.
-static const uint32_t kWorkBudget = 80000;
-
-// The techniques the grader knows, in order: a puzzle's grade is the hardest it needed.
-// kLocked is pointing (a box's candidates for a digit all in one row or column: the digit leaves
-// the rest of that line) and claiming, or box-line reduction (a line's candidates for a digit all
-// in one box: the digit leaves the rest of that box). It is its own tier, tried before pairs,
-// because people meet it first; Medium allows both tiers.
-enum Technique : uint8_t { kUnsolved = 0, kSingles = 1, kLocked = 2, kPairs = 3, kBeyond = 4 };
-static const uint8_t kMediumTechniques = kPairs;  // singles, locked candidates, naked and hidden pairs
-
-struct Puzzle {
-  uint8_t grid[81];      // the givens, 0 elsewhere
-  uint8_t solution[81];  // the one solution
-  uint8_t clues;
-  uint8_t level;
-};
-
-struct Stats {
-  uint8_t attempts = 0;      // sub-seeds tried, 1 = the first one did
-  bool fallback = false;     // no attempt was in range and hard enough: the best was taken
-  uint8_t technique = 0;     // what the puzzle returned needs: kSingles, kLocked, kPairs or kBeyond
-  uint32_t nodes = 0;        // search nodes, the fills and all searches of this daily()
-  uint32_t maxNodes = 0;     // the most nodes one fill or search took
-  uint32_t graderSteps = 0;  // grader passes, all calls
-  uint32_t cuts = 0;         // searches cut short by a budget (each kept its clue)
-};
-
-// ======================================================================== the grid
-
-// The 27 units: rows 0-8, columns 9-17, boxes 18-26; i is 0-8 along the unit. Tables, built at
-// compile time (324 bytes of flash), because the grader and the search ask all the time.
-struct Tables {
-  uint8_t unit[27][9];
-  uint8_t box[81];
-  constexpr Tables() : unit(), box() {
-    for (int c = 0; c < 81; c++) box[c] = (uint8_t)(c / 27 * 3 + c % 9 / 3);
-    for (int i = 0; i < 9; i++)
-      for (int u = 0; u < 9; u++) {
-        unit[u][i] = (uint8_t)(u * 9 + i);
-        unit[9 + u][i] = (uint8_t)(i * 9 + u);
-        unit[18 + u][i] = (uint8_t)((u / 3 * 3 + i / 3) * 9 + u % 3 * 3 + i % 3);
-      }
-  }
-};
-static constexpr Tables kTables{};
-inline int boxOf(int cell) { return kTables.box[cell]; }
-inline int unitCell(int unit, int i) { return kTables.unit[unit][i]; }
-inline bool peers(int a, int b) { return a != b && (a / 9 == b / 9 || a % 9 == b % 9 || boxOf(a) == boxOf(b)); }
-inline uint16_t digitBit(int digit) { return (uint16_t)(1u << (digit - 1)); }
+inline int rowOf(int i) { return i / 9; }
+inline int colOf(int i) { return i % 9; }
+inline int boxOf(int i) { return (i / 27) * 3 + (i % 9) / 3; }
+inline bool peers(int a, int b) { return a != b && (rowOf(a) == rowOf(b) || colOf(a) == colOf(b) || boxOf(a) == boxOf(b)); }
 inline int bits(uint16_t m) { return __builtin_popcount(m); }
-inline int lowDigit(uint16_t m) { return __builtin_ctz(m) + 1; }
-static const uint16_t kAll = 0x1FF;
+// The j-th cell (0..8) of unit k: kind 0 rows, 1 columns, 2 boxes.
+inline int unitCell(int kind, int k, int j) { return kind == 0 ? k * 9 + j : kind == 1 ? j * 9 + k : (k / 3) * 27 + (k % 3) * 3 + (j / 3) * 9 + j % 3; }
 
-// The other cells in its row, column or box that hold the same digit as `cell` (0 if it's empty).
-inline int clashes(const uint8_t cells[81], int cell) {
-  if (cell < 0 || cell >= 81 || !cells[cell]) return 0;
-  int n = 0;
-  for (int c = 0; c < 81; c++) n += cells[c] == cells[cell] && peers(c, cell);
-  return n;
-}
-// How many cells clash with another (game peek's "clashes").
-inline int clashCount(const uint8_t cells[81]) {
-  int n = 0;
-  for (int c = 0; c < 81; c++) n += clashes(cells, c) > 0;
-  return n;
-}
-// Full, with no clash: with one solution, that is the solution.
-inline bool solved(const uint8_t cells[81]) {
-  for (int c = 0; c < 81; c++)
-    if (!cells[c]) return false;
-  return clashCount(cells) == 0;
-}
-inline int clueCount(const uint8_t grid[81]) {
-  int n = 0;
-  for (int c = 0; c < 81; c++) n += grid[c] != 0;
-  return n;
-}
+// ---- what's still allowed: a bit per number used in each row, column and box
 
-// ======================================================================== the solution counter
-//
-// Depth-first, always on the empty cell with the fewest candidates. Counts solutions up to
-// `limit`; the first one goes to `first`. `order`, if given, is each cell's 9 digits in the order
-// to try them (the full grid's seeded shuffles); otherwise lowest first. Stops after `budget`
-// nodes (digits placed) with *cut set: the count is then only a lower bound. `ban`, if >= 0, is a
-// cell that may not hold `banDigit`: dig() asks whether a removed clue could be anything else.
-// Stack: 81 frames of 4 bytes, a grid and the masks, ~450 bytes.
-inline int countSolutions(const uint8_t grid[81], int limit, uint32_t budget, uint8_t *first = nullptr,
-                          uint32_t *nodesOut = nullptr, bool *cut = nullptr, const uint8_t *order = nullptr,
-                          int ban = -1, int banDigit = 0) {
-  uint8_t g[81];
-  uint16_t row[9] = {}, col[9] = {}, box[9] = {};
-  if (cut) *cut = false;
-  if (nodesOut) *nodesOut = 0;
-  for (int c = 0; c < 81; c++) {
-    g[c] = grid[c];
-    if (!g[c]) continue;
-    uint16_t b = digitBit(g[c]);
-    if ((row[c / 9] | col[c % 9] | box[boxOf(c)]) & b) return 0;  // the givens clash
-    row[c / 9] |= b, col[c % 9] |= b, box[boxOf(c)] |= b;
-  }
-  struct Frame {
-    uint8_t cell, tried;  // tried: how far along order[] this cell has got
-    uint16_t left;        // candidates not yet tried
-  } stack[81];
-  int depth = 0, found = 0;
-  uint32_t nodes = 0;
-  for (;;) {
-    int best = -1, bestN = 10;
-    uint16_t bestM = 0;
-    for (int c = 0; c < 81; c++) {
-      if (g[c]) continue;
-      uint16_t m = (uint16_t)(~(row[c / 9] | col[c % 9] | box[boxOf(c)]) & kAll);
-      if (c == ban) m &= (uint16_t)~digitBit(banDigit);
-      int n = bits(m);
-      if (n < bestN) {
-        best = c, bestN = n, bestM = m;
-        if (n <= 1) break;
-      }
-    }
-    if (best < 0) {  // full: a solution
-      if (!found && first)
-        for (int c = 0; c < 81; c++) first[c] = g[c];
-      if (++found >= limit) break;
-    } else if (bestN > 0) {
-      stack[depth].cell = (uint8_t)best, stack[depth].tried = 0, stack[depth].left = bestM;
-      depth++;
-    }
-    // The next digit at the top frame, backing out of frames that have none left.
-    bool placed = false;
-    while (depth > 0 && !placed) {
-      Frame &f = stack[depth - 1];
-      int c = f.cell;
-      if (g[c]) {
-        uint16_t b = digitBit(g[c]);
-        row[c / 9] &= ~b, col[c % 9] &= ~b, box[boxOf(c)] &= ~b;
-        g[c] = 0;
-      }
-      if (!f.left) {
-        depth--;
-        continue;
-      }
-      int d = 0;
-      if (order) {
-        while (!(f.left & digitBit(order[c * 9 + f.tried]))) f.tried++;
-        d = order[c * 9 + f.tried++];
-      } else {
-        d = lowDigit(f.left);
-      }
-      uint16_t b = digitBit(d);
-      f.left &= ~b;
-      g[c] = (uint8_t)d;
-      row[c / 9] |= b, col[c % 9] |= b, box[boxOf(c)] |= b;
-      placed = true;
-      if (++nodes > budget) {
-        if (cut) *cut = true;
-        if (nodesOut) *nodesOut = nodes;
-        return found;
-      }
-    }
-    if (!placed) break;  // every branch tried
-  }
-  if (nodesOut) *nodesOut = nodes;
-  return found;
-}
-
-// ======================================================================== the grader
-//
-// A small logic solver, the way a person plays, in tiers: naked singles (a cell with one
-// candidate) and hidden singles (a digit with one place in a unit); if `allowed` >= kLocked,
-// pointing and claiming (see Technique); if `allowed` >= kPairs, naked pairs (two cells of a unit
-// with the same two candidates: those leave the unit's other cells) and hidden pairs (two digits
-// with the same two places in a unit: those cells keep only them). A tier is used only when the
-// tiers below it have nothing left, and after any progress it starts again from singles.
-// Returns the hardest tier needed (kSingles, kLocked or kPairs), or kUnsolved if it got stuck or
-// met a contradiction. A solve leaves the grid in `out`, if given; *steps counts its passes.
-// Stack: ~350 bytes.
-struct Grader {
-  uint8_t g[81];
-  uint16_t cand[81];
-  int left;  // empty cells
-
-  void place(int c, int d) {
-    g[c] = (uint8_t)d, cand[c] = 0, left--;
-    uint16_t b = digitBit(d);
-    int r = c / 9, k = c % 9, x = boxOf(c);
-    for (int i = 0; i < 9; i++) {
-      cand[r * 9 + i] &= ~b;
-      cand[i * 9 + k] &= ~b;
-      cand[unitCell(18 + x, i)] &= ~b;
-    }
-  }
-  bool start(const uint8_t grid[81]) {
-    for (int c = 0; c < 81; c++) g[c] = 0, cand[c] = kAll;
-    left = 81;
-    for (int c = 0; c < 81; c++)
-      if (grid[c]) {
-        if (!(cand[c] & digitBit(grid[c]))) return false;  // clashes with a given placed before
-        place(c, grid[c]);
-      }
-    return true;
-  }
-  // One round of singles: 1 if any digit went in, 0 if none, -1 on a contradiction.
-  int singles() {
-    int progress = 0;
-    for (int c = 0; c < 81; c++) {
-      if (g[c]) continue;
-      if (!cand[c]) return -1;
-      if (!(cand[c] & (cand[c] - 1))) place(c, lowDigit(cand[c])), progress = 1;
-    }
-    for (int u = 0; u < 27; u++) {
-      // A digit's places in the unit, counted 0, 1, more: once and twice, a bit per digit.
-      uint16_t have = 0, once = 0, twice = 0;
-      for (int i = 0; i < 9; i++) {
-        int c = unitCell(u, i);
-        if (g[c]) have |= digitBit(g[c]);
-        else twice |= once & cand[c], once |= cand[c];
-      }
-      uint16_t missing = (uint16_t)(kAll & ~have);
-      if (missing & ~once) return -1;  // a digit with nowhere to go
-      for (uint16_t single = (uint16_t)(missing & once & ~twice); single; single &= (uint16_t)(single - 1)) {
-        int d = lowDigit(single), at = -1;
-        for (int i = 0; i < 9 && at < 0; i++) {
-          int c = unitCell(u, i);
-          if (!g[c] && (cand[c] & digitBit(d))) at = c;
-        }
-        if (at < 0) return -1;  // its one place took another digit just now
-        place(at, d), progress = 1;
-      }
-    }
-    return progress;
-  }
-  // One round of locked candidates (pointing and claiming): true if any candidate went. Works on
-  // the 54 segments where a row or column crosses a box (3 cells each): seg[0][r][j] is row r's
-  // cells in box column j, seg[1][c][j] column c's in box row j, the OR of their candidates. A
-  // digit in a segment and in neither of its box's other two segments in that direction is pointing
-  // (it leaves the rest of the line); in neither of its line's other two, claiming (it leaves the
-  // rest of the box). Masks taken before the round only ever see more candidates than there are,
-  // so the round eliminates no more than it should.
-  bool locked() {
-    uint16_t seg[2][9][3];
-    for (int a = 0; a < 9; a++)
-      for (int j = 0; j < 3; j++) {
-        seg[0][a][j] = cand[a * 9 + j * 3] | cand[a * 9 + j * 3 + 1] | cand[a * 9 + j * 3 + 2];
-        seg[1][a][j] = cand[j * 27 + a] | cand[j * 27 + 9 + a] | cand[j * 27 + 18 + a];
-      }
-    bool progress = false;
-    for (int v = 0; v < 2; v++)
-      for (int a = 0; a < 9; a++)
-        for (int j = 0; j < 3; j++) {
-          uint16_t m = seg[v][a][j];
-          if (!m) continue;
-          int a0 = a / 3 * 3;
-          uint16_t inBox = seg[v][a0 + (a + 1) % 3][j] | seg[v][a0 + (a + 2) % 3][j];
-          uint16_t inLine = seg[v][a][(j + 1) % 3] | seg[v][a][(j + 2) % 3];
-          uint16_t point = (uint16_t)(m & ~inBox & inLine), claim = (uint16_t)(m & ~inLine & inBox);
-          if (!point && !claim) continue;
-          for (int i = 0; i < 9; i++) {
-            int along = v == 0 ? a * 9 + i : i * 9 + a;  // the line, outside the segment
-            if (point && i / 3 != j && (cand[along] & point)) cand[along] &= ~point, progress = true;
-            int across = v == 0 ? (a0 + i / 3) * 9 + j * 3 + i % 3 : (j * 3 + i % 3) * 9 + a0 + i / 3;
-            bool other = v == 0 ? across / 9 != a : across % 9 != a;  // the box, outside the line
-            if (claim && other && (cand[across] & claim)) cand[across] &= ~claim, progress = true;
-          }
-        }
-    return progress;
-  }
-  // One round of pairs: true if any candidate went.
-  bool pairs() {
-    bool progress = false;
-    for (int u = 0; u < 27; u++) {
-      for (int i = 0; i < 9; i++) {  // naked
-        int a = unitCell(u, i);
-        if (g[a] || bits(cand[a]) != 2) continue;
-        for (int j = i + 1; j < 9; j++) {
-          int b = unitCell(u, j);
-          if (g[b] || cand[b] != cand[a]) continue;
-          for (int k = 0; k < 9; k++) {
-            int c = unitCell(u, k);
-            if (c == a || c == b || g[c] || !(cand[c] & cand[a])) continue;
-            cand[c] &= ~cand[a], progress = true;
-          }
-        }
-      }
-      // Hidden: only digits with exactly two places in the unit can pair up.
-      uint16_t once = 0, twice = 0, thrice = 0;
-      for (int i = 0; i < 9; i++) {
-        uint16_t m = cand[unitCell(u, i)];  // 0 for a filled cell
-        thrice |= twice & m, twice |= once & m, once |= m;
-      }
-      uint16_t two = (uint16_t)(twice & ~thrice);
-      if (bits(two) < 2) continue;
-      uint16_t where[10] = {};  // where[d] = the unit's places for d, a bit per i
-      for (int i = 0; i < 9; i++) {
-        uint16_t m = (uint16_t)(cand[unitCell(u, i)] & two);
-        for (; m; m &= (uint16_t)(m - 1)) where[lowDigit(m)] |= (uint16_t)(1u << i);
-      }
-      for (uint16_t ds = two; ds; ds &= (uint16_t)(ds - 1)) {
-        int d = lowDigit(ds);
-        for (uint16_t es = (uint16_t)(ds & (ds - 1)); es; es &= (uint16_t)(es - 1)) {
-          int e = lowDigit(es);
-          if (where[e] != where[d]) continue;
-          uint16_t keep = digitBit(d) | digitBit(e);
-          for (int i = 0; i < 9; i++)
-            if (where[d] & (1u << i)) {
-              int c = unitCell(u, i);
-              if (cand[c] & ~keep) cand[c] &= keep, progress = true;
-            }
-        }
-      }
-    }
-    return progress;
-  }
+struct Used {
+  uint16_t row[9], col[9], box[9];
 };
-
-inline int grade(const uint8_t grid[81], int allowed, uint8_t *out = nullptr, uint32_t *steps = nullptr) {
-  Grader s;
-  if (!s.start(grid)) return kUnsolved;
-  int used = kSingles;
-  while (s.left) {
-    if (steps) ++*steps;
-    int r = s.singles();
-    if (r < 0) return kUnsolved;
-    if (r > 0) continue;
-    if (allowed >= kLocked && s.locked()) {
-      if (used < kLocked) used = kLocked;
-      continue;
-    }
-    if (allowed < kPairs || !s.pairs()) return kUnsolved;
-    used = kPairs;
-  }
-  if (out)
-    for (int c = 0; c < 81; c++) out[c] = s.g[c];
-  return used;
+inline uint16_t allowed(const Used &u, int i) { return (uint16_t)(~(u.row[rowOf(i)] | u.col[colOf(i)] | u.box[boxOf(i)]) & 0x3FE); }
+inline void put(Used &u, int i, int d) {
+  uint16_t b = 1u << d;
+  u.row[rowOf(i)] |= b, u.col[colOf(i)] |= b, u.box[boxOf(i)] |= b;
 }
-
-// ======================================================================== making today's puzzle
-
-// A grade as a difficulty: kBeyond for what Medium's techniques can't solve.
-inline int difficulty(int grade) { return grade == kUnsolved ? kBeyond : grade; }
-// What each level needs beyond what it allows: Medium more than singles, Hard more than Medium.
-static const uint8_t kNeeds[kLevels] = {kSingles, kLocked, kBeyond};
-
-inline void spend(uint32_t &workLeft, uint32_t work) { workLeft = work < workLeft ? workLeft - work : 0; }
-
-// Tries removing `c` from p.grid: whether the puzzle stays within the level (Easy and Medium: their
-// techniques solve it; Hard: unique), leaving `c` removed if so. `diff` is the puzzle's difficulty
-// before, and after if it stays. A clue that is a naked or hidden single in what's left (by the
-// givens alone) needs no grading: the first step puts it back, so nothing changes. `workLeft` is what's left of kWorkBudget.
-inline bool tryRemove(Puzzle &p, int c, int &diff, uint32_t &workLeft, Stats &st) {
-  const int level = p.level;
-  uint8_t d = p.grid[c];
-  p.grid[c] = 0;
-  uint16_t row[9] = {}, col[9] = {}, box[9] = {};  // the digits each unit's givens hold
-  for (int x = 0; x < 81; x++)
-    if (p.grid[x]) row[x / 9] |= digitBit(p.grid[x]), col[x % 9] |= digitBit(p.grid[x]), box[boxOf(x)] |= digitBit(p.grid[x]);
-  auto open = [&](int x) { return (uint16_t)(kAll & ~(row[x / 9] | col[x % 9] | box[boxOf(x)])); };
-  if (bits(open(c)) == 1) return true;  // a naked single
-  const int units[3] = {c / 9, 9 + c % 9, 18 + boxOf(c)};
-  for (int u : units) {
-    bool elsewhere = false;
-    for (int i = 0; i < 9 && !elsewhere; i++) {
-      int x = unitCell(u, i);
-      elsewhere = x != c && !p.grid[x] && (open(x) & digitBit(d));
-    }
-    if (!elsewhere) return true;  // a hidden single
-  }
-  uint32_t passes = st.graderSteps;
-  int g = grade(p.grid, level == 0 ? kSingles : kMediumTechniques, nullptr, &st.graderSteps);
-  spend(workLeft, (st.graderSteps - passes) * kPassWork);
-  bool keep = g != kUnsolved;  // solved by logic: one solution, no search needed
-  if (level == 2 && !keep && workLeft) {
-    uint32_t n = 0;
-    bool cut = false;
-    uint32_t budget = workLeft < kSearchBudget ? workLeft : kSearchBudget;
-    // Unique still, if no solution puts anything else where the clue was (it had one before).
-    keep = countSolutions(p.grid, 1, budget, nullptr, &n, &cut, nullptr, c, d) == 0 && !cut;
-    if (n > budget) n = budget;
-    spend(workLeft, n), st.nodes += n;
-    if (n > st.maxNodes) st.maxNodes = n;
-    st.cuts += cut;
-  }
-  if (!keep) p.grid[c] = d;
-  else diff = difficulty(g);
-  return keep;
+inline void take(Used &u, int i, int d) {
+  uint16_t b = (uint16_t)~(1u << d);
+  u.row[rowOf(i)] &= b, u.col[colOf(i)] &= b, u.box[boxOf(i)] &= b;
 }
-
-// Whether the puzzle is hard enough for its level (kNeeds), by the grader alone. Step 3 asks,
-// after a clue goes back: singles first (cheap, and they settle "no").
-inline bool hardEnough(const Puzzle &p, uint32_t &workLeft, Stats &st) {
-  if (p.level == 0) return true;
-  uint32_t passes = st.graderSteps;
-  bool hard = grade(p.grid, kSingles, nullptr, &st.graderSteps) == kUnsolved;
-  if (hard) hard = (grade(p.grid, kMediumTechniques, nullptr, &st.graderSteps) != kUnsolved) == (p.level == 1);
-  spend(workLeft, (st.graderSteps - passes) * kPassWork);
-  return hard;
-}
-
-// Digs `p.solution` in seeded order (see the top), in three steps:
-//   1. Down: a removal stays if the puzzle stays within the level (tryRemove), to one clue above
-//      the level's minimum (Easy: to the seeded target, and that's all).
-//   2. Medium and Hard: at each count from there down to the minimum, until the puzzle is hard
-//      enough (kNeeds), the next clue out is the first given left, in the seeded order, whose
-//      removal makes it so; if none does, the first that keeps it within the level. Looking ahead
-//      like this (rather than only taking the next cell) is what makes most attempts succeed:
-//      Medium ~1 in 4 attempts instead of ~1 in 20.
-//   3. If it is hard enough: removed cells return, in the reverse of the order they went, while it
-//      stays hard enough, until it has the seeded `target` clues. A clue added never costs the
-//      one solution, nor the techniques' solve.
-inline void dig(Puzzle &p, Rng &rng, int target, uint32_t &workLeft, Stats &st) {
-  uint8_t order[81], gone[81];
-  int nGone = 0;
-  for (int i = 0; i < 81; i++) order[i] = (uint8_t)i;
-  for (int i = 80; i > 0; i--) {
-    int j = rng.range(0, i);
-    uint8_t t = order[i];
-    order[i] = order[j], order[j] = t;
-  }
-  for (int c = 0; c < 81; c++) p.grid[c] = p.solution[c];
-  p.clues = 81;
-  const int lo = kMinClues[p.level];
-  const int floor = p.level == 0 ? target : lo + 1;
-  int diff = kSingles, k = 0;
-  for (; k < 81 && p.clues > floor && workLeft; k++)
-    if (tryRemove(p, order[k], diff, workLeft, st)) p.clues--, gone[nGone++] = order[k];
-  if (p.level == 0) return;
-  while (p.clues > lo && diff < kNeeds[p.level] && workLeft) {  // step 2
-    int first = -1, firstDiff = diff, at = -1;
-    for (int j = k; j < 81 && workLeft; j++) {
-      if (!p.grid[order[j]]) continue;
-      int dj = diff;
-      if (!tryRemove(p, order[j], dj, workLeft, st)) continue;
-      bool hard = dj >= kNeeds[p.level];
-      if (first < 0 || hard) first = order[j], firstDiff = dj, at = j;
-      p.grid[order[j]] = p.solution[order[j]];
-      if (hard) break;
+// False when a number is there twice already.
+inline bool usedOf(const uint8_t g[kCells], Used &u) {
+  memset(&u, 0, sizeof u);
+  for (int i = 0; i < kCells; i++)
+    if (g[i]) {
+      if (!(allowed(u, i) & (1u << g[i]))) return false;
+      put(u, i, g[i]);
     }
-    if (first < 0) return;
-    p.grid[first] = 0, p.clues--, gone[nGone++] = (uint8_t)first, diff = firstDiff;
-    uint8_t t = order[at];  // it went: move it before the rest of the order
-    order[at] = order[k], order[k] = t, k++;
-  }
-  if (diff < kNeeds[p.level]) return;
-  for (int i = nGone - 1; i >= 0 && p.clues < target; i--) {  // step 3
-    int c = gone[i];
-    p.grid[c] = p.solution[c];
-    if (hardEnough(p, workLeft, st)) p.clues++;
-    else p.grid[c] = 0;
-  }
-}
-
-// Today's puzzle at `level` (0 Easy, 1 Medium, 2 Hard) for a date written yyyymmdd. False only
-// for a date that isn't one (<= 0): the caller shows "no date" then, as Daily maths does.
-// The first attempt in range and hard enough is taken. If none of kAttempts is (or the work
-// budget ran out), the best one is (Stats::fallback): the hardest, up to what the level needs,
-// then one in range, then the fewest clues. So a fallback Hard that any attempt made need more
-// than singles does; a fallback Medium is singles-only but at its fewest clues, 30 (test: rare).
-inline bool daily(long yyyymmdd, int level, Puzzle &out, Stats *stats = nullptr) {
-  Stats local;
-  Stats &st = stats ? *stats : local;
-  st = Stats();
-  if (yyyymmdd <= 0) return false;
-  if (level < 0) level = 0;
-  if (level >= kLevels) level = kLevels - 1;
-  const int lo = kMinClues[level], hi = kMaxClues[level];
-  uint32_t workLeft = kWorkBudget;
-  Puzzle p;
-  p.level = (uint8_t)level;
-  int bestScore = -1;
-  bool good = false;
-  for (int a = 0; a < kAttempts[level] && !good && workLeft; a++) {
-    st.attempts = (uint8_t)(a + 1);
-    Rng rng(daySeed(yyyymmdd, kSalt[level], a));
-    int target = rng.range(lo, hi);
-    uint8_t order[81 * 9];
-    for (int c = 0; c < 81; c++) {
-      uint8_t *o = order + c * 9;
-      for (int i = 0; i < 9; i++) o[i] = (uint8_t)(i + 1);
-      for (int i = 8; i > 0; i--) {
-        int j = rng.range(0, i);
-        uint8_t t = o[i];
-        o[i] = o[j], o[j] = t;
-      }
-    }
-    uint8_t empty[81] = {};
-    uint32_t n = 0;
-    bool cut = false;
-    // An empty grid fills without a dead end in practice; the budget is only a safety net.
-    int filled = countSolutions(empty, 1, kSearchBudget, p.solution, &n, &cut, order);
-    st.nodes += n;
-    if (n > st.maxNodes) st.maxNodes = n;
-    spend(workLeft, n);
-    if (filled != 1) continue;
-    dig(p, rng, target, workLeft, st);
-    int diff = difficulty(grade(p.grid, kMediumTechniques));
-    bool inRange = p.clues >= lo && p.clues <= hi;
-    good = inRange && diff >= kNeeds[level];
-    int capped = diff < kNeeds[level] ? diff : kNeeds[level];
-    int score = capped * 1000 + inRange * 100 + (81 - p.clues);
-    if (good || score > bestScore) out = p, bestScore = score, st.technique = (uint8_t)diff;
-  }
-  if (bestScore < 0) return false;  // can't happen: the fill always succeeds
-  st.fallback = !good;
   return true;
 }
 
-// ======================================================================== the hint
+// The empty cell with the fewest numbers left (-1: none empty); `left` gets them.
+inline int tightest(const uint8_t g[kCells], const Used &u, uint16_t &left) {
+  int best = -1, bestN = 10;
+  for (int i = 0; i < kCells; i++)
+    if (!g[i]) {
+      uint16_t a = allowed(u, i);
+      int n = bits(a);
+      if (n < bestN) best = i, bestN = n, left = a;
+      if (n <= 1) break;
+    }
+  return best;
+}
 
-// The cell `game peek` names as "next" and `game right` fills: an empty (or wrong) cell that
-// naked or hidden singles fill from the right digits on the board, else the first empty or wrong
-// cell. Its digit, always the solution's, goes to *digit. -1 when the board is solved.
-inline int next(const Puzzle &p, const uint8_t cells[81], uint8_t *digit = nullptr) {
-  uint8_t known[81];
-  int fallback = -1;
-  for (int c = 0; c < 81; c++) {
-    known[c] = cells[c] == p.solution[c] ? cells[c] : 0;
-    if (!known[c] && fallback < 0) fallback = c;
-  }
-  if (fallback < 0) return -1;
-  Grader s;
-  int at = -1;
-  if (s.start(known)) {
-    for (int c = 0; c < 81 && at < 0; c++)
-      if (!s.g[c] && bits(s.cand[c]) == 1) at = c;
-    for (int u = 0; u < 27 && at < 0; u++)
-      for (int d = 1; d <= 9 && at < 0; d++) {
-        int n = 0, last = -1;
-        bool placed = false;
-        for (int i = 0; i < 9; i++) {
-          int c = unitCell(u, i);
-          placed |= s.g[c] == d;
-          if (!s.g[c] && (s.cand[c] & digitBit(d))) n++, last = c;
+// ---- the search: depth first, the tightest cell first, without recursion (the board's loop has
+// an 8 KB stack; a call a cell would take several KB of it). Its frames are in a Work, which the
+// board keeps in PSRAM.
+
+struct Frame {
+  uint8_t cell, n, k;  // the cell; how many numbers to try there, and the next one
+  uint8_t order[9];    // the numbers, in the order they're tried
+};
+struct Work {
+  Frame f[kCells];
+  uint32_t nodes = 0;  // numbers tried by the last search
+};
+
+// Counts the ways to fill g, no further than `limit`. With rnd the numbers are tried in a random
+// order (filling a grid); without, smallest first. At `limit`, g is left as that solution. Past
+// `budget` numbers tried (0: no budget) it gives up and returns `limit`, as if there were that many.
+inline int search(uint8_t g[kCells], Used &u, int limit, Work &w, Rand rnd = nullptr, uint32_t budget = 0) {
+  int depth = 0, found = 0;
+  bool descend = true;
+  w.nodes = 0;
+  for (;;) {
+    if (descend) {
+      uint16_t left = 0;
+      int i = tightest(g, u, left);
+      if (i < 0) {
+        if (++found >= limit) return found;
+      } else {
+        Frame &fr = w.f[depth++];
+        fr.cell = i, fr.n = 0, fr.k = 0;
+        for (int d = 1; d <= 9; d++)
+          if (left & (1u << d)) fr.order[fr.n++] = d;
+        for (int k = fr.n - 1; rnd && k > 0; k--) {  // Fisher-Yates
+          int j = rnd(0, k);
+          uint8_t t = fr.order[k];
+          fr.order[k] = fr.order[j], fr.order[j] = t;
         }
-        if (!placed && n == 1) at = last;
       }
+    }
+    // The next number in the deepest open cell; back up a cell when it has none left.
+    if (!depth) return found;
+    Frame &fr = w.f[depth - 1];
+    if (g[fr.cell]) take(u, fr.cell, g[fr.cell]), g[fr.cell] = 0;
+    if (fr.k >= fr.n) {
+      depth--, descend = false;
+      continue;
+    }
+    if (budget && ++w.nodes > budget) return limit;
+    if (!budget) w.nodes++;
+    int d = fr.order[fr.k++];
+    g[fr.cell] = d, put(u, fr.cell, d), descend = true;
   }
-  if (at < 0) at = fallback;
-  if (digit) *digit = p.solution[at];
-  return at;
+}
+
+inline int countSolutions(const uint8_t puzzle[kCells], Work &w, int limit = 2, uint32_t budget = 0) {
+  uint8_t g[kCells];
+  memcpy(g, puzzle, kCells);
+  Used u;
+  if (!usedOf(g, u)) return 0;
+  return search(g, u, limit, w, nullptr, budget);
+}
+// Solves in place; false when there's no solution.
+inline bool solve(uint8_t g[kCells], Work &w) {
+  Used u;
+  if (!usedOf(g, u)) return false;
+  return search(g, u, 1, w) == 1;
+}
+
+// ---- the grader: a small logic solver, going as a person would
+
+// Naked singles (a cell with one number left) and hidden singles (a number with one place left
+// in a row, column or box); with `pairs`, also naked pairs (two cells of a unit left with the same
+// two numbers: no other cell there has them), hidden pairs (two numbers with the same two places
+// in a unit: those cells hold nothing else) and pointing pairs (a number's places in a box all on
+// one line: not elsewhere on that line; and the same from a line into a box).
+// True when that fills the grid.
+inline bool logicSolves(const uint8_t puzzle[kCells], bool pairs) {
+  uint8_t g[kCells];
+  uint16_t cand[kCells];
+  memcpy(g, puzzle, kCells);
+  Used u;
+  if (!usedOf(g, u)) return false;
+  for (int i = 0; i < kCells; i++) cand[i] = g[i] ? 0 : allowed(u, i);
+  auto place = [&](int i, int d) {
+    g[i] = d, cand[i] = 0;
+    for (int j = 0; j < kCells; j++)
+      if (peers(i, j)) cand[j] &= (uint16_t)~(1u << d);
+  };
+  for (;;) {
+    bool progress = false, full = true;
+    for (int i = 0; i < kCells; i++)
+      if (!g[i]) {
+        full = false;
+        if (!cand[i]) return false;
+        if (bits(cand[i]) == 1) place(i, __builtin_ctz(cand[i])), progress = true;
+      }
+    if (full) return true;
+    for (int kind = 0; kind < 3; kind++)
+      for (int k = 0; k < 9; k++)
+        for (int d = 1; d <= 9; d++) {
+          int where = -1, n = 0;
+          for (int j = 0; j < 9 && n < 2; j++) {
+            int i = unitCell(kind, k, j);
+            if (g[i] == d) n = 2;  // placed already
+            else if (!g[i] && (cand[i] & (1u << d))) where = i, n++;
+          }
+          if (n == 1) place(where, d), progress = true;
+        }
+    if (progress) continue;
+    if (!pairs) return false;
+    for (int kind = 0; kind < 3; kind++)
+      for (int k = 0; k < 9; k++) {
+        // naked pairs
+        for (int a = 0; a < 9; a++) {
+          int ia = unitCell(kind, k, a);
+          if (g[ia] || bits(cand[ia]) != 2) continue;
+          for (int b = a + 1; b < 9; b++) {
+            int ib = unitCell(kind, k, b);
+            if (g[ib] || cand[ib] != cand[ia]) continue;
+            for (int j = 0; j < 9; j++) {
+              int i = unitCell(kind, k, j);
+              if (i != ia && i != ib && !g[i] && (cand[i] & cand[ia])) cand[i] &= (uint16_t)~cand[ia], progress = true;
+            }
+          }
+        }
+        // hidden pairs: where each number can go in this unit, a bit per place
+        uint16_t where[10] = {};
+        for (int j = 0; j < 9; j++) {
+          int i = unitCell(kind, k, j);
+          for (int d = 1; d <= 9; d++)
+            if (!g[i] && (cand[i] & (1u << d))) where[d] |= 1u << j;
+        }
+        for (int d1 = 1; d1 <= 9; d1++) {
+          if (bits(where[d1]) != 2) continue;
+          for (int d2 = d1 + 1; d2 <= 9; d2++) {
+            if (where[d2] != where[d1]) continue;
+            uint16_t keep = (1u << d1) | (1u << d2);
+            for (int j = 0; j < 9; j++)
+              if (where[d1] & (1u << j)) {
+                int i = unitCell(kind, k, j);
+                if (cand[i] & ~keep) cand[i] &= keep, progress = true;
+              }
+          }
+        }
+      }
+    // pointing pairs (box -> line) and box-line reduction (line -> box)
+    for (int b = 0; b < 9; b++)
+      for (int d = 1; d <= 9; d++) {
+        int rows = 0, cols = 0, n = 0;
+        for (int j = 0; j < 9; j++) {
+          int i = unitCell(2, b, j);
+          if (!g[i] && (cand[i] & (1u << d))) rows |= 1 << rowOf(i), cols |= 1 << colOf(i), n++;
+        }
+        if (n < 2) continue;
+        for (int line = 0; line < 2; line++) {
+          int m = line ? cols : rows;
+          if (bits(m) != 1) continue;
+          int r = __builtin_ctz(m);
+          for (int j = 0; j < 9; j++) {
+            int i = unitCell(line, r, j);
+            if (boxOf(i) != b && !g[i] && (cand[i] & (1u << d))) cand[i] &= (uint16_t)~(1u << d), progress = true;
+          }
+        }
+      }
+    for (int line = 0; line < 2; line++)
+      for (int r = 0; r < 9; r++)
+        for (int d = 1; d <= 9; d++) {
+          int boxes = 0;
+          for (int j = 0; j < 9; j++) {
+            int i = unitCell(line, r, j);
+            if (!g[i] && (cand[i] & (1u << d))) boxes |= 1 << boxOf(i);
+          }
+          if (bits(boxes) != 1) continue;
+          int b = __builtin_ctz(boxes);
+          for (int j = 0; j < 9; j++) {
+            int i = unitCell(2, b, j);
+            bool onLine = line ? colOf(i) == r : rowOf(i) == r;
+            if (!onLine && !g[i] && (cand[i] & (1u << d))) cand[i] &= (uint16_t)~(1u << d), progress = true;
+          }
+        }
+    if (!progress) return false;
+  }
+}
+
+// What a puzzle needs: SINGLES, PAIRS, or MORE (the grader alone can't finish it).
+inline Technique grade(const uint8_t puzzle[kCells]) {
+  if (logicSolves(puzzle, false)) return SINGLES;
+  if (logicSolves(puzzle, true)) return PAIRS;
+  return MORE;
+}
+
+// ---- the puzzle of the day
+
+struct Puzzle {
+  long date = -1;
+  int level = 0, clues = 0, tries = 0;  // tries: which try was kept (1 the first)
+  int attempts = 0;                     // how many tries were made
+  uint32_t nodes = 0;                   // numbers tried by every search of those tries: the work done
+  Technique needs = SINGLES;
+  uint8_t given[kCells] = {};     // the puzzle: 0 an empty cell
+  uint8_t solution[kCells] = {};  // its only solution
+};
+
+inline int countClues(const uint8_t g[kCells]) {
+  int n = 0;
+  for (int i = 0; i < kCells; i++) n += g[i] != 0;
+  return n;
+}
+
+// One try: a fresh grid, then cells taken away as far as the level allows.
+inline void attempt(Puzzle &p, int level, Work &w, Rand rnd) {
+  memset(p.solution, 0, kCells);
+  Used u;
+  memset(&u, 0, sizeof u);
+  search(p.solution, u, 1, w, rnd);  // an empty grid always fills
+  p.nodes += w.nodes;
+  memcpy(p.given, p.solution, kCells);
+  // The pairs (i, 80 - i) for i 0..40 (40 is the middle, alone), in a random order.
+  uint8_t order[41];
+  for (int i = 0; i < 41; i++) order[i] = i;
+  for (int k = 40; k > 0; k--) {
+    int j = rnd(0, k);
+    uint8_t t = order[k];
+    order[k] = order[j], order[j] = t;
+  }
+  int clues = kCells;
+  for (int k = 0; k < 41; k++) {
+    int a = order[k], b = kCells - 1 - a, n = a == b ? 1 : 2;
+    if (clues - n < kFewest[level]) continue;
+    uint8_t va = p.given[a], vb = p.given[b];
+    p.given[a] = p.given[b] = 0;
+    bool ok = countSolutions(p.given, w, 2, kNodeBudget) == 1;
+    p.nodes += w.nodes;
+    ok = ok && (level == 2 || logicSolves(p.given, level == 1));
+    if (ok) clues -= n;
+    else p.given[a] = va, p.given[b] = vb;
+  }
+  p.clues = clues;
+  p.needs = grade(p.given);
+}
+
+// How far a try is from what its level wants (0: just right).
+inline int miss(const Puzzle &p) {
+  int m = p.clues > kMost[p.level] ? (p.clues - kMost[p.level]) * 2 : 0;
+  if ((int)p.needs < p.level) m += 1;  // easier than its level
+  return m;
+}
+
+// `best` is room for the closest try so far (the board keeps it in PSRAM, beside w). rnd must be
+// seeded with seed(date, level) first.
+inline void make(Puzzle &p, long date, int level, Work &w, Puzzle &best, Rand rnd) {
+  level = level < 0 ? 0 : level >= kLevels ? kLevels - 1 : level;
+  p.date = date, p.level = level;
+  best.clues = kCells + 1;
+  int bestMiss = 1 << 20;
+  uint32_t nodes = 0;
+  for (int t = 1; t <= kTries[level]; t++) {
+    p.nodes = 0;
+    attempt(p, level, w, rnd);
+    nodes += p.nodes;
+    p.tries = p.attempts = t, p.nodes = nodes;
+    int m = miss(p);
+    if (!m) return;
+    if (m < bestMiss) best = p, bestMiss = m;
+  }
+  p = best;
+  p.attempts = kTries[level], p.nodes = nodes;
+}
+
+// ---- playing
+
+// True when the number in cell i is also in its row, column or box (a clash: shown, never refused).
+inline bool clashes(const uint8_t v[kCells], int i) {
+  if (!v[i]) return false;
+  for (int j = 0; j < kCells; j++)
+    if (v[j] == v[i] && peers(i, j)) return true;
+  return false;
+}
+inline int countClashes(const uint8_t v[kCells]) {
+  int n = 0;
+  for (int i = 0; i < kCells; i++) n += clashes(v, i);
+  return n;
+}
+inline bool solved(const uint8_t v[kCells], const Puzzle &p) { return memcmp(v, p.solution, kCells) == 0; }
+// A number placed in cell i takes its pencil mark off its row, column and box.
+inline void clearPeersMark(uint16_t pencil[kCells], int i, int d) {
+  for (int j = 0; j < kCells; j++)
+    if (peers(i, j)) pencil[j] &= (uint16_t)~(1u << d);
+}
+// The values a save left still fit the puzzle: every given where it is, numbers 0..9.
+inline bool fits(const uint8_t v[kCells], const Puzzle &p) {
+  for (int i = 0; i < kCells; i++)
+    if (v[i] > 9 || (p.given[i] && v[i] != p.given[i])) return false;
+  return true;
+}
+// The first empty cell, else the first wrong one (-1: solved): what `game right` fills.
+inline int nextCell(const uint8_t v[kCells], const Puzzle &p) {
+  for (int i = 0; i < kCells; i++)
+    if (!v[i]) return i;
+  for (int i = 0; i < kCells; i++)
+    if (v[i] != p.solution[i]) return i;
+  return -1;
 }
 
 }  // namespace sudokugrid

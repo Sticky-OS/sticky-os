@@ -22,7 +22,7 @@ firmware.
 - **Notes and voice notes**: typed or spoken, sorted by AI (your own OpenAI key)
 - **E-reader**: EPUB, MOBI, AZW3 (without DRM), FB2, PDF (as text) and plain text from a microSD card
 - **E-paper photo frame**: photos in four greys, sent from the browser or read from microSD
-- **Clock, timer, quote of the day, recipes, and twelve games** (2048, Solitaire, Mines, Chess and more)
+- **Clock, timer, quote of the day, recipes, and games**: 2048, Solitaire, Mines, Chess and more, and a daily Sudoku, the same puzzle on every board
 - **Ten languages**; no account and no cloud; updates over WiFi that roll back if they fail
 
 It runs on the reTerminal Sticky (3.97", 800 x 480, ESP32-S3) only, not on
@@ -60,7 +60,7 @@ The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 | Quote | Quote of the Day from ZenQuotes, or the board's own list offline; double-tap for full screen |
 | Books | An e-reader for the books on a microSD card: EPUB, MOBI and AZW3 without DRM, FB2, PDF (as text), plain text and HTML; a library with each book's page (cover, description, chapters, progress), justified serif pages in seven sizes, contents, bookmarks and reading statistics |
 | Recipes | Say or type a dish; the AI writes the recipe (needs an OpenAI key) |
-| Games | 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor (7th grade geometry lessons, in Romanian and English), Solitaire (Klondike, draw 1 or 3), Mines (three sizes), Four in a Row and Chess (both against the board, at three levels) |
+| Games | 2048, Memory, Maths Quest, Daily (Daily maths, a Sudoku of the day at three levels and a Nonogram of the day at two sizes), Quiz, Adventure, X and O, Tutor (7th grade geometry lessons, in Romanian and English), Solitaire (Klondike, draw 1 or 3), Mines (three sizes), Four in a Row and Chess (both against the board, at three levels) |
 | Claude | Your weekly Claude Code usage, from your own MQTT broker |
 | Settings | Language, rotation, sound, sleep, WiFi, which apps show, software update |
 | About | The project's website (with a QR code), source and videos; then firmware, memory, network, battery, sensors |
@@ -228,7 +228,7 @@ flash layout, how updates and releases work. The setup protocol is in
 [docs/protocol.md](docs/protocol.md); the website and setup app are in
 `site/` (`node test/run.mjs` runs the setup app's tests); the calendar
 parser's tests run on your computer with `firmware/test/ics/run.sh`, and
-the rules of Solitaire, Mines, Four in a Row and Chess with
+the rules of Solitaire, Mines, Four in a Row, Chess and the daily Sudoku and Nonogram with
 `firmware/test/games/run.sh`.
 
 ## Contributing, security, licence

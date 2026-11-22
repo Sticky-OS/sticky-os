@@ -1,14 +1,15 @@
 // The Games folder's games: what they know and keep, apart from how they
 // look (games.ino draws them and takes the taps). 2048, Memory, Maths
-// Quest with its Daily challenge and Practice, Quiz, Adventure, X and O.
+// Quest with Practice, Daily (Daily maths, Sudoku, Nonogram), Quiz, Adventure, X and O...
 //
 // Quiz and Adventure ask the AI (the notes task's JOB_GAME, notes.h) when
 // there's a key, WiFi and `games.ai` is on; each also has its own built-in
 // questions and story, so they play offline too.
 //
-// Progress (best scores, levels, stars, the daily streak, the questions to
-// practise) is kept in LittleFS, /games.txt and /games-practice.txt. Only
-// the loop writes them (gamesSave()), never the notes task.
+// Progress (best scores, levels, stars, the daily streaks, the questions to
+// practise) is kept in LittleFS, /games.txt and /games-practice.txt, and
+// today's sudoku and nonogram grids in /daily.txt. Only the loop writes them (gamesSave()),
+// never the notes task.
 #pragma once
 #include <Arduino.h>
 #include <new>
@@ -47,23 +48,50 @@ struct GameProgress {
   int minesBest[3] = {};  // the quickest win per size, in seconds (0: none yet)
   int fourWins = 0, fourDraws = 0, fourLosses = 0, fourLevel = 1;  // level 0 easy .. 2 hard
   int chessWins = 0, chessDraws = 0, chessLosses = 0, chessLevel = 0;  // level 0 easy .. 2 hard
-  // The Daily puzzles (games_sudoku.ino, games_nonogram.ino): the last day one was solved (any level or size),
-  // the days in a row as of then, the quickest solve per level or size in seconds (0: none yet).
-  long sdkDay = 0;
-  int sdkStreak = 0, sdkBest[3] = {};  // Sudoku: Easy, Medium, Hard
-  long nonDay = 0;
-  int nonStreak = 0, nonBest[2] = {};  // nonogram: 8 x 8, 10 x 10
+  // The Daily screen's Sudoku (games_sudoku.ino, sudokugrid.h; issue #18), in /games.txt:
+  long sdkDay = 0;       // the last day a sudoku of the day was solved (any level)
+  int sdkStreak = 0;     // days in a row, as of sdkDay
+  int sdkBest[3] = {};   // the quickest solve per level, in seconds (0: none yet)
+  int sdkLevel = 0;      // the level last played, 0 easy .. 2 hard
+  // ... and today's grids as played so far, one a level, in /daily.txt (so a day's work survives
+  // deep sleep, which restarts the board; a grid for another date is dropped when it's opened).
+  struct SudokuPlay {
+    long date = 0;             // the puzzle's day (0: none)
+    int secs = 0;              // the time taken so far
+    bool done = false;         // solved
+    uint8_t value[81] = {};    // the grid: the givens and the numbers put in, 0 empty
+    uint16_t pencil[81] = {};  // pencil marks, bits 1..9
+  } sdkPlay[3];
+  // The Daily screen's Nonogram (games_nonogram.ino, nonogrid.h; issue #18), the same way: in
+  // /games.txt the streak and bests, 0 the 8 x 8 .. 1 the 10 x 10 ...
+  long nonDay = 0;       // the last day a nonogram of the day was solved (either size)
+  int nonStreak = 0;     // days in a row, as of nonDay
+  int nonBest[2] = {};   // the quickest solve per size, in seconds (0: none yet)
+  int nonSize = 0;       // the size last played
+  // ... and in /daily.txt today's grids as played so far, one a size.
+  struct NonogramPlay {
+    long date = 0;              // the puzzle's day (0: none)
+    int secs = 0;               // the time taken so far
+    bool done = false;          // solved
+    uint16_t check = 0;         // the puzzle the marks were made on (games_nonogram.ino: nonoCheck())
+    uint8_t marks[100] = {};    // a square each, row by row: 0 unknown, 1 filled, 2 crossed (nonogrid::Mark)
+  } nonPlay[2];
 };
 GameProgress &gameProgress();
 void gamesBegin();     // after LittleFS is mounted: reads what's saved
 void gamesChanged();   // progress changed: gamesSave() writes it on the loop
+void gamesDailyChanged();  // a grid in /daily.txt changed: gamesSave() writes it too
 void gamesSave();      // the loop only; nothing when nothing changed, or in demo mode
 void gamesDemo(bool on);  // screenshots: made-up progress, never saved
 
 int gamesDailyStreak(long today);  // the streak if it's still alive (done today or yesterday), else 0
 bool gamesDailyDone(long today);
-// The same for any daily streak: `streak` as of `lastDay` if that is today or yesterday, else 0.
-int gamesStreakAlive(long lastDay, int streak, long today);
+int gamesSudokuStreak(long today);   // the same for the daily Sudoku: days in a row with one solved
+bool gamesSudokuDone(long today);    // a sudoku solved today (any level)
+void gamesSudokuSolved(long today);  // one just was: the streak goes on (once a day)
+int gamesNonogramStreak(long today);   // the same for the daily Nonogram
+bool gamesNonogramDone(long today);
+void gamesNonogramSolved(long today);
 
 // ---------------------------------------------------------------- 2048
 
