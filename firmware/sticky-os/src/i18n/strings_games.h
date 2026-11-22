@@ -16,7 +16,10 @@
 S(S_G_2048, "2048")
 S(S_G_MEMORY, "Memory")
 S(S_G_MATHS, "Maths Quest")
-S(S_G_DAILY, "Daily maths")
+S(S_G_DAILY, "Daily")  // the Daily tile: three puzzles a day (Daily maths, Sudoku, a nonogram)
+S(S_G_DAILY_MATHS, "Daily maths")  // the first of them; bold 18pt on the Daily screen (~300 px), its titles
+S(S_G_SUDOKU, "Sudoku")  // the second (games_sudoku.ino)
+S(S_G_NONOGRAM, "Nonogram")  // the third: a picture logic puzzle, also called picross or griddler (games_nonogram.ino)
 S(S_G_QUIZ, "Quiz")
 S(S_G_ADVENTURE, "Adventure")
 S(S_G_XO, "X and O")
@@ -49,6 +52,17 @@ S(S_G_L_LEVEL, "Level %d of %d")
 S(S_G_L_DONE_TODAY, "Done today")
 S(S_G_DAYS_IN_ROW, "1 day in a row|%ld days in a row")  // the daily streak; also bold 18pt on the Daily's end screen
 S(S_G_L_FIVE_A_DAY, "5 a day")
+S(S_DAILY_L_DONE, "%d of 3 today")  // the Daily tile: how many of its three puzzles are done today
+S(S_DAILY_L_HINT, "3 puzzles a day")  // the Daily tile, before any is done or a streak is going
+
+// ---- Daily: the screen of three puzzles, and what Sudoku and the nonogram share
+S(S_DAILY_UNDER_WAY, "Under way: %s")  // a row's line (12pt, ~300 px with the streak after it): the level started today, "Under way: Medium"; on the Size card, the time so far
+S(S_DAILY_SOLVED, "Solved!")  // bold 24pt where the pad was, ~400 px upright, ~320 sideways
+S(S_DAILY_TIME, "Time %s")  // bold 12pt under it: the time played, "Time 12:04"
+S(S_DAILY_TIME_BEST, "Time %s, a best!")  // ... the quickest at this level yet
+S(S_DAILY_TOMORROW, "Come back tomorrow for a new one.")  // 9pt, one or two lines
+S(S_DAILY_SOLVED_IN, "Solved in %s")  // the Level / Size card, under a level's button (9pt, ~350 px with the clues before it)
+S(S_DAILY_BEST, "best %s")  // the same: the quickest solve, "best 6:12"
 S(S_G_QUIZ_BEST, "Best %d of 8")  // the most right in one quiz of 8; also the Quiz's header
 S(S_G_L_EIGHT_QUESTIONS, "8 questions")
 S(S_G_L_SCENE_GO_ON, "Scene %d: go on")  // a story under way

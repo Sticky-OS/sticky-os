@@ -32,8 +32,8 @@
 //   Photos, Quote        double-tap the picture / the words: full screen (no status bar, no
 //                        buttons); double-tap again to come back. Kept per app
 //   Recipes              say or type a dish, the AI writes it; tick ingredients, swipe the pages
-//   Games                a folder: 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure,
-//                        X and O (games.ino); UP / DOWN move a ring, OK presses it
+//   Games                a folder: 2048, Memory, Maths Quest, Daily (maths, Sudoku, a nonogram), Quiz,
+//                        Adventure, X and O... (games.ino and games_*.ino); UP / DOWN move a ring, OK presses it
 //   Calendar             read only: now / next, the week, then the agenda;
 //                        swipe up / down for its pages, tap an event to read it all,
 //                        tap a day in the week strip to jump to it, OK: back to today
@@ -6387,6 +6387,8 @@ static void devCommands() {
       sdCommand(line);
     } else if (line == "game" || line.startsWith("game ")) {  // the Games app: see gamesCommand()
       gamesCommand(line.length() > 5 ? line.substring(5) : String());
+    } else if (line == "daily" || line.startsWith("daily ")) {  // the daily puzzles' date: see dailyCommand()
+      dailyCommand(line.length() > 6 ? line.substring(6) : String());
     } else if (line == "quote new") {  // the Quote app's New quote
       screen = SCREEN_APP, app = APP_QUOTE;
       quoteNew();
@@ -6752,6 +6754,7 @@ void loop() {
   notesPoll();  // a note's answer has come: apply it and show it
   notesMarksTick();  // what it added stops standing out after a while
   gamesSave();  // a game's progress changed: written here, on the loop
+  dailySave();  // today's Sudoku and nonogram grids changed: /daily.txt, on the loop too
   booksTick();  // Books: the card's scan, a book being got ready, the place written on leaving
   quotePoll();  // a quote has come from ZenQuotes
 

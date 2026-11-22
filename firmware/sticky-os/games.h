@@ -47,6 +47,12 @@ struct GameProgress {
   int minesBest[3] = {};  // the quickest win per size, in seconds (0: none yet)
   int fourWins = 0, fourDraws = 0, fourLosses = 0, fourLevel = 1;  // level 0 easy .. 2 hard
   int chessWins = 0, chessDraws = 0, chessLosses = 0, chessLevel = 0;  // level 0 easy .. 2 hard
+  // The Daily puzzles (games_sudoku.ino, games_nonogram.ino): the last day one was solved (any level or size),
+  // the days in a row as of then, the quickest solve per level or size in seconds (0: none yet).
+  long sdkDay = 0;
+  int sdkStreak = 0, sdkBest[3] = {};  // Sudoku: Easy, Medium, Hard
+  long nonDay = 0;
+  int nonStreak = 0, nonBest[2] = {};  // nonogram: 8 x 8, 10 x 10
 };
 GameProgress &gameProgress();
 void gamesBegin();     // after LittleFS is mounted: reads what's saved
@@ -56,6 +62,8 @@ void gamesDemo(bool on);  // screenshots: made-up progress, never saved
 
 int gamesDailyStreak(long today);  // the streak if it's still alive (done today or yesterday), else 0
 bool gamesDailyDone(long today);
+// The same for any daily streak: `streak` as of `lastDay` if that is today or yesterday, else 0.
+int gamesStreakAlive(long lastDay, int streak, long today);
 
 // ---------------------------------------------------------------- 2048
 

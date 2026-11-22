@@ -132,7 +132,7 @@ static constexpr Tables kTables{};
 inline int boxOf(int cell) { return kTables.box[cell]; }
 inline int unitCell(int unit, int i) { return kTables.unit[unit][i]; }
 inline bool peers(int a, int b) { return a != b && (a / 9 == b / 9 || a % 9 == b % 9 || boxOf(a) == boxOf(b)); }
-inline uint16_t bit(int digit) { return (uint16_t)(1u << (digit - 1)); }
+inline uint16_t digitBit(int digit) { return (uint16_t)(1u << (digit - 1)); }
 inline int bits(uint16_t m) { return __builtin_popcount(m); }
 inline int lowDigit(uint16_t m) { return __builtin_ctz(m) + 1; }
 static const uint16_t kAll = 0x1FF;
@@ -180,7 +180,7 @@ inline int countSolutions(const uint8_t grid[81], int limit, uint32_t budget, ui
   for (int c = 0; c < 81; c++) {
     g[c] = grid[c];
     if (!g[c]) continue;
-    uint16_t b = bit(g[c]);
+    uint16_t b = digitBit(g[c]);
     if ((row[c / 9] | col[c % 9] | box[boxOf(c)]) & b) return 0;  // the givens clash
     row[c / 9] |= b, col[c % 9] |= b, box[boxOf(c)] |= b;
   }
@@ -196,7 +196,7 @@ inline int countSolutions(const uint8_t grid[81], int limit, uint32_t budget, ui
     for (int c = 0; c < 81; c++) {
       if (g[c]) continue;
       uint16_t m = (uint16_t)(~(row[c / 9] | col[c % 9] | box[boxOf(c)]) & kAll);
-      if (c == ban) m &= (uint16_t)~bit(banDigit);
+      if (c == ban) m &= (uint16_t)~digitBit(banDigit);
       int n = bits(m);
       if (n < bestN) {
         best = c, bestN = n, bestM = m;
@@ -217,7 +217,7 @@ inline int countSolutions(const uint8_t grid[81], int limit, uint32_t budget, ui
       Frame &f = stack[depth - 1];
       int c = f.cell;
       if (g[c]) {
-        uint16_t b = bit(g[c]);
+        uint16_t b = digitBit(g[c]);
         row[c / 9] &= ~b, col[c % 9] &= ~b, box[boxOf(c)] &= ~b;
         g[c] = 0;
       }
@@ -227,12 +227,12 @@ inline int countSolutions(const uint8_t grid[81], int limit, uint32_t budget, ui
       }
       int d = 0;
       if (order) {
-        while (!(f.left & bit(order[c * 9 + f.tried]))) f.tried++;
+        while (!(f.left & digitBit(order[c * 9 + f.tried]))) f.tried++;
         d = order[c * 9 + f.tried++];
       } else {
         d = lowDigit(f.left);
       }
-      uint16_t b = bit(d);
+      uint16_t b = digitBit(d);
       f.left &= ~b;
       g[c] = (uint8_t)d;
       row[c / 9] |= b, col[c % 9] |= b, box[boxOf(c)] |= b;
@@ -267,7 +267,7 @@ struct Grader {
 
   void place(int c, int d) {
     g[c] = (uint8_t)d, cand[c] = 0, left--;
-    uint16_t b = bit(d);
+    uint16_t b = digitBit(d);
     int r = c / 9, k = c % 9, x = boxOf(c);
     for (int i = 0; i < 9; i++) {
       cand[r * 9 + i] &= ~b;
@@ -280,7 +280,7 @@ struct Grader {
     left = 81;
     for (int c = 0; c < 81; c++)
       if (grid[c]) {
-        if (!(cand[c] & bit(grid[c]))) return false;  // clashes with a given placed before
+        if (!(cand[c] & digitBit(grid[c]))) return false;  // clashes with a given placed before
         place(c, grid[c]);
       }
     return true;
@@ -298,7 +298,7 @@ struct Grader {
       uint16_t have = 0, once = 0, twice = 0;
       for (int i = 0; i < 9; i++) {
         int c = unitCell(u, i);
-        if (g[c]) have |= bit(g[c]);
+        if (g[c]) have |= digitBit(g[c]);
         else twice |= once & cand[c], once |= cand[c];
       }
       uint16_t missing = (uint16_t)(kAll & ~have);
@@ -307,7 +307,7 @@ struct Grader {
         int d = lowDigit(single), at = -1;
         for (int i = 0; i < 9 && at < 0; i++) {
           int c = unitCell(u, i);
-          if (!g[c] && (cand[c] & bit(d))) at = c;
+          if (!g[c] && (cand[c] & digitBit(d))) at = c;
         }
         if (at < 0) return -1;  // its one place took another digit just now
         place(at, d), progress = 1;
@@ -385,7 +385,7 @@ struct Grader {
         for (uint16_t es = (uint16_t)(ds & (ds - 1)); es; es &= (uint16_t)(es - 1)) {
           int e = lowDigit(es);
           if (where[e] != where[d]) continue;
-          uint16_t keep = bit(d) | bit(e);
+          uint16_t keep = digitBit(d) | digitBit(e);
           for (int i = 0; i < 9; i++)
             if (where[d] & (1u << i)) {
               int c = unitCell(u, i);
@@ -438,7 +438,7 @@ inline bool tryRemove(Puzzle &p, int c, int &diff, uint32_t &workLeft, Stats &st
   p.grid[c] = 0;
   uint16_t row[9] = {}, col[9] = {}, box[9] = {};  // the digits each unit's givens hold
   for (int x = 0; x < 81; x++)
-    if (p.grid[x]) row[x / 9] |= bit(p.grid[x]), col[x % 9] |= bit(p.grid[x]), box[boxOf(x)] |= bit(p.grid[x]);
+    if (p.grid[x]) row[x / 9] |= digitBit(p.grid[x]), col[x % 9] |= digitBit(p.grid[x]), box[boxOf(x)] |= digitBit(p.grid[x]);
   auto open = [&](int x) { return (uint16_t)(kAll & ~(row[x / 9] | col[x % 9] | box[boxOf(x)])); };
   if (bits(open(c)) == 1) return true;  // a naked single
   const int units[3] = {c / 9, 9 + c % 9, 18 + boxOf(c)};
@@ -446,7 +446,7 @@ inline bool tryRemove(Puzzle &p, int c, int &diff, uint32_t &workLeft, Stats &st
     bool elsewhere = false;
     for (int i = 0; i < 9 && !elsewhere; i++) {
       int x = unitCell(u, i);
-      elsewhere = x != c && !p.grid[x] && (open(x) & bit(d));
+      elsewhere = x != c && !p.grid[x] && (open(x) & digitBit(d));
     }
     if (!elsewhere) return true;  // a hidden single
   }
@@ -614,7 +614,7 @@ inline int next(const Puzzle &p, const uint8_t cells[81], uint8_t *digit = nullp
         for (int i = 0; i < 9; i++) {
           int c = unitCell(u, i);
           placed |= s.g[c] == d;
-          if (!s.g[c] && (s.cand[c] & bit(d))) n++, last = c;
+          if (!s.g[c] && (s.cand[c] & digitBit(d))) n++, last = c;
         }
         if (!placed && n == 1) at = last;
       }

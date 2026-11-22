@@ -243,7 +243,7 @@ timer adds an hourglass and its minutes left when there is room.
 | Quote | Quote of the Day in large serif italic, the author under it; a long quote wraps and gets smaller type. It changes at local midnight. *New quote* (or OK) shows another. Double-tap the quote for full screen: only the words, larger (up to 40 pt, still smaller for a long one), and the author, with ZenQuotes' credit in small type at the foot when it's theirs; double-tap again to bring back the heading and the button | Today's quote from ZenQuotes (`zenquotes.io/api/today`, free, no key), fetched once a day and kept in the board's flash (`/quote.txt`), so it shows offline too; *New quote* asks `/api/random`. Its quotes show ZenQuotes' attribution, as its free API asks. Without WiFi, with `quotes.online` off, or when ZenQuotes asks for a pause (it allows 5 requests in 30 s; the board waits 7 s between them), a quote comes from the board's own list of 54 public-domain quotes, and a quiet line under it says so |
 | Recipes | Say what you'd like to cook ("a quick vegetarian pasta for two") or type it, and the AI writes a recipe: the title, the time and how many it serves, the ingredients with tick boxes (tap one while you cook; the ticks last until another recipe is opened), the numbered steps, tips. A page at a time: large type (18 pt) with the board sideways, 12 pt held upright. Saved recipes are a list, newest first; *Delete* (tap twice) | Speech to text as for Notes (OpenAI or your relay), then the model in `notes.ai_model` answers as strict JSON (OpenAI structured outputs). The board reads it defensively (code fences and words around it, trailing commas, numbers as text, ingredients as plain strings, all capped, and anything the fonts lack folded to a look-alike) and keeps up to 30 in its flash (`/recipes/`; the 31st replaces the oldest). Failures say why: *AI key rejected: it's expired or wrong*, *The AI's recipe came back garbled. Try again.* |
 | Books | An e-reader for the books on the microSD card: a library, then each book's cover and pages in a serif typeface, full screen, a page at a time (see [Books](#books)) | The card's `books` folder (EPUB, MOBI and AZW3 without DRM, FB2, PDF, plain text, Markdown, HTML); the board keeps where you are in each, and your bookmarks, on the card |
-| Games | A folder of twelve games (see Games below): 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row, Chess | The board; Quiz and Adventure also the model in `notes.ai_model` when there's a key, WiFi and `games.ai` is on. Progress in the board's flash (`/games.txt`, `/games-practice.txt`) |
+| Games | A folder of twelve games (see Games below): 2048, Memory, Maths Quest, Daily (Daily maths, a Daily Sudoku and a daily nonogram), Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row, Chess | The board; Quiz and Adventure also the model in `notes.ai_model` when there's a key, WiFi and `games.ai` is on. Progress in the board's flash (`/games.txt`, `/games-practice.txt`, and today's puzzles in `/daily.txt`) |
 | Claude | This week's Claude Code usage, all models and Fable alone, with reset times | Retained numbers under `claude.topic` on your MQTT broker: `…/seven_day/percent`, `…/seven_day/resets_at_unix`, `…/weekly_scoped/percent`, `…/age_seconds` |
 | Settings | Laid out like Android's: headings (Display, Sound and power, Connections, Apps, System), an icon, title and summary on each row. Tap a row with `>` for a page of choices (rotation, temperature, sleep on battery, which apps the home screen shows); tap a switch to turn it on or off; WiFi has the saved networks and adds new ones; *Connect to the setup app* starts Bluetooth setup | Kept in the board's flash |
 | About | First, the project: the Sticky OS logo, that it's free, open-source firmware not made by or affiliated with Seeed Studio, and where it lives: the website (sticky-os.space.fast, with a QR code to scan), the source code (github.com/Sticky-OS/sticky-os) and the videos (youtube.com/@stickyosapp). Then, a page at a time: firmware, chip, memory, network, screen, touch, battery, sensors, card, uptime, in large type with each value under its label | The board itself; OK also prints it on the serial port |
@@ -349,8 +349,8 @@ wins). Tap one; *Back* (top left) returns to the grid, the status bar
 goes home. UP / DOWN move a ring from game to game (and, inside a game,
 from button to button), OK presses it; sideways swipes stay in the game
 rather than changing app. A game left half-played (2048, X and O, a quiz,
-a story, Solitaire, Mines, Four in a Row, Chess) is where you left it when
-you come back. Settings > Home screen
+a story, Solitaire, Mines, Four in a Row, Chess, today's Sudoku and
+nonogram) is where you left it when you come back. Settings > Home screen
 hides Games, or any game in it.
 
 | Game | How it plays |
@@ -358,7 +358,10 @@ hides Games, or any game in it.
 | 2048 | Swipe on the board (or UP / DOWN) to slide every tile; two the same merge. Tiles get bolder as they grow, white on black from 128. *New game*; your best score is kept |
 | Memory | Easy (12 cards) or Hard (20). Tap two cards; a pair stays up, a miss stays up until your next tap (e-paper doesn't flash them back for free). Fewest moves wins; the best for each is kept |
 | Maths Quest | Ten levels, from adding within 100 to fractions and the order of operations: eight questions and a boss each, three hearts, streaks and quick answers score more, up to three stars, and the next level opens. A wrong answer is struck through and gets a hint, never the answer. Questions you miss wait in *Practice* until you get them right first time |
-| Daily maths | Five mixed questions, the same all day (they come from the date), and a streak of days in a row |
+| Daily | Three puzzles a day, on one screen: Daily maths, Sudoku and a nonogram, each with a line under it (done today, under way, and its streak of days in a row) and a tick once done today. The tile says how many of the three are done today (*2 of 3 today*), else the best streak going. They come from the date, so every board shows the same puzzles that day; without the date (no WiFi yet to set the clock) they wait for it. *Back* on a puzzle returns to this screen |
+| Daily maths | Five mixed questions, the same all day, and a streak of days in a row. Back returns to the Daily screen |
+| Sudoku | Today's Sudoku at Easy (36 to 40 digits given, solved by singles alone), Medium (30 to 34, needs a little more) or Hard (26 to 29): each has one solution. Choose the level on the *Level* card, which shows how many digits are given, your time once solved, or your best. Tap a square (it gets a thick frame), then a digit; the same digit again takes it out, *Erase* too. Given digits are bold, yours regular. *Pencil* (OK turns it on and off) makes the digits small notes, three by three in the square; a digit put in takes that note out of its row, column and box. A digit that clashes with another in its row, column or box is struck through. Upright, the board is 459 px with the digits under it; sideways 414 px with them beside it. Solved: your time, your streak and *Come back tomorrow*. Each level is kept as you leave it, all day; the quickest solve at each is kept |
+| Nonogram | Today's picture puzzle, 8 x 8 (Easy) or 10 x 10 (Normal), chosen on the *Size* card. The numbers on the left of each row and on top of each column are the runs of filled squares in it, in order, with at least one gap between. *Fill* / *Cross* (OK swaps them) says what a tap does: fill a square, or cross it out as known empty; the same tap again clears it. A clue is struck through once its line is right. Every puzzle can be solved a line at a time, without guessing. Solved: your time, your streak and *Come back tomorrow*. Each size is kept as you leave it, all day; the quickest solve at each is kept |
 | Quiz | Pick a theme (Science, Space, Nature, Geography, History, Words and numbers) or type your own: the AI writes eight questions on it, four answers each and a fact to read after. Without the AI (no key, no WiFi, the key rejected, or *AI in games* off) the board's own 48 questions play instead, and the screen says why. *A mix* is always the board's own |
 | Adventure | Pick a world (pirates, space, a castle...) or type your own idea, and the AI tells a story a scene at a time; you choose what happens next from two or three ways, and it ends happily after about eight scenes. *The Lighthouse Key* is a story built into the board, with its own turns and ending, for when there's no AI |
 | X and O | You're X against the board, at Easy, Medium, Hard or Best (it can't be beaten, only drawn). Who starts takes turns; your wins, draws and losses are kept |
@@ -377,10 +380,16 @@ structured outputs), read defensively as a recipe is: capped, folded to
 the letters the fonts have, and a question without four answers is left out.
 
 The progress is kept in the board's flash and written by the loop only:
-`/games.txt` (best scores, levels, stars, the daily streak, the X and O,
-Four in a Row and Chess tallies, Solitaire's wins and fewest moves, Mines'
-wins and best times) and `/games-practice.txt` (up to 30 maths questions to practise).
-Demo mode shows made-up progress and saves nothing.
+`/games.txt` (best scores, levels, stars, the X and O, Four in a Row and
+Chess tallies, Solitaire's wins and fewest moves, Mines' wins and best
+times; for Daily maths, Sudoku and the nonogram the last day each was done
+and the days in a row, and Sudoku's and the nonogram's quickest solve per
+level or size), `/games-practice.txt` (up to 30 maths questions to
+practise) and `/daily.txt`: today's Sudoku and nonogram as you left them
+(the date; per level or size started, the squares, Sudoku's pencil notes and
+the time so far), so a puzzle worked on all day survives the board's deep
+sleep. On a new day it starts again (the streaks stay). Demo mode shows
+made-up progress and puzzles, and saves nothing.
 
 The rules of Solitaire, Mines, Four in a Row and Chess come from
 [CrossPlay](https://github.com/ma-r-s/crossplay) by Mario Ruiz (MIT); the

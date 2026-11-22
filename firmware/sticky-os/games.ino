@@ -35,7 +35,33 @@ CROSSPLAY_GAME(Solitaire, solitaire)
 CROSSPLAY_GAME(Mines, mines)
 CROSSPLAY_GAME(Four, four)
 CROSSPLAY_GAME(Chess, chess)
+// The Daily tile (games_daily.ino) has the same hooks, and so have its two puzzles, Sudoku
+// (games_sudoku.ino) and the nonogram (games_nonogram.ino), which the Daily screen opens.
+CROSSPLAY_GAME(Daily, daily)
+CROSSPLAY_GAME(Sudoku, sudoku)
+CROSSPLAY_GAME(Nonogram, nonogram)
 #undef CROSSPLAY_GAME
+// What else the Daily tabs ask of each other (they come after this tab).
+static long dailyDate();
+static void dailyChanged();
+static void dailyBack();
+static const char *dailyTitle();
+static void dailyAnswer(bool right);
+static void drawDailyNoDate();
+static String dailyTime(uint32_t secs);
+static bool dailySolvedNow(long &day, int &streak, int &best, uint32_t secs);
+static void dailySolvedPanel(int x, int y, int w, int h, uint32_t secs, bool best, int streak, const char *otherLabel);
+static void dailyCard(const char *title, int n, int firstId, int current, const String *names, const String *lines);
+static String dailyRowLine(bool done, const String &state, int streak);
+static void sudokuReset();
+static void sudokuSaveTo(File &f);
+static void sudokuLoadLine(const String &k, const String &v);
+static void sudokuAnswer(bool right);
+static void nonogramReset();
+static void nonogramSaveTo(File &f);
+static void nonogramLoadLine(const String &k, const String &v);
+static void nonogramAnswer(bool right);
+static void mStartDaily();
 
 
 // Everything the games hold while the board runs, in one place in PSRAM
@@ -91,6 +117,7 @@ struct GState {
   uint32_t t7Seen[t7::MAX_STEPS] = {};  // what this practice has asked (kind and givens), so nothing comes twice
   uint32_t t7Seed = 0;  // the open exercise's seed: made again from it when the content language changes
   t7::Exercise t7Ex;              // made in place by t7Make(), here in PSRAM: it is 3.9 KB
+  long gDateOverride = 0;         // `daily date` (test builds): today, for the daily games; 0 the clock's
 };
 static GState *gs;
 
@@ -103,12 +130,13 @@ static void gamesUiBegin() {
 // screenshots, so a demo board can't be finished for real and save a made-up
 // best or tally; the one on screen deals afresh now. (Not static: sticky-os.ino calls it.)
 void crossplayDemoEnded() {
-  solitaireForget(), minesForget(), fourForget(), chessForget();
+  solitaireForget(), minesForget(), fourForget(), chessForget(), dailyForget();
   switch (gs->gGame) {
     case GAME_SOLITAIRE: solitaireOpen(); break;
     case GAME_MINES: minesOpen(); break;
     case GAME_FOUR: fourOpen(); break;
     case GAME_CHESS: chessOpen(); break;
+    case GAME_DAILY: dailyOpen(); break;
   }
 }
 
@@ -251,15 +279,7 @@ static void gameIcon(int g, int cx, int cy, int s) {
       canvas->fillCircle(rx, by - a + 1, w / 2 + 1, INK), canvas->fillCircle(rx, by + a - 1, w / 2 + 1, INK);
       break;
     }
-    case GAME_DAILY: {  // a calendar page with a star on it
-      int x = cx - r, y = cy - r + s / 10, w = s, h = s - s / 10;
-      canvas->fillRoundRect(x, y, w, h * 30 / 100, 6, INK);
-      for (int k = 0; k < t; k++) canvas->drawRoundRect(x + k, y + k, w - 2 * k, h - 2 * k, 6, INK);
-      canvas->fillRoundRect(x + w / 4 - 2, y - s / 10, 5, s / 5, 2, INK);
-      canvas->fillRoundRect(x + w * 3 / 4 - 2, y - s / 10, 5, s / 5, 2, INK);
-      gStar(cx, y + h * 64 / 100, h * 26 / 100, true);
-      break;
-    }
+    case GAME_DAILY: dailyIcon(cx, cy, s, t); break;  // a calendar page with a star on it
     case GAME_QUIZ: {  // a question mark in a ring
       ring(cx, cy, r, t);
       const GFXfont *f = s >= 48 ? &FreeSansBold18pt7b : &FreeSansBold12pt7b;
@@ -322,7 +342,10 @@ static std::vector<int> gamesShownList() {
   return out;
 }
 
-static long gToday() { return timeKnown() ? localDate(time(nullptr)) : 0; }
+static long gToday() {
+  if (gs && gs->gDateOverride) return gs->gDateOverride;  // `daily date`, test builds only
+  return timeKnown() ? localDate(time(nullptr)) : 0;
+}
 
 // ---- AI: is it there, and why not
 
@@ -893,7 +916,7 @@ static void drawMathsPlay() {
 }
 
 static void drawMathsEnd() {
-  gHeader(gs->mMode == MM_QUEST ? gameName(GAME_MATHS) : gs->mMode == MM_DAILY ? gameName(GAME_DAILY) : T(S_G_M_PRACTICE));
+  gHeader(gs->mMode == MM_QUEST ? gameName(GAME_MATHS) : gs->mMode == MM_DAILY ? T(S_G_DAILY_MATHS) : T(S_G_M_PRACTICE));
   int cy = gTop() + (TALL ? 110 : 56);
   String title, line1, line2;
   int stars = -1;
@@ -944,6 +967,10 @@ static void drawMathsEnd() {
   }
   if (line1.length()) textCentre(W / 2, y + 12, &FreeSansBold18pt7b, fitted(&FreeSansBold18pt7b, line1, W - 32).c_str()), y += 52;
   gCentred(W / 2, y, &FreeSans12pt7b, line2, W - 80, 30, 3);
+  if (gs->mMode == MM_DAILY) {  // Daily maths goes back to the Daily screen
+    if (leftId == ID_GAMES) left = gameName(GAME_DAILY);
+    if (rightId == ID_BACK) right = gameName(GAME_DAILY);
+  }
   int bw = TALL ? (W - 64) / 2 : 240, by = H - 86;
   gButton(W / 2 - bw - 8, by, bw, 60, left, false, leftId);
   gButton(W / 2 + 8, by, bw, 60, right, true, rightId);
@@ -966,7 +993,7 @@ static void actMaths(int id) {
   }
   if (gs->mScreen == MS_PLAY) {
     if (id == ID_BACK) {  // back where the round came from
-      if (gs->mMode == MM_DAILY) gs->gGame = -1;
+      if (gs->mMode == MM_DAILY) return gs->mScreen = MS_MAP, dailyBack();
       gs->mScreen = MS_MAP;
       gs->gFocusId = -1;
       return render(false);
@@ -974,6 +1001,7 @@ static void actMaths(int id) {
     return mAnswer(id);
   }
   gs->gFocusId = -1;
+  if (gs->mMode == MM_DAILY && (id == ID_BACK || id == ID_GAMES)) return gs->mScreen = MS_MAP, dailyBack();  // Daily maths: the Daily screen
   switch (id) {
     case ID_BACK: gs->mScreen = MS_MAP; return render(false);
     case ID_GAMES: gs->gGame = -1, gs->mScreen = MS_MAP; return render(false);
@@ -1663,12 +1691,11 @@ static void actXo(int id) {
 
 static String launcherLine(int g) {
   GameProgress &p = gameProgress();
-  long today = gToday();
   switch (g) {
     case GAME_2048: return gs->board2048Live && gs->board2048.score && !gs->board2048.over ? TF(S_G_L_GAME_ON, gs->board2048.score) : p.best2048 ? TF(S_G_L_BEST, p.best2048) : String(T(S_G_L_SWIPE));
     case GAME_MEMORY: return p.memBest[0] ? TP(S_G_L_BEST_MOVES, p.memBest[0]) : String(T(S_G_L_PAIRS));
     case GAME_MATHS: return TF(S_G_L_LEVEL, p.mathsUnlocked, MATHS_LEVELS);
-    case GAME_DAILY: return gamesDailyDone(today) ? String(T(S_G_L_DONE_TODAY)) : gamesDailyStreak(today) ? TP(S_G_DAYS_IN_ROW, gamesDailyStreak(today)) : String(T(S_G_L_FIVE_A_DAY));
+    case GAME_DAILY: return dailyLine();
     case GAME_QUIZ: return p.quizBest ? TF(S_G_QUIZ_BEST, p.quizBest) : String(T(S_G_L_EIGHT_QUESTIONS));
     case GAME_ADVENTURE: return gs->aScreen == AS_PLAY && !gs->aScene.ending && gs->aNum ? TF(S_G_L_SCENE_GO_ON, gs->aNum) : p.stories ? TP(S_G_STORIES, p.stories) : String(T(S_G_L_CHOOSE_WAY));
     case GAME_XO: return p.xoWins + p.xoDraws + p.xoLosses ? TF(S_G_L_WON_DRAWN, p.xoWins, p.xoDraws) : String(T(S_G_L_BEAT_BOARD));
@@ -1729,7 +1756,7 @@ static void gameOpen(int g) {
     case GAME_2048: g2048Start(false); break;
     case GAME_MEMORY: if (gs->memScreen == MEM_WON) gs->memScreen = MEM_START; break;
     case GAME_MATHS: if (gs->mScreen != MS_PLAY || gs->mMode != MM_QUEST) gs->mScreen = MS_MAP; break;
-    case GAME_DAILY: gs->gGame = GAME_MATHS; return mStartDaily();
+    case GAME_DAILY: dailyOpen(); break;
     case GAME_QUIZ:
       if (gs->qScreen == QS_DONE || gs->qScreen == QS_NOTICE) gs->qScreen = QS_THEMES;
       if (demoMode && gs->qScreen == QS_THEMES) gs->qNote = "";
@@ -1749,7 +1776,12 @@ static void gameOpen(int g) {
 
 // ======================================================================== the app's entry points (sticky-os.ino)
 
-static const char *gamesBarTitle() { return gs->gGame < 0 ? T(S_G_GAMES) : gs->gGame == GAME_MATHS && gs->mMode == MM_DAILY && gs->mScreen != MS_MAP ? gameName(GAME_DAILY) : gameName(gs->gGame); }
+static const char *gamesBarTitle() {
+  if (gs->gGame < 0) return T(S_G_GAMES);
+  if (gs->gGame == GAME_MATHS && gs->mMode == MM_DAILY && gs->mScreen != MS_MAP) return T(S_G_DAILY_MATHS);
+  if (gs->gGame == GAME_DAILY) return dailyTitle();
+  return gameName(gs->gGame);
+}
 
 // Going home: the keyboard goes; a game stays as it was.
 static void gamesLeave() { gs->gTyping = false; }
@@ -1776,6 +1808,7 @@ static void drawGames() {
     case GAME_MINES: drawMines(); break;
     case GAME_FOUR: drawFour(); break;
     case GAME_CHESS: drawChess(); break;
+    case GAME_DAILY: drawDaily(); break;
     default: drawLauncher(); break;
   }
 }
@@ -1797,6 +1830,7 @@ static void gamesActivate(int id) {
     case GAME_MINES: return actMines(id);
     case GAME_FOUR: return actFour(id);
     case GAME_CHESS: return actChess(id);
+    case GAME_DAILY: return actDaily(id);
     default:
       if (id >= 0 && id < GAME_COUNT) gameOpen(id);
   }
@@ -1849,6 +1883,7 @@ static void gamesOk() {
   if (gs->gGame == GAME_MINES && minesOk()) return;
   if (gs->gGame == GAME_FOUR && fourOk()) return;
   if (gs->gGame == GAME_CHESS && chessOk()) return;
+  if (gs->gGame == GAME_DAILY && dailyOk()) return;
   for (int id : {ID_NEXT, ID_AGAIN, ID_PLAY, ID_OFFLINE, ID_NEW})  // an end screen: its main button
     if (gHas(id)) return gamesActivate(id);
 }
@@ -1896,10 +1931,11 @@ static void gamesAiArrived(const String &say, const String &raw) {
 // ======================================================================== the serial port's game commands
 
 // game                  the launcher
-// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily maths, 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor,
-//                       8 Solitaire, 9 Mines, 10 Four in a Row, 11 Chess)
+// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily (Daily maths, Sudoku, nonogram), 4 Quiz,
+//                       5 Adventure, 6 X and O, 7 Tutor, 8 Solitaire, 9 Mines, 10 Four in a Row, 11 Chess)
 // game peek             what's on the screen, as text: the board, the cards, the right answer
-// game right / wrong    answer the question on screen right (or wrong): Maths, Quiz; Memory: a pair (or a miss)
+// game right / wrong    answer the question on screen right (or wrong): Maths, Quiz; Memory: a pair (or a miss);
+//                       Sudoku and nonogram: the next square right (or wrong)
 // game slide <0-3>      2048: left, right, up, down
 // game pick <n>         press target n (a card, an answer, a choice, a level, a square)
 // game type <words>     Quiz or Adventure: <words> as if typed for "Your own theme" / "Your own idea"
@@ -1950,6 +1986,8 @@ static void gamesCommand(const String &arg) {
       fourPeek(s);
     } else if (gs->gGame == GAME_CHESS) {
       chessPeek(s);
+    } else if (gs->gGame == GAME_DAILY) {
+      dailyPeek(s);
     } else {
       s += String("screen of ") + (gs->gGame < 0 ? "the launcher" : GAME_NAMES[gs->gGame]);
     }
@@ -1967,7 +2005,9 @@ static void gamesCommand(const String &arg) {
   }
   bool right = arg == "right";
   if (!right && arg != "wrong") return;
-  if (gs->gGame == GAME_MATHS && gs->mScreen == MS_PLAY) {
+  if (gs->gGame == GAME_DAILY) {
+    dailyAnswer(right);
+  } else if (gs->gGame == GAME_MATHS && gs->mScreen == MS_PLAY) {
     for (int i = 0; i < 4; i++)
       if ((gs->mQ.options[i] == gs->mQ.answer) == right && !gs->mCrossed[i]) return mAnswer(i);
   } else if (gs->gGame == GAME_TUTOR7 && gs->t7Screen == T7_QUESTION) {

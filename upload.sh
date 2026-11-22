@@ -7,6 +7,8 @@
 #   STICKY_VERSION=v0.2.0 ./upload.sh build    a release build (CI only: refused while the seed headers exist)
 #   STICKY_OTA_HTTP=1 ./upload.sh    a test build that takes updates over plain http
 #   STICKY_ICS_HTTP=1 ./upload.sh    a test build that takes plain http calendar links (a feed on a computer)
+# Every build that isn't a release (v*) is a test build: -DSTICKY_TEST_BUILD turns on the serial
+# port's test-only commands (`daily date`).
 # The flash layout is firmware/sticky-os/partitions.csv (the whole 32 MB):
 # the core copies a partitions.csv from the sketch folder over the scheme's,
 # and PartitionScheme=custom with upload.maximum_size checks against the 6 MB app slot.
@@ -26,6 +28,7 @@ if [[ "$VERSION" == v* ]] && { [ -e secrets.h ] || [ -L secrets.h ] || [ -e priv
   exit 1
 fi
 FLAGS="-DSTICKY_COMMIT=$COMMIT -DSTICKY_VERSION=$VERSION"
+[[ "$VERSION" == v* ]] || FLAGS="$FLAGS -DSTICKY_TEST_BUILD"
 # STICKY_OTA_HTTP=1: updates may come over plain http (a test feed on a computer). Never in a release.
 if [ "${STICKY_OTA_HTTP:-}" = 1 ]; then
   [[ "$VERSION" == v* ]] && { echo "STICKY_OTA_HTTP is for test builds, not $VERSION" >&2; exit 1; }

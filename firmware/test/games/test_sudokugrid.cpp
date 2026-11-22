@@ -177,7 +177,7 @@ static void testGraderSound() {
       }
       stuck += s.left > 0;
       for (int c = 0; c < 81; c++)
-        wrong += s.g[c] ? s.g[c] != p.solution[c] : !(s.cand[c] & sg::bit(p.solution[c]));
+        wrong += s.g[c] ? s.g[c] != p.solution[c] : !(s.cand[c] & sg::digitBit(p.solution[c]));
       if (level == 1 && !st.fallback) tiers[sg::grade(p.grid, sg::kMediumTechniques)]++;
     }
   CHECK(wrong == 0);
