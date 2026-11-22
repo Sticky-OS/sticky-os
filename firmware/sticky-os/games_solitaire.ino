@@ -277,7 +277,7 @@ static void solCard() {
   for (int k = 0; k < 2; k++) {
     int x = bx + 24 + k * (half + 16);
     gButton(x, y, half, 52, T(k ? S_SOL_DRAW3 : S_SOL_DRAW1), k == (int)s.g.drawThree(), SOL_DRAW + k);
-    textCentre(x + half / 2, y + 76, &FreeSans9pt7b, fitted(&FreeSans9pt7b, T(k ? S_SOL_DRAW3_LINE : S_SOL_DRAW1_LINE), half).c_str());
+    gCentred(x + half / 2, y + 76, &FreeSans9pt7b, T(k ? S_SOL_DRAW3_LINE : S_SOL_DRAW1_LINE), half, 19, 2);  // two lines when it needs them
   }
   if (!won) gButton(bx + 24, by + bh - 62, bw - 48, 46, T(S_G_CANCEL), false, ID_CANCEL);
 }
