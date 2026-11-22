@@ -1,6 +1,6 @@
 #!/bin/bash
 # The games' rules from CrossPlay (Solitaire, Mines, Four in a Row, Chess),
-# on this computer: ./run.sh
+# and Sticky OS's own daily puzzles (Sudoku, nonogram), on this computer: ./run.sh
 # The test_*.cpp files are CrossPlay's own host tests (host-tests/<game>/),
 # with only their include paths changed; src/crossplay/README.md says from
 # which commit.
@@ -30,4 +30,8 @@ run solui -I../../sticky-os test_solui.cpp "$SRC/solitaire/SolitaireCore.cpp"
 run minesgrid -I../../sticky-os test_minesgrid.cpp
 # Sticky OS's own logic around Four in a Row and Chess (boardgames.h), and the on-device test's scripted games.
 run boardgames -I../../sticky-os test_boardgames.cpp "$SRC/chess/ChessCore.cpp" "$SRC/chess/ChessEngine.cpp"
+# The daily puzzles (issue #18): Sudoku (sudokugrid.h) and nonogram (nonogrid.h), made from the
+# date; both print their host times, from which the board's are estimated.
+run sudokugrid -I../../sticky-os test_sudokugrid.cpp
+run nonogrid -I../../sticky-os test_nonogrid.cpp
 echo "games: all passed"
