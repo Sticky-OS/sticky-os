@@ -492,5 +492,6 @@ S(S_KB_ABC, "ABC")  // the key back to the letters, ~110 px, bold 12pt (Russian:
 #include "strings_four.h"  // Games: Four in a Row (games_four.ino)
 #include "strings_chess.h"  // Games: Chess (games_chess.ino)
 #include "strings_sudoku.h"  // Games: the Daily screen and Sudoku (games_sudoku.ino)
+#include "strings_nonogram.h"  // Games: the Daily screen's Nonogram (games_nonogram.ino)
 #include "strings_net.h"  // the network side: errors, statuses, the AI's own replies
 #include "strings_books.h"  // the Books app

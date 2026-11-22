@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------- Daily, and its Sudoku
 //
 // The Games folder's Daily tile (GAME_DAILY, issue #18) opens the Daily screen: a row for Daily
-// maths (games.ino's maths round, unchanged; its Back comes back here) and a row for Sudoku. Like
+// maths (games.ino's maths round, unchanged; its Back comes back here), a row for Sudoku and a
+// row for the Nonogram (games_nonogram.ino, which this tab sends its taps to). Like
 // the other games (gHeader, gButton, gTarget; games.ino), this tab draws them and takes the taps.
 // Its state lives in PSRAM (dailyS, dailyEnsure()).
 //
@@ -19,20 +20,21 @@
 // screen, a gap between taps counting at most SDK_GAP_MS (a board left alone doesn't run it up).
 //
 // Ids, for taps, the ring and `game pick <id>`:
-//   10 Daily maths, 11 Sudoku (the Daily screen)
+//   10 Daily maths, 11 Sudoku, 12 Nonogram (the Daily screen; the Nonogram's own: games_nonogram.ino)
 //   0..80 a square (row * 9 + column); 101..109 the numbers; 110 Erase; 111 Pencil; 112 Undo
 //   120 / 121 / 122 a level (the levels card); 130 Levels (back to the card); ID_BACK (900)
 // `game peek`: "sudoku <level> <date> grid <81: digit or .> given <81: g or -> sel <cell> next
 // <cell>=<digit> clashes <n> done <0|1>", then " card" when the levels card is up. On the Daily
-// screen: "daily maths <done 0|1> streak <n>, sudoku <easy medium hard done 0|1> streak <n>".
+// screen: "daily maths <done 0|1> streak <n>, sudoku <easy medium hard done 0|1> streak <n>,
+// nonogram <8x8 10x10 done 0|1> streak <n>".
 // `game right` / `game wrong`: the next square (sudokugrid::nextCell) gets its number, or a wrong one.
 // Demo mode (`demo on`): the first Sudoku opened is Medium, half done, with pencil marks and a
 // clash, from 12:34; nothing is saved.
 #include "sudokugrid.h"
 
-enum { DY_MENU, DY_SUDOKU };       // the Daily screen, or Sudoku
+enum { DY_MENU, DY_SUDOKU, DY_NONO };  // the Daily screen, Sudoku, or the Nonogram
 enum { SK_CARD, SK_PLAY };         // Sudoku: the levels card, or a puzzle
-enum { DY_MATHS = 10, DY_SDK = 11, SK_DIGIT = 100, SK_ERASE = 110, SK_PENCIL = 111, SK_UNDO = 112, SK_LEVEL = 120, SK_LEVELS = 130 };
+enum { DY_MATHS = 10, DY_SDK = 11, DY_NONOGRAM = 12, SK_DIGIT = 100, SK_ERASE = 110, SK_PENCIL = 111, SK_UNDO = 112, SK_LEVEL = 120, SK_LEVELS = 130 };
 enum { SAY_NONE, SAY_GIVEN };
 static const uint32_t SDK_GAP_MS = 10 * 60 * 1000UL;
 static const int SDK_UNDO = 32;
@@ -178,9 +180,9 @@ static String dailyMathsLine() {
 
 static String dailyLine() {
   long today = gToday();
-  int done = gamesDailyDone(today) + gamesSudokuDone(today);
-  if (done) return TF(S_DAILY_L_DONE, done, 2);
-  int streak = max(gamesDailyStreak(today), gamesSudokuStreak(today));
+  int done = gamesDailyDone(today) + gamesSudokuDone(today) + gamesNonogramDone(today);
+  if (done) return TF(S_DAILY_L_DONE, done, 3);
+  int streak = max(gamesDailyStreak(today), max(gamesSudokuStreak(today), gamesNonogramStreak(today)));
   if (streak) return TP(S_G_DAYS_IN_ROW, streak);
   return T(S_DAILY_L_HINT);
 }
@@ -197,6 +199,7 @@ static void dailyForget() {
   if (!dailyS) return;
   dailyS->demoMade = false, dailyS->running = false, dailyS->sel = -1, dailyS->undoN = 0;
   dailyS->screen = DY_MENU;
+  nonogramForget();
 }
 
 static void sdkStart(int level) {
@@ -448,11 +451,12 @@ static void drawSudokuCard() {
   if (TALL) textCentre(W / 2, H - 30, &FreeSans9pt7b, fitted(&FreeSans9pt7b, T(S_DAILY_FOOT), W - 32).c_str());
 }
 
-// The Daily screen: a row a puzzle, its picture, name and line.
+// The Daily screen: a row a puzzle, its picture, name and line. Sideways, three rows of 120
+// don't fit under the date: 100 there.
 static void drawDailyMenu() {
   gHeader(gameName(GAME_DAILY));
   long today = gToday();
-  int y = gTop() + (TALL ? 20 : 10), rh = TALL ? 150 : 120, x = 24, w = W - 48;
+  int y = gTop() + (TALL ? 20 : 10), rh = TALL ? 150 : 100, x = 24, w = W - 48;
   if (today) {
     struct tm d = {};
     d.tm_year = today / 10000 - 1900, d.tm_mon = today / 100 % 100 - 1, d.tm_mday = today % 100, d.tm_hour = 12;
@@ -464,13 +468,14 @@ static void drawDailyMenu() {
     int id;
     const char *name;
     String line;
-  } rows[] = {{DY_MATHS, T(S_G_DAILY), dailyMathsLine()}, {DY_SDK, T(S_SUDOKU_NAME), sdkLine()}};
+  } rows[] = {{DY_MATHS, T(S_G_DAILY), dailyMathsLine()}, {DY_SDK, T(S_SUDOKU_NAME), sdkLine()}, {DY_NONOGRAM, T(S_NONO_NAME), nonogramLine()}};
   for (const Row &r : rows) {
     canvas->drawRoundRect(x, y, w, rh - 20, 18, INK);
     canvas->drawRoundRect(x + 1, y + 1, w - 2, rh - 22, 17, INK);
     int icx = x + 20 + 40, icy = y + (rh - 20) / 2;
     if (r.id == DY_MATHS) gameIcon(GAME_MATHS, icx, icy, 64);
-    else sudokuIcon(icx, icy, 64);
+    else if (r.id == DY_SDK) sudokuIcon(icx, icy, 64);
+    else nonogramIcon(icx, icy, 60);
     int tx = x + 128, tw = w - 128 - 20;
     text(tx, icy - 6, &FreeSansBold18pt7b, fitted(&FreeSansBold18pt7b, r.name, tw).c_str());
     text(tx, icy + 26, &FreeSans12pt7b, fitted(&FreeSans12pt7b, r.line, tw).c_str());
@@ -483,6 +488,7 @@ static void drawDailyMenu() {
 static void drawDaily() {
   dailyEnsure();
   if (dailyS->screen == DY_MENU) return drawDailyMenu();
+  if (dailyS->screen == DY_NONO) return drawNonogram();
   if (dailyS->sk == SK_CARD || !gToday()) return drawSudokuCard();
   drawSudokuPlay();
 }
@@ -575,13 +581,15 @@ static void actDaily(int id) {
     if (id == ID_BACK) return gs->gGame = -1, render(false);
     if (id == DY_MATHS) return gs->gGame = GAME_MATHS, mStartDaily();
     if (id == DY_SDK) return sdkOpen(), render(true);
+    if (id == DY_NONOGRAM) return d.screen = DY_NONO, nonogramOpen(), render(true);
     return;
   }
   if (id == ID_BACK) {  // the puzzle -> the Daily screen; the card too
-    sdkPause();
+    sdkPause(), nonogramPause();
     d.screen = DY_MENU;
     return render(false);
   }
+  if (d.screen == DY_NONO) return actNonogram(id);
   if (d.sk == SK_CARD) {
     if (id >= SK_LEVEL && id < SK_LEVEL + 3 && gToday()) return sdkStart(id - SK_LEVEL), render(true);
     return;
@@ -595,6 +603,7 @@ static bool dailyOk() {
   dailyEnsure();
   DailyState &d = *dailyS;
   if (d.screen == DY_MENU) return false;
+  if (d.screen == DY_NONO) return nonogramOk();
   if (d.sk == SK_CARD) {
     for (int l = 0; l < 3; l++)
       if (!sdkSolvedToday(l)) return actDaily(SK_LEVEL + l), true;
@@ -606,10 +615,11 @@ static bool dailyOk() {
 }
 
 // Leaving the app (home): the clock stops.
-static void dailyLeave() { sdkPause(); }
+static void dailyLeave() { sdkPause(), nonogramPause(); }
 
 // `game right` / `game wrong`: the next square gets its number, or one that's wrong there.
 static bool dailyAnswer(bool right) {
+  if (dailyS && dailyS->screen == DY_NONO) return nonogramAnswer(right);
   if (!dailyS || dailyS->screen != DY_SUDOKU || dailyS->sk != SK_PLAY || sdkNow().done) return false;
   const sudokugrid::Puzzle &p = sdkPuzzle(dailyS->level);
   int i = sudokugrid::nextCell(sdkNow().value, p);
@@ -628,8 +638,12 @@ static void dailyPeek(String &s) {
     s += "daily maths " + String(gamesDailyDone(today) ? 1 : 0) + " streak " + gamesDailyStreak(today) + ", sudoku";
     for (int l = 0; l < 3; l++) s += String(" ") + SDK_LEVEL_IDS[l] + " " + (sdkSolvedToday(l) ? 1 : 0);
     s += " streak " + String(gamesSudokuStreak(today));
+    s += ", nonogram";
+    for (int z = 0; z < 2; z++) s += String(z ? " 10x10 " : " 8x8 ") + (nonoSolvedToday(z) ? 1 : 0);
+    s += " streak " + String(gamesNonogramStreak(today));
     return;
   }
+  if (d.screen == DY_NONO) return nonogramPeek(s);
   const sudokugrid::Puzzle &p = sdkPuzzle(d.level);
   const GameProgress::SudokuPlay &g = gameProgress().sdkPlay[d.level];
   bool current = g.date == today && sudokugrid::fits(g.value, p);
@@ -648,6 +662,7 @@ static void dailyPeek(String &s) {
 }
 
 static bool dailyOnSudoku() { return dailyS && dailyS->screen == DY_SUDOKU; }
+static bool dailyOnNonogram() { return dailyS && dailyS->screen == DY_NONO; }
 
 // `daily date <YYYYMMDD>` (test builds only: a dev-* version): the daily puzzles' today, to check
 // that boards agree and that streaks roll over; `daily date off` goes back to the clock.

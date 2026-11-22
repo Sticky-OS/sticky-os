@@ -36,11 +36,16 @@ CROSSPLAY_GAME(Mines, mines)
 CROSSPLAY_GAME(Four, four)
 CROSSPLAY_GAME(Chess, chess)
 #undef CROSSPLAY_GAME
-// The Daily tile (games_sudoku.ino): its screen with Daily maths and Sudoku. The same entry
+// The Daily tile (games_sudoku.ino): its screen with Daily maths, Sudoku and the Nonogram. The same entry
 // points, and dailyLeave (going home stops Sudoku's clock), dailyAnswer (game right / wrong).
 static void dailyOpen(); static void drawDaily(); static void actDaily(int id); static String dailyLine(); static void dailyPeek(String &s);
 static bool dailyOk(); static void dailyForget(); static void dailyLeave(); static bool dailyAnswer(bool right);
-static void dailyIcon(int cx, int cy, int s); static bool dailyOnSudoku();
+static void dailyIcon(int cx, int cy, int s); static bool dailyOnSudoku(); static bool dailyOnNonogram();
+// The Daily screen's Nonogram (games_nonogram.ino): what games_sudoku.ino calls, and what it uses of Sudoku's.
+static void nonogramOpen(); static void drawNonogram(); static void actNonogram(int id); static bool nonogramOk();
+static void nonogramForget(); static void nonogramPause(); static String nonogramLine(); static void nonogramPeek(String &s);
+static bool nonogramAnswer(bool right); static void nonogramIcon(int cx, int cy, int s); static bool nonoSolvedToday(int size);
+static String sdkTime(int secs); static void sdkCheckMark(int x, int y, int s, uint16_t ink);
 
 
 // Everything the games hold while the board runs, in one place in PSRAM
@@ -1755,6 +1760,7 @@ static const char *gamesBarTitle() {
   if (gs->gGame < 0) return T(S_G_GAMES);
   if (gs->gGame == GAME_MATHS && gs->mMode == MM_DAILY && gs->mScreen != MS_MAP) return T(S_G_DAILY);
   if (gs->gGame == GAME_DAILY && dailyOnSudoku()) return T(S_SUDOKU_NAME);
+  if (gs->gGame == GAME_DAILY && dailyOnNonogram()) return T(S_NONO_NAME);
   return gameName(gs->gGame);
 }
 
@@ -1906,11 +1912,11 @@ static void gamesAiArrived(const String &say, const String &raw) {
 // ======================================================================== the serial port's game commands
 
 // game                  the launcher
-// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily (Daily maths, Sudoku), 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor,
+// game <n>              open game n (0 2048, 1 Memory, 2 Maths Quest, 3 Daily (Daily maths, Sudoku, Nonogram), 4 Quiz, 5 Adventure, 6 X and O, 7 Tutor,
 //                       8 Solitaire, 9 Mines, 10 Four in a Row, 11 Chess)
 // game peek             what's on the screen, as text: the board, the cards, the right answer
 // game right / wrong    answer the question on screen right (or wrong): Maths, Quiz; Memory: a pair (or a miss);
-//                       Sudoku: the next square's number (or a wrong one)
+//                       Sudoku: the next square's number (or a wrong one); Nonogram: the next square's mark (or the other)
 // game slide <0-3>      2048: left, right, up, down
 // game pick <n>         press target n (a card, an answer, a choice, a level, a square)
 // game type <words>     Quiz or Adventure: <words> as if typed for "Your own theme" / "Your own idea"

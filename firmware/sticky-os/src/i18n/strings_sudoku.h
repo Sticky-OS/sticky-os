@@ -3,7 +3,7 @@
 // ---- the Daily screen: a row a puzzle (its name bold 18pt, ~300 px; a line under it, 12pt, ~300 px)
 S(S_DAILY_FOOT, "New puzzles every day, the same on every board.")  // 9pt, under the rows, ~440 px
 S(S_DAILY_L_DONE, "Done today: %d of %d")  // the launcher, under Daily (9pt, ~150 px, two lines at most)
-S(S_DAILY_L_HINT, "Maths and Sudoku")  // the launcher, before anything is done today
+S(S_DAILY_L_HINT, "Maths, Sudoku, Nonogram")  // the launcher, before anything is done today
 // ---- Sudoku
 S(S_SUDOKU_NAME, "Sudoku")  // the puzzle's name: a row on the Daily screen, the status bar, titles
 S(S_SUDOKU_EASY, "Easy")  // the levels: buttons on the levels card (~380 px, bold 12pt); in the header (bold 12pt, ~150 px)
