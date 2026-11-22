@@ -832,6 +832,7 @@ const BLOG_PAGES = ['blog/index.html', 'blog/introducing-sticky-os/index.html', 
                     'blog/sticky-os-1-5-tutor-7th-grade-geometry-lessons-romanian/index.html',
                     'blog/sticky-os-1-6-tutor-speaks-english/index.html',
                     'blog/sticky-os-1-8-solitaire-mines-four-in-a-row-chess/index.html',
+                    'blog/sticky-os-1-9-daily-sudoku-fridge-door/index.html',   // 1.9
                     'blog/ai-recipes-voice-ask-fridge-door-dinner/index.html',
                     'blog/install-custom-firmware-reterminal-sticky/index.html',
                     'blog/google-calendar-e-paper-fridge-display-no-subscription/index.html',
@@ -946,7 +947,8 @@ test('games: the help page has every game, passes the CSP, its demos and links w
   const { readFile, readdir } = await import('node:fs/promises');
   const { execFileSync } = await import('node:child_process');
   execFileSync('python3', [new URL('../build.py', import.meta.url).pathname], { stdio: 'ignore' });
-  const SLUGS = ['2048', 'memory', 'maths-quest', 'daily-maths', 'quiz', 'adventure', 'xo', 'tutor', 'solitaire', 'mines', 'four', 'chess'];
+  const SLUGS = ['2048', 'memory', 'maths-quest', 'daily', 'quiz', 'adventure', 'xo', 'tutor', 'solitaire', 'mines', 'four', 'chess'];   // the twelve tiles
+  const DEMOS = ['2048', 'memory', 'maths-quest', 'sudoku', 'daily-maths', 'quiz', 'adventure', 'xo', 'tutor', 'solitaire', 'mines', 'four', 'chess'];   // 1.9: Daily holds Sudoku and Daily maths
   const src = await readFile(new URL('../src/games/index.html', import.meta.url), 'utf8');
   const page = new URL('../dist/games/index.html', import.meta.url);
   const html = (await readFile(page, 'utf8')).replace(/<!--[\s\S]*?-->/g, '');   // a comment isn't published
@@ -962,6 +964,9 @@ test('games: the help page has every game, passes the CSP, its demos and links w
   assert.deepEqual([...contents.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]), SLUGS, 'games: the contents, in order');
   for (const slug of SLUGS) {
     assert.match(html, new RegExp(`<section class="game" id="${slug}"`), `games: a section for ${slug}`);
+  }
+  for (const slug of DEMOS) {
+    assert.match(html, new RegExp(`\\sid="${slug}"`), `games: an anchor for ${slug}`);
     assert.ok(src.includes(`<!-- demo:${slug} -->`) && src.includes(`<!-- /demo:${slug} -->`), `games: a demo block for ${slug}`);
     const demo = html.match(new RegExp(`<div class="demo[^"]*" data-demo="${slug}">[\\s\\S]*?</ol>`))?.[0];
     assert.ok(demo, `games: the demo of ${slug}`);

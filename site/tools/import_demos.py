@@ -33,8 +33,8 @@ import sys
 
 from PIL import Image
 
-SLUGS = ["2048", "memory", "maths-quest", "daily-maths", "quiz", "adventure",
-         "xo", "tutor", "solitaire", "mines", "four", "chess"]   # the page's anchors too
+SLUGS = ["2048", "memory", "maths-quest", "sudoku", "daily-maths", "quiz", "adventure",
+         "xo", "tutor", "solitaire", "mines", "four", "chess"]   # the page's anchors too (1.9: sudoku and daily-maths are in #daily)
 HERE = pathlib.Path(__file__).resolve().parent.parent
 DEST = HERE / "src" / "shots" / "demo"
 DEFAULT = pathlib.Path.home() / "Desktop/openwrt/devices/inksim/shorts/howto/cap"

@@ -606,3 +606,8 @@ html.lightbox-on { overflow: hidden; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 /* the counter shows the step; the caption keeps it for screen readers */
 .demo.is-player .demo-caption .demo-n { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* 1.9: a section with parts (Daily: Sudoku and Daily maths), each with its own demo */
+.game-part { margin-top: 2.5rem; }
+.game-part + .game-part { padding-top: 2.5rem; border-top: 1px solid var(--rule); }
+.game .part-title { font-size: clamp(1.4rem, 1.2rem + .8vw, 1.75rem); font-stretch: 88%; margin: 0 0 .8rem; }
+.game h4 { font: 700 1.1rem/1.2 var(--display); font-stretch: 90%; margin: 1.4rem 0 .5rem; }

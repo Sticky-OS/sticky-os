@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to play the games on {{NAME}}</title>
-<meta name="description" content="How to play the twelve games of {{NAME}} on the reTerminal Sticky e-paper board: 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, step by step on the board's own screens.">
+<meta name="description" content="How to play the twelve games of {{NAME}} on the reTerminal Sticky e-paper board: 2048, Memory, Maths Quest, Daily (Sudoku and Daily maths), Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, step by step on the board's own screens.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
@@ -87,7 +87,7 @@
     <li><a href="#2048"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M12 3.5v17M3.5 12h17"/></svg></span><strong>2048</strong><span class="line">Slide and merge the tiles</span></a></li>
     <li><a href="#memory"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/><path d="M15.5 12h3"/></svg></span><strong>Memory</strong><span class="line">Find the pairs</span></a></li>
     <li><a href="#maths-quest"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></span><strong>Maths Quest</strong><span class="line">Ten levels of sums</span></a></li>
-    <li><a href="#daily-maths"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.5v5.5M9.25 15.25h5.5"/></svg></span><strong>Daily maths</strong><span class="line">Five a day, and a streak</span></a></li>
+    <li><a href="#daily"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.5v5.5M9.25 15.25h5.5"/></svg></span><strong>Daily <span class="tag">New</span></strong><span class="line">Sudoku and Daily maths, every day</span></a></li><!-- 1.9: was Daily maths -->
     <li><a href="#quiz"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.4M12 16.8v.1"/></svg></span><strong>Quiz</strong><span class="line">Eight questions on a theme</span></a></li>
     <li><a href="#adventure"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></span><strong>Adventure</strong><span class="line">Choose what happens next</span></a></li>
     <li><a href="#xo"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17"/><path d="M4.6 4.6l2.8 2.8M7.4 4.6l-2.8 2.8"/><circle cx="18" cy="18" r="1.6"/></svg></span><strong>X and O</strong><span class="line">Three in a row</span></a></li>
@@ -231,24 +231,66 @@
   </div>
 </section>
 
-<section class="game" id="daily-maths" aria-labelledby="g-daily-maths">
-  <div class="wrap game-grid">
+<!-- 1.9: the Daily tile opens a Daily screen with Daily maths and Sudoku (issue #18). Before 1.9
+     this section was Daily maths alone (id="daily-maths"); that anchor still works below. Sudoku's
+     rules are kept to what is certain until the firmware's guide.md row lands. -->
+<section class="game" id="daily" aria-labelledby="g-daily">
+  <div class="wrap">
+    <h2 id="g-daily"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.5v5.5M9.25 15.25h5.5"/></svg></span>Daily <span class="tag">Sudoku new in 1.9</span></h2>
+    <p class="goal">The <strong>Daily</strong> tile opens today’s puzzles: a new daily puzzle, <a href="#sudoku">Sudoku</a>, next to <a href="#daily-maths">Daily maths</a>. Each is made on the board from the date, so it needs no internet, and every board has the same one that day.</p>
+  </div>
+  <div class="wrap game-grid game-part" id="sudoku">
     <div class="game-copy">
-      <h2 id="g-daily-maths"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.5v5.5M9.25 15.25h5.5"/></svg></span>Daily maths</h2>
+      <h3 class="part-title" id="g-sudoku">Sudoku</h3>
+      <p class="goal"><strong>Goal:</strong> fill the grid so that every row, every column and every 3 × 3 box holds the numbers 1 to 9 once each.</p>
+      <h4>How to play</h4>
+      <ol>
+        <li>Tap <em>Daily</em>, then <em>Sudoku</em>, and pick a level: <em>Easy</em>, <em>Medium</em> or <em>Hard</em>.</li>
+        <li>Tap a cell, then a number to put it there.</li>
+        <li>Pencil marks note the numbers a cell could still be.</li>
+        <li>A number that clashes with another in its row, column or box is marked.</li>
+      </ol>
+      <h4>Tips</h4>
+      <ul>
+        <li>There is a new puzzle every day, the same on every board: one to compare over breakfast.</li>
+        <li>Start with the rows, columns and boxes that are nearly full.</li>
+      </ul>
+      <h4>What’s kept</h4>
+      <p class="kept">Your streak of days and your best times.</p>
+      <!-- short:sudoku -->
+    </div>
+<!-- demo:sudoku -->
+<div class="demo" data-demo="sudoku">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <div class="slot"><strong>Sudoku</strong>The board’s screens are coming</div>
+        </div></div>
+        <figcaption>Sudoku, step by step: coming with its captures</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:sudoku -->
+  </div>
+  <div class="wrap game-grid game-part" id="daily-maths">
+    <div class="game-copy">
+      <h3 class="part-title" id="g-daily-maths">Daily maths</h3>
       <p class="goal"><strong>Goal:</strong> answer today’s five questions, and keep a streak of days in a row.</p>
-      <h3>How to play</h3>
+      <h4>How to play</h4>
       <ol>
         <li>Open Daily maths: <em>Today’s five questions</em>, the same all day, since they come from the date.</li>
         <li>Tap one of the four answers. They are mixed, at the Champion level, with three hearts as in Maths Quest.</li>
         <li>Answer all five: <em>Daily done!</em>, and your streak grows by a day.</li>
       </ol>
-      <h3>Tips</h3>
+      <h4>Tips</h4>
       <ul>
         <li>You can play again the same day, just for fun; it doesn’t add to the streak.</li>
         <li>The questions come from the date, which the board gets over WiFi: until it has it, the screen says <em>No date yet</em>.</li>
         <li>Questions you miss go to Maths Quest’s <em>Practice</em>.</li>
       </ul>
-      <h3>What’s kept</h3>
+      <h4>What’s kept</h4>
       <p class="kept">Your streak of days.</p>
       <!-- short:daily-maths -->
       <p class="to-top"><a href="#contents">All the games</a></p>
@@ -259,9 +301,9 @@
     <li class="demo-step">
       <figure>
         <div class="device portrait"><div class="screen">
-          <img src="../shots/games-twelve.png" width="480" height="800" loading="lazy" decoding="async" alt="The Games folder: icons for 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, each with a line of progress">
+          <img src="../shots/games-twelve.png" width="480" height="800" loading="lazy" decoding="async" alt="The Games folder: icons for 2048, Memory, Maths Quest, Daily (Sudoku and Daily maths), Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, each with a line of progress">
         </div></div>
-        <figcaption>Daily maths is in the Games folder, with your streak under it</figcaption>
+        <figcaption>The Games folder, before 1.9: Daily maths, with your streak under it</figcaption>
       </figure>
     </li>
   </ol>
