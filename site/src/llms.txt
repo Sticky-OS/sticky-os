@@ -1,9 +1,10 @@
 # Sticky OS
 
-> Free, open-source (MIT) firmware for the Seeed reTerminal Sticky, the 3.97-inch 800 x 480 touch e-paper board with an ESP32-S3. It gives the board a home screen of glanceable apps: clock, weather, calendar (Google, iCloud or Outlook iCal links), notes and voice notes, timer, photos, quote of the day, an e-reader (EPUB, MOBI, AZW3, FB2, PDF), recipes and twelve games (among them Solitaire, Mines, Four in a Row and Chess). Set up from the browser over USB or Bluetooth; no account and no cloud. It does not run on the reTerminal E1001 or E1002. Independent; not made by or affiliated with Seeed Studio.
+> Free, open-source (MIT) firmware for the Seeed reTerminal Sticky, the 3.97-inch 800 x 480 touch e-paper board with an ESP32-S3. It gives the board a home screen of glanceable apps: clock, weather, calendar (Google, iCloud or Outlook iCal links), notes and voice notes, timer, photos, quote of the day, an e-reader (EPUB, MOBI, AZW3, FB2, PDF), recipes and twelve games (among them a daily Sudoku, Solitaire, Mines, Four in a Row and Chess). Set up from the browser over USB or Bluetooth; no account and no cloud. It does not run on the reTerminal E1001 or E1002. Independent; not made by or affiliated with Seeed Studio.
 
 - [Home: tour, apps, install, FAQ](https://sticky-os.space.fast/)
 - [Setup app (Chrome or Edge)](https://sticky-os.space.fast/setup/)
+- [How to play the games](https://sticky-os.space.fast/games/): the twelve games (2048, Memory, Maths Quest, Daily: Sudoku and Daily maths, Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row, Chess): goal, steps, tips and what is kept, with the board's screens step by step.
 - [Source, README and install steps](https://github.com/Sticky-OS/sticky-os)
 - [Latest release](https://github.com/Sticky-OS/sticky-os/releases/latest)
 
@@ -18,6 +19,7 @@
 
 ## Blog
 
+- [Sticky OS 1.9: a daily Sudoku for the fridge door](https://sticky-os.space.fast/blog/sticky-os-1-9-daily-sudoku-fridge-door/)
 - [Sticky OS 1.8: Solitaire, Mines, Four in a Row and Chess](https://sticky-os.space.fast/blog/sticky-os-1-8-solitaire-mines-four-in-a-row-chess/)
 - [AI recipes by voice: ask the fridge door what's for dinner](https://sticky-os.space.fast/blog/ai-recipes-voice-ask-fridge-door-dinner/)
 - [Sticky OS 1.6: Tutor speaks English](https://sticky-os.space.fast/blog/sticky-os-1-6-tutor-speaks-english/)

@@ -383,6 +383,9 @@ footer p { margin: 0 0 .5rem; }
 /* A Short beside what it shows: the video on the left, a list of its beats on the right;
    stacked on a phone. Fills the column instead of a narrow video with gaps on both sides. */
 .short-feature { display: grid; gap: 1.5rem 2.25rem; align-items: center; margin: 2.75rem 0; }
+/* A game's "How to play" Short on the help page: a small poster under its steps. */
+.game-short { width: 100%; max-width: 13rem; margin: 1.5rem 0; }
+.game-short figcaption { margin-top: .5rem; font-size: .9rem; }
 .short-feature .video.short { width: 100%; max-width: 17rem; margin: 0 auto; }
 @media (min-width: 40rem) {
   .short-feature { grid-template-columns: 15rem 1fr; }
@@ -538,3 +541,76 @@ html.lightbox-on { overflow: hidden; }
 .kit-dodont li, .kit-name li { margin-bottom: .45rem; }
 .kit-quote { margin: 1rem 0 2rem; padding: 1rem 1.25rem; border-left: .4rem solid var(--mark); background: var(--paper-2);
   font-weight: 700; max-width: 46rem; }
+
+/* ---- Games help (games/): a contents grid, a section a game, each with a demo ---- */
+.game-index { list-style: none; padding: 0; margin: 1rem 0 clamp(2.5rem, 6vw, 4rem); display: grid; gap: .75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); }
+.game-index a { display: grid; grid-template-columns: 3rem 1fr; gap: .1rem .85rem; align-items: center; height: 100%;
+  padding: .75rem .9rem; border: 2px solid var(--ink); border-radius: 4px; color: var(--ink); text-decoration: none; background: var(--paper); }
+.game-index a:hover, .game-index a:focus-visible { background: var(--paper-2); }
+.game-index .icon { width: 3rem; height: 3rem; border-radius: .75rem; }
+.game-index .icon svg { width: 1.7rem; height: 1.7rem; }
+.game-index strong { font: 700 1.15rem/1.15 var(--display); font-stretch: 90%; }
+.game-index span.line { grid-column: 2; color: var(--graphite); font-size: .88rem; line-height: 1.3; }
+.help-basics { padding: clamp(2.5rem, 6vw, 4rem) 0; }
+.help-basics h2, .game h2 { font-size: var(--step-2); font-stretch: 85%; max-width: none; margin-bottom: 1rem; }
+.help-basics ul { padding-left: 1.2rem; max-width: 64ch; }
+.help-basics li { margin-bottom: .45rem; }
+.game { padding: clamp(2.5rem, 6vw, 4.5rem) 0; }
+.game-grid { display: grid; gap: 2.5rem 4rem; align-items: start; }
+@media (min-width: 56rem) {
+  .game-grid { grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem); }
+  .game-grid:has(.demo.landscape) { grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem); }
+  .game-grid > .demo { position: sticky; top: 5rem; }
+}
+.game h2 { display: flex; align-items: center; gap: .85rem; }
+.game h2 .icon { flex: none; }
+.game h3 { font-size: 1.2rem; font-stretch: 90%; margin: 1.6rem 0 .5rem; }
+.game .goal { font-size: var(--step-1); line-height: 1.45; }
+.game ol, .game ul { padding-left: 1.3rem; margin: 0 0 1em; max-width: 60ch; }
+.game li { margin-bottom: .4rem; }
+.game li::marker { color: var(--graphite); }
+.game .kept { color: var(--graphite); }
+.to-top { font-size: .92rem; margin-top: 1.5rem; }
+
+.demo { min-width: 0; }
+.demo .demo-title { font: 700 .95rem/1.3 var(--text); font-stretch: 100%; color: var(--graphite); margin: 0 0 1rem; text-align: center; }
+.demo-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 2rem; }
+.demo-step figure { margin: 0; }
+.demo .device.portrait { max-width: 19rem; margin: 0 auto; }
+.demo figcaption, .demo-caption { margin: .9rem auto 0; max-width: 24rem; color: var(--graphite); font-size: .95rem; line-height: 1.45; text-align: center; }
+.demo-n { font-weight: 700; color: var(--ink); }
+.demo-tap { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.demo-tap circle { fill: none; }
+.demo-tap .ring-out { stroke: var(--panel-black); stroke-width: 12; }
+.demo-tap .ring-in { stroke: var(--yellow); stroke-width: 6; }
+/* with games.js: one step at a time */
+.demo.is-player .demo-step { display: none; }
+.demo.is-player .demo-step.on { display: block; }
+.demo.is-player .demo-steps { cursor: pointer; }
+.demo.is-player figcaption { display: none; }
+.demo.is-player .demo-caption { min-height: 4.4em; }
+.demo-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; margin-top: .5rem; }
+.demo-controls button { min-height: 2.75rem; padding: 0 .9rem; border: 2px solid var(--ink); border-radius: .6rem;
+  background: var(--paper); color: var(--ink); font: 700 .95rem/1 var(--text); cursor: pointer; }
+.demo-controls button:hover { background: var(--paper-2); }
+.demo-controls button:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
+.demo-controls button:disabled { opacity: .4; cursor: default; background: var(--paper); }
+.demo-controls .demo-play { min-width: 5.2rem; }
+.demo-count { min-width: 6.2em; text-align: center; color: var(--graphite); font-size: .92rem; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: no-preference) {
+  /* a step changes like the panel does: a quick flash, and the tap ring lands */
+  .demo.flash .demo-step.on .screen::after { content: ""; position: absolute; inset: 0; background: var(--screen); pointer-events: none;
+    animation: demo-refresh .35s steps(1, end) both; }
+  @keyframes demo-refresh { 0% { opacity: .85; } 50% { opacity: .35; } 100% { opacity: 0; } }
+  .demo.flash .demo-step.on .demo-tap circle { transform-box: fill-box; transform-origin: center; animation: demo-tap .45s ease-out .2s both; }
+  @keyframes demo-tap { from { transform: scale(1.6); opacity: 0; } }
+}
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* the counter shows the step; the caption keeps it for screen readers */
+.demo.is-player .demo-caption .demo-n { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* 1.9: a section with parts (Daily: Sudoku and Daily maths), each with its own demo */
+.game-part { margin-top: 2.5rem; }
+.game-part + .game-part { padding-top: 2.5rem; border-top: 1px solid var(--rule); }
+.game .part-title { font-size: clamp(1.4rem, 1.2rem + .8vw, 1.75rem); font-stretch: 88%; margin: 0 0 .8rem; }
+.game h4 { font: 700 1.1rem/1.2 var(--display); font-stretch: 90%; margin: 1.4rem 0 .5rem; }

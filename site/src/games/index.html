@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play the games on {{NAME}}</title>
+<meta name="description" content="How to play the twelve games of {{NAME}} on the reTerminal Sticky e-paper board: 2048, Memory, Maths Quest, Daily (Daily maths and Sudoku), Quiz, Adventure, X and O, Tutor, Solitaire, Mines, Four in a Row and Chess, step by step on the board's own screens.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sticky-os.space.fast/games/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{NAME}}">
+<meta property="og:title" content="How to play the games on {{NAME}}">
+<meta property="og:description" content="The twelve games on the e-paper board, from 2048 to Chess: the goal, the taps, tips and what the board keeps, shown step by step on its own screens.">
+<meta property="og:url" content="https://sticky-os.space.fast/games/">
+<meta property="og:image" content="https://sticky-os.space.fast/shots/social-games.jpg">
+<meta property="og:image:secure_url" content="https://sticky-os.space.fast/shots/social-games.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Two game screens on the board: Chess with a pawn picked and its moves shown as dots, and a won game of Four in a Row">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to play the games on {{NAME}}">
+<meta name="twitter:description" content="The twelve games on the e-paper board, from 2048 to Chess: the goal, the taps, tips and what the board keeps, shown step by step on its own screens.">
+<meta name="twitter:image" content="https://sticky-os.space.fast/shots/social-games.jpg">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preload" href="../fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/atkinson.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../site.css">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "WebPage",
+   "name": "How to play the games on Sticky OS",
+   "description": "How to play the twelve games of Sticky OS on the reTerminal Sticky e-paper board, step by step on the board's own screens.",
+   "url": "https://sticky-os.space.fast/games/",
+   "inLanguage": "en",
+   "isPartOf": { "@type": "WebSite", "name": "Sticky OS", "url": "https://sticky-os.space.fast/" }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Sticky OS", "item": "https://sticky-os.space.fast/" },
+    { "@type": "ListItem", "position": 2, "name": "How to play the games", "item": "https://sticky-os.space.fast/games/" }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+{{HEADER}}
+
+<main id="main">
+<!--
+  Each game's section has a <!- - short:<slug> - -> marker in its copy. When the game's
+  "How to play" Short is published, put its link-out thumbnail there, as on the 1.8 post
+  (a poster image in src/shots/, nothing loaded from YouTube; the CSP allows no frames):
+
+  <figure class="video short game-short">
+    <a href="https://youtube.com/shorts/ID" target="_blank" rel="noopener noreferrer">
+      <img src="../shots/video-howto-SLUG.jpg" width="720" height="1280" loading="lazy" alt="Watch how to play GAME in a NN-second YouTube Short">
+      <span class="video-play" aria-hidden="true"></span>
+      <span class="video-time" aria-hidden="true">0:NN</span>
+    </a>
+    <figcaption>How to play GAME, in NN seconds. It opens on YouTube.</figcaption>
+  </figure>
+
+  Each game's demo is the block between <!- - demo:<slug> - -> and <!- - /demo:<slug> - ->:
+  one screenshot until its captures are imported (tools/import_demos.py), then build.py
+  draws the steps there.
+-->
+<header class="post-head wrap">
+  <p class="kicker">Help · the Games folder</p>
+  <h1>How to play the games on {{NAME}}</h1>
+  <p class="lede">Twelve games made for e-paper: turn by turn, played by tap on the board’s screen. Here is each one’s goal, how to play it, a few tips and what the board keeps, with the board’s own screens step by step.</p>
+</header>
+
+<nav class="wrap" id="contents" aria-labelledby="contents-h">
+  <h2 id="contents-h" class="visually-hidden">The games</h2>
+  <ul class="game-index">
+    <li><a href="#2048"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M12 3.5v17M3.5 12h17"/></svg></span><strong>2048</strong><span class="line">Slide and merge the tiles</span></a></li>
+    <li><a href="#memory"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/><path d="M15.5 12h3"/></svg></span><strong>Memory</strong><span class="line">Find the pairs</span></a></li>
+    <li><a href="#maths-quest"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></span><strong>Maths Quest</strong><span class="line">Ten levels of sums</span></a></li>
+    <li><a href="#daily"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.5v5.5M9.25 15.25h5.5"/></svg></span><strong>Daily <span class="tag">New</span></strong><span class="line">Sudoku and Daily maths, every day</span></a></li><!-- 1.9: was Daily maths -->
+    <li><a href="#quiz"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.4M12 16.8v.1"/></svg></span><strong>Quiz</strong><span class="line">Eight questions on a theme</span></a></li>
+    <li><a href="#adventure"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></span><strong>Adventure</strong><span class="line">Choose what happens next</span></a></li>
+    <li><a href="#xo"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17"/><path d="M4.6 4.6l2.8 2.8M7.4 4.6l-2.8 2.8"/><circle cx="18" cy="18" r="1.6"/></svg></span><strong>X and O</strong><span class="line">Three in a row</span></a></li>
+    <li><a href="#tutor"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5V5l14.5 14.5z"/><path d="M4.5 15.5h4v4"/></svg></span><strong>Tutor</strong><span class="line">7th grade geometry</span></a></li>
+    <li><a href="#solitaire"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 7.5c-2 2.2-3.5 3.2-3.5 4.8a1.8 1.8 0 0 0 3.5.6 1.8 1.8 0 0 0 3.5-.6c0-1.6-1.5-2.6-3.5-4.8zM12 13.2v3"/></svg></span><strong>Solitaire</strong><span class="line">Klondike, by tap</span></a></li>
+    <li><a href="#mines"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 21V3.5M6.5 4h11l-3 4 3 4h-11"/></svg></span><strong>Mines</strong><span class="line">Dig, but not a mine</span></a></li>
+    <li><a href="#four"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.3" r="2"/><circle cx="15.5" cy="9.3" r="2"/><circle cx="8.5" cy="14.7" r="2"/><circle cx="15.5" cy="14.7" r="2"/></svg></span><strong>Four in a Row</strong><span class="line">Drop discs, line up four</span></a></li>
+    <li><a href="#chess"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6.5" r="2.5"/><path d="M9.5 11h5M10.5 11c0 3-1 5.2-2.5 7.5h8c-1.5-2.3-2.5-4.5-2.5-7.5M6.5 20.5h11"/></svg></span><strong>Chess</strong><span class="line">You play White</span></a></li>
+  </ul>
+</nav>
+
+<section class="help-basics" id="basics" aria-labelledby="basics-h">
+  <div class="wrap">
+    <h2 id="basics-h">The Games folder</h2>
+    <ul>
+      <li><strong>Games</strong> on the home screen is a folder of all twelve, each with a line of how you’re doing: your best, your level, the daily streak, your wins. Tap one to play.</li>
+      <li><em>Back</em> returns to the folder; upright it is top left, and sideways it sits in the panel beside the board (2048 says <em>Games</em>; in Chess it is in the <em>Menu</em>). The status bar goes home.</li>
+      <li>The three buttons work too: UP and DOWN move a ring from button to button, and OK presses the ringed one. Sideways swipes stay in the game rather than changing app.</li>
+      <li>Leave a game half-played and it is where you left it when you come back, until the board restarts. Your progress (bests, levels, streaks, tallies) is kept in the board’s own memory through restarts and updates.</li>
+      <li>Settings → Home screen hides the Games folder, or any game in it.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="game" id="2048" aria-labelledby="g-2048">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-2048"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M12 3.5v17M3.5 12h17"/></svg></span>2048</h2>
+      <p class="goal"><strong>Goal:</strong> slide the tiles so that equal numbers merge, and build a 2048 tile.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Swipe on the board, up, down, left or right: every tile slides that way as far as it can.</li>
+        <li>Two tiles with the same number that meet merge into one, worth both. Your score goes up by the new tile.</li>
+        <li>After each move a new tile appears in an empty square.</li>
+        <li>UP and DOWN slide the tiles up and down too; left and right need a swipe.</li>
+        <li>When no move is left the screen says <em>No moves left</em>: OK or <em>New game</em> starts again.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>Keep your biggest tile in a corner and build towards it.</li>
+        <li>Tiles get bolder as they grow, and turn white on black from 128. Reaching 2048 isn’t the end: keep going for more.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">Your best score and your biggest tile.</p>
+      <!-- short:2048 -->
+      <figure class="video short game-short">
+        <a href="https://youtube.com/shorts/xE5zXvqnreI" target="_blank" rel="noopener noreferrer">
+          <img src="../shots/video-howto-2048.jpg" width="720" height="1280" loading="lazy" alt="Watch how to play 2048 in a 28-second YouTube Short">
+          <span class="video-play" aria-hidden="true"></span>
+          <span class="video-time" aria-hidden="true">0:28</span>
+        </a>
+        <figcaption>How to play 2048, in 28 seconds. It opens on YouTube.</figcaption>
+      </figure>
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:2048 -->
+<div class="demo landscape" data-demo="2048">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device"><div class="screen">
+          <img src="../shots/game-2048.png" width="800" height="480" loading="lazy" decoding="async" alt="2048: a board of numbered tiles with the score and best score">
+        </div></div>
+        <figcaption>2048 held sideways, with the score and your best</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:2048 -->
+  </div>
+</section>
+
+<section class="game" id="memory" aria-labelledby="g-memory">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-memory"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/><path d="M15.5 12h3"/></svg></span>Memory</h2>
+      <p class="goal"><strong>Goal:</strong> turn up every pair of matching cards in as few moves as you can.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Pick <em>Easy: 12 cards</em> or <em>Hard: 20 cards</em>.</li>
+        <li>Tap a card to turn it up, then tap a second one.</li>
+        <li>A pair stays up. A miss stays up until your next tap, then turns back down.</li>
+        <li>Turn up every pair: <em>All pairs found!</em>, with up to three stars for few moves.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>A miss isn’t wasted: you have seen two more cards. Remember where they are.</li>
+        <li>E-paper doesn’t flash a miss back by itself, so take your time to look.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">The fewest moves for each size.</p>
+      <!-- short:memory -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:memory -->
+<div class="demo landscape" data-demo="memory">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device"><div class="screen">
+          <img src="../shots/game-memory.png" width="800" height="480" loading="lazy" decoding="async" alt="Memory: a grid of cards, some turned over in matched pairs">
+        </div></div>
+        <figcaption>Memory: the pairs found stay up</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:memory -->
+  </div>
+</section>
+
+<section class="game" id="maths-quest" aria-labelledby="g-maths-quest">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-maths-quest"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></span>Maths Quest</h2>
+      <p class="goal"><strong>Goal:</strong> pass ten levels of mental maths, from warm-up sums to the Champion level, and earn three stars on each.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>The map shows the ten levels: Warm-up, Easy tables, All tables, Division, Big numbers, Missing number, Bigger times, Order of operations, Fractions and Champion. Tap an open level, or <em>Play level</em>.</li>
+        <li>Each question has four answers: tap one. A level is eight questions and a boss question, worth three times the points.</li>
+        <li>A wrong answer is struck through and a hint shows, never the answer: try again among the others. You have three hearts; a wrong answer costs one.</li>
+        <li>Finish your newest level without running out of hearts and the next one opens.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>Quick answers (under six seconds) and streaks score more: twice the points from three right in a row, three times from six.</li>
+        <li>Stars: three with no wrong answer, two with one or two.</li>
+        <li>Questions you miss wait in <em>Practice</em>, which has no hearts, until you get them right first time. Any open level can be played again from the map.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">The levels you have opened, the stars and best score for each, and up to 30 questions to practise.</p>
+      <!-- short:maths-quest -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:maths-quest -->
+<div class="demo landscape" data-demo="maths-quest">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device"><div class="screen">
+          <img src="../shots/game-maths.png" width="800" height="480" loading="lazy" decoding="async" alt="Maths Quest: a map of ten levels with stars on the ones passed">
+        </div></div>
+        <figcaption>The map of ten levels, with the stars won</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:maths-quest -->
+  </div>
+</section>
+
+<!-- 1.9 (hold until 1.9 is tagged): the Daily tile opens a Daily screen with Daily maths and
+     Sudoku (issue #18). Before 1.9 this section was Daily maths alone (id="daily-maths"); that
+     anchor still works below. Sudoku's facts: docs/guide.md and games_sudoku.ino on games/sudoku. -->
+<section class="game" id="daily" aria-labelledby="g-daily">
+  <div class="wrap">
+    <h2 id="g-daily"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.5v5.5M9.25 15.25h5.5"/></svg></span>Daily <span class="tag">Sudoku new in 1.9</span></h2>
+    <p class="goal">The <strong>Daily</strong> tile opens the puzzles of the day: a new daily puzzle, <a href="#sudoku">Sudoku</a>, next to <a href="#daily-maths">Daily maths</a>. Both come from the date, so every board running the same version of {{NAME}} has the same ones that day, and each has its own streak of days in a row.</p>
+  </div>
+  <div class="wrap game-grid game-part" id="sudoku">
+    <div class="game-copy">
+      <h3 class="part-title" id="g-sudoku">Sudoku</h3>
+      <p class="goal"><strong>Goal:</strong> fill the grid so that every row, every column and every 3 × 3 box holds the numbers 1 to 9 once each.</p>
+      <h4>How to play</h4>
+      <ol>
+        <li>Tap <em>Daily</em>, then <em>Sudoku</em>: <em>Today’s sudoku</em>. Pick a level: <em>Easy</em> (36 to 40 numbers given), <em>Medium</em> (30 to 34) or <em>Hard</em> (26 to 29).</li>
+        <li>Tap a square: it is ringed, and its row, column and box are lightly hatched.</li>
+        <li>Tap a number to put it in; the same number again takes it out. Given numbers are bold and can’t change.</li>
+        <li><em>Pencil</em> puts numbers in small, as notes. <em>Erase</em> clears a square, and <em>Undo</em> takes back a step.</li>
+        <li>A number of yours that clashes with another in its row, column or box is struck through, never refused.</li>
+        <li>Fill the last square: <em>Solved!</em>, with your time, a new best, your streak and <em>Come back tomorrow for a new one.</em></li>
+      </ol>
+      <h4>Tips</h4>
+      <ul>
+        <li>Every puzzle has exactly one solution. On Easy, a square with only one number left, or a number with only one place left in its row, column or box, always gets you to the end.</li>
+        <li>A number you place takes its pencil notes off its row, column and box. Once a number is placed nine times it fades on the pad.</li>
+        <li>The clock counts while the puzzle is on screen; a long gap between taps counts as ten minutes at most. <em>Levels</em> goes back to the levels card, which shows each level’s time and best, with a tick on those solved today.</li>
+        <li>The puzzle is made on the board itself from the date, with no server and no account, and nothing is sent anywhere; every board running the same version of {{NAME}} has the same one that day. The board needs the date, which it gets over WiFi: without it, the screen asks you to connect to WiFi.</li>
+      </ul>
+      <h4>What’s kept</h4>
+      <p class="kept">Your best time at each level, and your streak: days in a row with a sudoku solved, at any level. Today’s grids, notes and times are kept even when the board restarts or sleeps; a new day starts afresh.</p>
+      <!-- short:sudoku -->
+      <figure class="video short game-short">
+        <a href="https://youtube.com/shorts/uhJWrokixLI" target="_blank" rel="noopener noreferrer">
+          <img src="../shots/video-howto-sudoku.jpg" width="720" height="1280" loading="lazy" alt="Watch how to play Daily Sudoku in a 26-second YouTube Short">
+          <span class="video-play" aria-hidden="true"></span>
+          <span class="video-time" aria-hidden="true">0:26</span>
+        </a>
+        <figcaption>How to play Daily Sudoku, in 26 seconds. It opens on YouTube.</figcaption>
+      </figure>
+    </div>
+<!-- demo:sudoku -->
+<div class="demo" data-demo="sudoku">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <img src="../shots/sudoku-play.png" width="480" height="800" loading="lazy" decoding="async" alt="Today's Easy sudoku at 1:12: the square in row 2, column 1 ringed and its 8 struck through, since the row already has an 8; pencil marks 2 and 3 in a square of the top row; the number pad, Erase, Pencil and Undo">
+        </div></div>
+        <figcaption>A clash struck through, and pencil marks</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:sudoku -->
+  </div>
+  <div class="wrap game-grid game-part" id="daily-maths">
+    <div class="game-copy">
+      <h3 class="part-title" id="g-daily-maths">Daily maths</h3>
+      <p class="goal"><strong>Goal:</strong> answer today’s five questions, and keep a streak of days in a row.</p>
+      <h4>How to play</h4>
+      <ol>
+        <li>Tap <em>Daily</em>, then <em>Daily maths</em>: <em>Today’s five questions</em>, the same all day, since they come from the date.</li>
+        <li>Tap one of the four answers. They are mixed, at the Champion level, with three hearts as in Maths Quest.</li>
+        <li>Answer all five: <em>Daily done!</em>, and your streak grows by a day. <em>Back</em> returns to the Daily screen.</li>
+      </ol>
+      <h4>Tips</h4>
+      <ul>
+        <li>You can play again the same day, just for fun; it doesn’t add to the streak.</li>
+        <li>The questions come from the date, which the board gets over WiFi: until it has it, the screen says <em>No date yet</em>.</li>
+        <li>Questions you miss go to Maths Quest’s <em>Practice</em>.</li>
+      </ul>
+      <h4>What’s kept</h4>
+      <p class="kept">Your streak of days.</p>
+      <!-- short:daily-maths -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:daily-maths -->
+<div class="demo" data-demo="daily-maths">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <img src="../shots/sudoku-daily.png" width="480" height="800" loading="lazy" decoding="async" alt="The Daily screen, Sunday, 22 November 2026: a row for Daily maths, 5 a day, and a row for Sudoku, Easy, Medium or Hard; at the foot: New puzzles every day, the same on every board">
+        </div></div>
+        <figcaption>The Daily screen: Daily maths and Sudoku</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:daily-maths -->
+  </div>
+</section>
+
+<section class="game" id="quiz" aria-labelledby="g-quiz">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-quiz"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.4M12 16.8v.1"/></svg></span>Quiz</h2>
+      <p class="goal"><strong>Goal:</strong> get as many of eight questions right as you can.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Pick a theme: Science, Space, Nature, Geography, History or Words and numbers, <em>A mix</em>, or <em>Your own theme</em> to type one.</li>
+        <li>With the AI on, it writes eight new questions on it; this takes 10 to 40 seconds, and <em>Cancel</em> stops it.</li>
+        <li>Tap one of the four answers. The screen says if it’s right, or which one was, with a fact to read.</li>
+        <li>Tap <em>Next</em>; after the eighth, the results, then <em>Another one</em> or <em>Themes</em>.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>A right answer is 100 points, 200 once you have three in a row.</li>
+        <li>The AI is optional: it needs your own OpenAI key, WiFi and <em>AI in games</em> on in Settings. Without it, the board’s own 48 questions play, and the screen says why. <em>A mix</em> is always the board’s own; <em>Your own theme</em> needs the AI.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">The rounds you have played and your best score out of 8 (full rounds only).</p>
+      <!-- short:quiz -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:quiz -->
+<div class="demo landscape" data-demo="quiz">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device"><div class="screen">
+          <img src="../shots/game-quiz.png" width="800" height="480" loading="lazy" decoding="async" alt="Quiz: a space question answered right, Saturn, with a fact about its rings">
+        </div></div>
+        <figcaption>A question answered right, with its fact</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:quiz -->
+  </div>
+</section>
+
+<section class="game" id="adventure" aria-labelledby="g-adventure">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-adventure"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></span>Adventure</h2>
+      <p class="goal"><strong>Goal:</strong> choose your way through a story to its happy ending.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Pick a world: Pirates, Space, Castle, Jungle, Ocean or Mystery, or <em>Your own idea</em> to type one. These need the AI.</li>
+        <li>Or pick <em>Lighthouse Key</em>, a story built into the board, which plays without the AI.</li>
+        <li>Read the scene, then tap what happens next, from two or three ways.</li>
+        <li>After about eight scenes the story ends: <em>The end</em>, and <em>A new story</em>.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>Each scene takes the AI a moment to write; the screen says so, with <em>Cancel</em>.</li>
+        <li>If a scene can’t be written, <em>Try again</em>, or switch to the <em>Board’s story</em>.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">How many stories you have finished.</p>
+      <!-- short:adventure -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:adventure -->
+<div class="demo landscape" data-demo="adventure">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device"><div class="screen">
+          <img src="../shots/game-adventure.png" width="800" height="480" loading="lazy" decoding="async" alt="Adventure: the first scene of a story by the sea, with two choices">
+        </div></div>
+        <figcaption>A scene, and two ways the story can go</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:adventure -->
+  </div>
+</section>
+
+<section class="game" id="xo" aria-labelledby="g-xo">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-xo"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17"/><path d="M4.6 4.6l2.8 2.8M7.4 4.6l-2.8 2.8"/><circle cx="18" cy="18" r="1.6"/></svg></span>X and O</h2>
+      <p class="goal"><strong>Goal:</strong> get three X in a row, across, down or slanting, before the board gets three O.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Pick a level: <em>Easy</em>, <em>Medium</em>, <em>Hard</em> or <em>Best</em>.</li>
+        <li>You’re X: tap a square. The board answers with its O.</li>
+        <li>Three in a row wins; a full grid with none is a draw.</li>
+        <li>Tap <em>New game</em>. Who starts takes turns, a game each.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li><em>Best</em> can’t be beaten, only drawn. A draw against it is a win of a kind.</li>
+        <li>Changing the level when a game has barely begun starts it again at the new level.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">Your wins, draws and losses, and the level you chose.</p>
+      <!-- short:xo -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:xo -->
+<div class="demo landscape" data-demo="xo">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device"><div class="screen">
+          <img src="../shots/game-xo.png" width="800" height="480" loading="lazy" decoding="async" alt="X and O: a game in progress against the board on Hard">
+        </div></div>
+        <figcaption>A game against the board on Hard</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:xo -->
+  </div>
+</section>
+
+<section class="game" id="tutor" aria-labelledby="g-tutor">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-tutor"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5V5l14.5 14.5z"/><path d="M4.5 15.5h4v4"/></svg></span>Tutor</h2>
+      <p class="goal"><strong>Goal:</strong> learn a geometry lesson, then get its exercises right first time.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Tap <em>Grade 7</em>, then <em>Math - Geometry</em>, then a lesson: the quadrilateral (4.1 to 4.8) or the Pythagorean theorem (7.2).</li>
+        <li>Read <em>1. Lesson summary</em> and <em>2. Worked examples</em>, three of them, with <em>Next</em> and <em>Back</em>.</li>
+        <li>Then <em>3. Practice</em>: 6 to 8 exercises. Tap the right answer.</li>
+        <li>Stuck? <em>Hints</em> gives two clues that never give the answer away. After a wrong answer the screen says why, and <em>Solution</em> shows the whole working.</li>
+        <li>After the last one, <em>See the result</em>: how many you got right first time.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>The numbers are new each time, so an exercise can be practised again and again.</li>
+        <li>Tutor is in Romanian on a board set to Romanian, and in English on any other.</li>
+        <li><em>Clear progress</em> on a lesson starts it fresh: tap it, then <em>Sure? Tap again</em>.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">Your best result for each lesson (right first time).</p>
+      <!-- short:tutor -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:tutor -->
+<div class="demo" data-demo="tutor">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <img src="../shots/tutor-en-exercise.png" width="480" height="800" loading="lazy" decoding="async" alt="Exercise 1/8: triangle ABC has angle A = 90°, leg AB = 15 cm, leg AC = 8 cm and hypotenuse BC = 17 cm; what is its area? The triangle is drawn with its sides marked and Area = ? inside, above four answers: 23 cm², 255/2 cm², 60 cm² and 120 cm², and a Hints button">
+        </div></div>
+        <figcaption>An exercise: four answers, and Hints</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:tutor -->
+  </div>
+</section>
+
+<section class="game" id="solitaire" aria-labelledby="g-solitaire">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-solitaire"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 7.5c-2 2.2-3.5 3.2-3.5 4.8a1.8 1.8 0 0 0 3.5.6 1.8 1.8 0 0 0 3.5-.6c0-1.6-1.5-2.6-3.5-4.8zM12 13.2v3"/></svg></span>Solitaire</h2>
+      <p class="goal"><strong>Goal:</strong> move every card to the four foundations, each suit from ace to king.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Tap a card to move it: it goes to its foundation, or to the only column it fits.</li>
+        <li>If it could go to more than one place, it is picked up (drawn black): <em>Now tap where it goes.</em></li>
+        <li>In the columns, cards go down in alternating colours; an empty column takes a king.</li>
+        <li>Tap the stock to turn a card. <em>Draw 1</em> turns one at a time, <em>Draw 3</em> three (harder): choose on the <em>New game</em> card.</li>
+        <li><em>Undo</em> takes back a move at a time. Once every card in the columns is face up, the game plays itself out.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>Turn up the face-down cards in the columns first: they are the ones that block you.</li>
+        <li>When nothing can get anywhere the screen says <em>No moves left</em>: <em>Undo</em>, or start a new game.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">Your wins out of the games played, and the fewest moves in a win.</p>
+      <!-- short:solitaire -->
+      <figure class="video short game-short">
+        <a href="https://youtube.com/shorts/NC0wBSagWug" target="_blank" rel="noopener noreferrer">
+          <img src="../shots/video-howto-solitaire.jpg" width="720" height="1280" loading="lazy" alt="Watch how to play Solitaire in a 27-second YouTube Short">
+          <span class="video-play" aria-hidden="true"></span>
+          <span class="video-time" aria-hidden="true">0:27</span>
+        </a>
+        <figcaption>How to play Solitaire, in 27 seconds. It opens on YouTube.</figcaption>
+      </figure>
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:solitaire -->
+<div class="demo" data-demo="solitaire">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <img src="../shots/games-solitaire.png" width="480" height="800" loading="lazy" decoding="async" alt="Solitaire, draw 1, 14 moves: the eight of clubs on the waste is picked up, drawn black; the ace of hearts is on its foundation">
+        </div></div>
+        <figcaption>A card picked up, waiting for where it goes</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:solitaire -->
+  </div>
+</section>
+
+<section class="game" id="mines" aria-labelledby="g-mines">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-mines"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 21V3.5M6.5 4h11l-3 4 3 4h-11"/></svg></span>Mines</h2>
+      <p class="goal"><strong>Goal:</strong> open every square that isn’t a mine, without digging one up.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Choose a size on the <em>New game</em> card: Small (8 × 10, 10 mines), Medium (9 × 12, 16) or Large (10 × 13, 20).</li>
+        <li>Tap any square: the first one is always safe, and opens a patch.</li>
+        <li>A number says how many mines touch that square.</li>
+        <li>Switch to <em>Flag</em> and tap a square you know is a mine; tap it again to take the flag off. Switch back to <em>Dig</em> to open squares.</li>
+        <li>Tap a number that already has its flags around it to open the rest around it.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>The counter shows the mines still to flag, and the clock times the game.</li>
+        <li>OK swaps <em>Dig</em> and <em>Flag</em>. Dig a mine and the screen says <em>Boom!</em>, shows the mines and crosses any wrong flags.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">Your wins and the quickest win at each size.</p>
+      <!-- short:mines -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:mines -->
+<div class="demo" data-demo="mines">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <img src="../shots/games-mines.png" width="480" height="800" loading="lazy" decoding="async" alt="Mines, medium: Dig selected, 15 mines left, 0:42 on the clock; a large patch of the field open with its numbers, and one flag">
+        </div></div>
+        <figcaption>The field opened, one mine flagged</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:mines -->
+  </div>
+</section>
+
+<section class="game" id="four" aria-labelledby="g-four">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-four"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.3" r="2"/><circle cx="15.5" cy="9.3" r="2"/><circle cx="8.5" cy="14.7" r="2"/><circle cx="15.5" cy="14.7" r="2"/></svg></span>Four in a Row</h2>
+      <p class="goal"><strong>Goal:</strong> line up four of your discs, across, down or slanting, before the board does.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>Pick a level: <em>Easy</em>, <em>Medium</em> or <em>Hard</em>.</li>
+        <li>You’re the rings: tap a column, and your disc drops to the lowest free place.</li>
+        <li>The board replies at once with a solid disc; the disc played last has a dot.</li>
+        <li>Four in a line wins and is struck through. Tap <em>New game</em>: who starts takes turns, a game each.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li>The middle column is in more lines of four than any other: start there.</li>
+        <li>With the buttons, UP and DOWN ring a column and show where the disc would land; OK drops it.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">Your wins, draws and losses, and the level you chose.</p>
+      <!-- short:four -->
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:four -->
+<div class="demo" data-demo="four">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <img src="../shots/games-four.png" width="480" height="800" loading="lazy" decoding="async" alt="Four in a Row: You win! Four rings in a diagonal, struck through; Easy is selected; Won 3, Drawn 1, Lost 3; a New game button">
+        </div></div>
+        <figcaption>A win on Easy, the four struck through</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:four -->
+  </div>
+</section>
+
+<section class="game" id="chess" aria-labelledby="g-chess">
+  <div class="wrap game-grid">
+    <div class="game-copy">
+      <h2 id="g-chess"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6.5" r="2.5"/><path d="M9.5 11h5M10.5 11c0 3-1 5.2-2.5 7.5h8c-1.5-2.3-2.5-4.5-2.5-7.5M6.5 20.5h11"/></svg></span>Chess</h2>
+      <p class="goal"><strong>Goal:</strong> checkmate the board’s king. You play White.</p>
+      <h3>How to play</h3>
+      <ol>
+        <li>The board fills the screen. Tap one of your pieces: its moves show as dots, its captures as corners.</li>
+        <li>Tap where it goes. Tap the piece again to put it back, or another of yours to switch.</li>
+        <li>The board shows <em>Thinking...</em>, then plays its reply: <em>The board played Nc6. Your move.</em></li>
+        <li>A pawn that reaches the last row asks what to become.</li>
+        <li><em>Menu</em> opens a panel with <em>Back</em>, the levels (Easy, Medium, Hard), your tally, <em>Undo</em> and <em>Resign</em> (tap it twice); <em>Close</em> shuts it.</li>
+      </ol>
+      <h3>Tips</h3>
+      <ul>
+        <li><em>Undo</em> takes back your last move and the board’s reply. A new level counts from the board’s next move.</li>
+        <li>The last move’s two squares are framed, and a king in check gets a thicker frame.</li>
+        <li>A game also ends in stalemate, or a draw: the same position three times, fifty moves with no capture or pawn move, or too few pieces to checkmate.</li>
+        <li>Home is a swipe up from the bottom edge, or UP and DOWN together.</li>
+      </ul>
+      <h3>What’s kept</h3>
+      <p class="kept">Your wins, draws and losses (resigning counts as a loss), and the level you chose.</p>
+      <!-- short:chess -->
+      <figure class="video short game-short">
+        <a href="https://youtube.com/shorts/fNgflLziM64" target="_blank" rel="noopener noreferrer">
+          <img src="../shots/video-howto-chess.jpg" width="720" height="1280" loading="lazy" alt="Watch how to play Chess in a 26-second YouTube Short">
+          <span class="video-play" aria-hidden="true"></span>
+          <span class="video-time" aria-hidden="true">0:26</span>
+        </a>
+        <figcaption>How to play Chess, in 26 seconds. It opens on YouTube.</figcaption>
+      </figure>
+      <p class="to-top"><a href="#contents">All the games</a></p>
+    </div>
+<!-- demo:chess -->
+<div class="demo" data-demo="chess">
+  <ol class="demo-steps">
+    <li class="demo-step">
+      <figure>
+        <div class="device portrait"><div class="screen">
+          <img src="../shots/games-chess.png" width="480" height="800" loading="lazy" decoding="async" alt="Chess, full screen: the starting position with the white pawn on e2 picked (its square black) and dots on e3 and e4 where it can go; below the board: Now tap where it goes, and a Menu button">
+        </div></div>
+        <figcaption>A pawn picked, its moves shown as dots</figcaption>
+      </figure>
+    </li>
+  </ol>
+</div>
+<!-- /demo:chess -->
+  </div>
+</section>
+
+<section class="help-basics" id="more" aria-labelledby="more-games-h">
+  <div class="wrap">
+    <h2 id="more-games-h">More about the games</h2>
+    <div class="short-feature">
+      <figure class="video short">
+      <a href="https://youtube.com/shorts/H9hcRsAU_AQ" target="_blank" rel="noopener noreferrer">
+        <img src="../shots/video-games-short.jpg" width="720" height="1280" loading="lazy" alt="Watch the four games new in 1.8 in a 33-second YouTube Short: Four new games">
+        <span class="video-play" aria-hidden="true"></span>
+        <span class="video-time" aria-hidden="true">0:33</span>
+      </a>
+      </figure>
+      <div class="short-text">
+        <p class="short-kicker">Watch · 0:33</p>
+        <p class="short-title">Four new games in 33 seconds</p>
+        <p>Solitaire, Mines, Four in a Row and Chess, as they came in 1.8, filmed from the board’s own screens.</p>
+        <p><a href="https://youtube.com/shorts/H9hcRsAU_AQ" target="_blank" rel="noopener noreferrer">Watch it on YouTube</a></p>
+        <p class="short-note">It opens on YouTube; nothing from YouTube loads on this page.</p>
+      </div>
+    </div>
+    <p>The rules of Solitaire, Mines, Four in a Row and Chess come from <a href="https://github.com/ma-r-s/crossplay" target="_blank" rel="noopener noreferrer">CrossPlay</a> by Mario Ruiz (MIT); the chess pieces are Maurizio Monge’s “celtic” set (MIT). The games come with {{NAME}}, free; <a href="../#install">install it</a> on your board. Read what came in <a href="../blog/sticky-os-1-8-solitaire-mines-four-in-a-row-chess/">1.8: Solitaire, Mines, Four in a Row and Chess</a> and <a href="../blog/reterminal-sticky-games-2048-memory-maths-quiz/">the first eight games</a>, or the <a href="https://github.com/Sticky-OS/sticky-os/blob/main/docs/guide.md#games" target="_blank" rel="noopener noreferrer">user guide</a>.</p>
+    <p class="post-end"><a class="button" href="../#install">Install {{NAME}}</a> <a href="../#tour">Take the tour</a></p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><span class="brand">{{NAME}}</span></p>
+    <div>
+      <p>An independent, open-source firmware for the <a href="https://www.seeedstudio.com/sticky/" target="_blank" rel="noopener noreferrer">Seeed reTerminal Sticky</a>. Not made by or affiliated with Seeed Studio. Seeed and reTerminal are trademarks of their owners, named here only to say which board this firmware runs on.</p>
+      <p>Every screenshot is the board’s own picture, captured as drawn, with demo data. In the demos, a yellow ring marks where the finger taps next.</p>
+      <p><a href="https://github.com/Sticky-OS/sticky-os" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://www.youtube.com/@stickyosapp" target="_blank" rel="noopener noreferrer">YouTube</a> · <a href="../brand/">Brand</a> · <a href="https://github.com/Sticky-OS/sticky-os/issues" target="_blank" rel="noopener noreferrer">Issues</a> · <a href="https://github.com/Sticky-OS/sticky-os/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licence</a></p>
+    </div>
+  </div>
+</footer>
+<script src="../games.js" defer></script>
+<script type="module" src="../menu.js"></script>
+</body>
+</html>

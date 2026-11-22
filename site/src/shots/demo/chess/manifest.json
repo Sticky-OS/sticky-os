@@ -1,0 +1,69 @@
+{
+ "game": "Chess",
+ "orientation": "portrait",
+ "steps": [
+  {
+   "file": "01-start.png",
+   "caption": "You play White against the board",
+   "tap": null,
+   "shows": "Starting position, 'You're White. Tap a piece to move it.', Menu button"
+  },
+  {
+   "file": "02-menu.png",
+   "caption": "Menu: Back, the level (Easy, Medium, Hard), your tally, Undo and New game",
+   "tap": {
+    "x": 86,
+    "y": 752
+   },
+   "shows": "Panel open under the board: Back, Easy selected, Medium, Hard, 'Won 2 Drawn 0 Lost 2', Close, Undo (greyed), New game"
+  },
+  {
+   "file": "03-picked.png",
+   "caption": "Tap a piece: its moves show as dots",
+   "tap": {
+    "x": 270,
+    "y": 438
+   },
+   "shows": "Menu closed, e2 pawn on a black square with dots on e3 and e4; 'Now tap where it goes.'"
+  },
+  {
+   "file": "04-reply.png",
+   "caption": "Tap where it goes; the board thinks, then plays its move",
+   "tap": {
+    "x": 270,
+    "y": 318
+   },
+   "shows": "Pawn on e4; the board played Nc6 (from and to squares framed): 'The board played Nc6. Your move.'"
+  },
+  {
+   "file": "05-capture-pick.png",
+   "caption": "A capture shows as corners on the piece you can take",
+   "tap": {
+    "x": 330,
+    "y": 378
+   },
+   "shows": "Queen on f3 picked: dots for its moves, corners on the black knight on e4 and the pawn on f7"
+  },
+  {
+   "file": "06-captured.png",
+   "caption": "Take it; captured pieces line up above and below the board",
+   "tap": {
+    "x": 270,
+    "y": 318
+   },
+   "shows": "Queen took the knight on e4; the board played d5; a captured knight shown under the board"
+  },
+  {
+   "file": "08-check.png",
+   "caption": "Check: your king gets a thick frame",
+   "tap": null,
+   "shows": "A later game: 'The board played Qxh4+. Check!' with the white king on f2 thickly framed"
+  },
+  {
+   "file": "09-mate.png",
+   "caption": "Checkmate wins the game; New game starts another",
+   "tap": null,
+   "shows": "'Checkmate. You win!' after Qh8#; the black king thickly framed; New game button filled"
+  }
+ ]
+}

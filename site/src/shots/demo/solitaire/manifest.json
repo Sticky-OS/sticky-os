@@ -1,0 +1,99 @@
+{
+ "game": "Solitaire",
+ "orientation": "portrait",
+ "steps": [
+  {
+   "file": "01-new.png",
+   "caption": "Tap New game, then choose Draw 1 (easier) or Draw 3 (harder)",
+   "tap": {
+    "x": 402,
+    "y": 78
+   },
+   "shows": "The New game card over the board: Draw 1 (selected), Draw 3, Cancel"
+  },
+  {
+   "file": "02-deal.png",
+   "caption": "A fresh deal: seven columns, the stock top left, four foundations top right",
+   "tap": {
+    "x": 143,
+    "y": 395
+   },
+   "shows": "New Draw 1 deal, 0 moves, stock 24, seven columns with the top cards face up"
+  },
+  {
+   "file": "03-move.png",
+   "caption": "Tap a card: if it fits only one column, it goes there by itself",
+   "tap": {
+    "x": 240,
+    "y": 301
+   },
+   "shows": "Jack of spades moved onto the queen of hearts; the jack of clubs underneath turned face up; 1 move"
+  },
+  {
+   "file": "04-stock.png",
+   "caption": "Tap the stock to turn a card onto the waste",
+   "tap": {
+    "x": 42,
+    "y": 159
+   },
+   "shows": "Stock 23, the ace of hearts turned onto the waste; 2 moves"
+  },
+  {
+   "file": "05-foundation.png",
+   "caption": "Tap an ace and it goes up to its foundation",
+   "tap": {
+    "x": 108,
+    "y": 159
+   },
+   "shows": "Ace of hearts on the first foundation; 3 moves"
+  },
+  {
+   "file": "06-picked.png",
+   "caption": "A card that fits more than one place is picked up and drawn black",
+   "tap": {
+    "x": 108,
+    "y": 159
+   },
+   "shows": "Another deal (11 moves): the 2 of spades on the waste is drawn black; it fits on the 3 of hearts or the 3 of diamonds"
+  },
+  {
+   "file": "07-placed.png",
+   "caption": "Then tap where it goes",
+   "tap": {
+    "x": 174,
+    "y": 287
+   },
+   "shows": "The 2 of spades placed on the 3 of hearts in the third column; 12 moves"
+  },
+  {
+   "file": "08-undo.png",
+   "caption": "Undo takes back a move at a time",
+   "tap": {
+    "x": 282,
+    "y": 78
+   },
+   "shows": "The 2 of spades back on the waste; 11 moves"
+  },
+  {
+   "file": "09-stuck.png",
+   "caption": "When no move can get anywhere, it says No moves left: Undo, or start a new game",
+   "tap": null,
+   "shows": "A later deal (63 moves) stuck: 'No moves left' in place of the move count, New game drawn filled"
+  },
+  {
+   "file": "10-won.png",
+   "caption": "Win, and the board says how many moves it took; deal again from the card",
+   "tap": null,
+   "shows": "'You won! In 131 moves. Your best yet!' with Draw 1 / Draw 3 buttons; all four kings on the foundations"
+  },
+  {
+   "file": "11-draw3.png",
+   "caption": "Draw 3: the stock turns three cards at a time, and only the top one plays",
+   "tap": {
+    "x": 42,
+    "y": 159
+   },
+   "shows": "Draw 3 deal after one stock tap: three cards fanned on the waste (4, 9, 9 of clubs on top); 1 move"
+  }
+ ]
+}

@@ -1,0 +1,102 @@
+{
+ "game": "Sudoku",
+ "orientation": "portrait",
+ "steps": [
+  {
+   "file": "01-launcher.png",
+   "caption": "Games has a Daily tile: puzzles of the day",
+   "tap": null,
+   "shows": "The Games launcher, twelve tiles; Daily (a calendar page with a star) second row left, 'Maths and Sudoku' under it"
+  },
+  {
+   "file": "02-daily.png",
+   "caption": "Tap Daily: Daily maths and Sudoku, a new puzzle every day",
+   "tap": {
+    "x": 90,
+    "y": 301
+   },
+   "shows": "The Daily screen: Sunday, 22 November 2026; rows for Daily maths ('5 a day') and Sudoku ('Easy, Medium or Hard'); 'New puzzles every day, the same on every board.'"
+  },
+  {
+   "file": "03-levels.png",
+   "caption": "Tap Sudoku and pick a level: Easy, Medium or Hard",
+   "tap": {
+    "x": 240,
+    "y": 377
+   },
+   "shows": "Today's sudoku card: Easy (36 to 40 clues, singles solve it), Medium (30 to 34 clues), Hard (26 to 29 clues)"
+  },
+  {
+   "file": "04-easy.png",
+   "caption": "Today's Easy puzzle, the same on every board; givens are bold",
+   "tap": {
+    "x": 240,
+    "y": 164
+   },
+   "shows": "A fresh Easy board, 36 givens in bold, the clock at 0:11, the number pad, Erase, Pencil, Undo (thin: nothing to undo); 'Tap a square, then a number.'"
+  },
+  {
+   "file": "05-square.png",
+   "caption": "Tap a square: it is ringed, its row, column and box are hatched",
+   "tap": {
+    "x": 239,
+    "y": 137
+   },
+   "shows": "Row 1 column 5 ringed; its row, column and box hatched lightly; Easy 0:22; '45 squares to go'"
+  },
+  {
+   "file": "06-number.png",
+   "caption": "Then tap a number to put it in",
+   "tap": {
+    "x": 239,
+    "y": 618
+   },
+   "shows": "A 5 (regular type, yours) in the ringed square; Easy 0:32; '44 squares to go'"
+  },
+  {
+   "file": "07-pencil.png",
+   "caption": "Pencil on: numbers go in small, as notes",
+   "tap": {
+    "x": 137,
+    "y": 618
+   },
+   "shows": "Pencil filled black, the pad's numbers small; pencil marks 2 and 3 in row 1 column 6; 'Pencil is on: numbers go in small, as notes.'"
+  },
+  {
+   "file": "08-clash.png",
+   "caption": "A number that clashes is struck through, never refused",
+   "tap": {
+    "x": 392,
+    "y": 618
+   },
+   "shows": "An 8 in row 2 column 1 struck through (the row already has a given 8); 'Struck through: the same number twice in a row, column or box.'"
+  },
+  {
+   "file": "09-undo.png",
+   "caption": "Undo takes it back",
+   "tap": {
+    "x": 395,
+    "y": 692
+   },
+   "shows": "Row 2 column 1 empty and ringed again; Easy 1:22; '44 squares to go'"
+  },
+  {
+   "file": "10-last.png",
+   "caption": "One square to go; the numbers already placed nine times fade on the pad",
+   "tap": {
+    "x": 239,
+    "y": 545
+   },
+   "shows": "Last empty square (row 9 column 5) ringed; the pad shows 8 bold and the other numbers thin; Easy 2:27; '1 square to go'"
+  },
+  {
+   "file": "11-solved.png",
+   "caption": "Solved: your time, a best, and your streak. Come back tomorrow",
+   "tap": {
+    "x": 392,
+    "y": 618
+   },
+   "shows": "The full grid; 'Solved!', 'Solved in 2:37', 'A new best time!', '1 day in a row', 'Come back tomorrow for a new one.'"
+  }
+ ]
+}

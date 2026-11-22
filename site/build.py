@@ -24,6 +24,16 @@ are drawn smooth at build time: shots/smooth/<name>.<width>.<fingerprint>.webp
 at 1x, 2x and 3x (kept by browsers for a year: the name changes with the picture),
 offered to the browser by srcset, so the screens read like a print at any size
 instead of showing their pixels unevenly when scaled (smooth_shots(); needs Pillow).
+Captures in subfolders are drawn too: shots/demo/chess/01-new.png becomes
+shots/smooth/demo-chess-01-new.<width>.<fingerprint>.webp.
+
+The games help page (src/games/) shows each game as a step-by-step demo of the
+board's own captures. A game's demo is the block between <!-- demo:<slug> -->
+and <!-- /demo:<slug> --> on the page: while src/shots/demo/<slug>/manifest.json
+is missing, the block stays as written (one screenshot); once it is there, the
+build draws the steps from it in the block's place (demo_player()). The
+captures and their manifest are brought in by tools/import_demos.py; games.js
+turns the list of steps into a player (one step at a time, keys, swipes, autoplay).
 
 Blog posts live in src/blog/<permalink>/index.html, listed in src/blog/index.html.
 A permalink is the title's keywords, lower case and hyphenated, without small
@@ -46,6 +56,8 @@ import subprocess
 import sys
 import zipfile
 import hashlib
+import html
+import json
 
 try:  # the screenshots' smooth versions (smooth_shots); --publish refuses without it
     from PIL import Image, ImageFilter
@@ -175,7 +187,7 @@ def brand_kit():
 PANEL = {(480, 800), (800, 480)}
 
 
-def smooth_versions(png):
+def smooth_versions(png, name):
     """The smooth 1x/2x/3x versions of a board capture: [(width, path)], or [] if it isn't one.
 
     A capture is the board's 1-bit frame (sometimes saved doubled). Scaled by a
@@ -197,13 +209,14 @@ def smooth_versions(png):
     big = big.point([0 if v <= lo else 255 if v >= hi else (v - lo) * 255 // (hi - lo) for v in range(256)])
     # In shots/smooth/, named with a fingerprint of the capture: a changed capture gets new
     # names, so the browser may keep these for a year (src/_headers) and never shows a stale one.
+    # name: the capture's path under shots/, "-" for "/" (demo/chess/01-new -> demo-chess-01-new).
     tag = hashlib.sha256(png.read_bytes()).hexdigest()[:10]
-    folder = png.parent / "smooth"
+    folder = DIST / "shots" / "smooth"
     folder.mkdir(exist_ok=True)
     out = []
     for scale in (1, 2, 3):
         w, h = im.width * scale, im.height * scale
-        path = folder / f"{png.stem}.{w}.{tag}.webp"
+        path = folder / f"{name}.{w}.{tag}.webp"
         big.resize((w, h), Image.LANCZOS).save(path, "WEBP", quality=88, method=6)
         out.append((w, path))
     return out
@@ -214,12 +227,16 @@ def smooth_shots():
     if Image is None:
         print("build: Pillow missing, screenshots left as captured (pip install pillow)")
         return 0
-    made = {}
-    for png in sorted((DIST / "shots").glob("*.png")):
-        versions = smooth_versions(png)
+    made = {}   # path under shots/ ("games-chess.png", "demo/chess/01-new.png") -> versions
+    shots = DIST / "shots"
+    for png in sorted(shots.rglob("*.png")):
+        rel = png.relative_to(shots).as_posix()
+        if rel.startswith("smooth/"):
+            continue
+        versions = smooth_versions(png, rel[:-4].replace("/", "-"))
         if versions:
-            made[png.name] = versions
-    shot = re.compile(r'((?:\.\./)*shots/)([a-z0-9-]+\.png)')
+            made[rel] = versions
+    shot = re.compile(r'((?:\.\./)*shots/)((?:[a-z0-9-]+/)*[a-z0-9-]+\.png)')
     for page in DIST.rglob("*.html"):
         text = page.read_text()
 
@@ -239,9 +256,72 @@ def smooth_shots():
             return m.group(0).replace(found.group(2), "smooth/" + made[found.group(2)][-1][1].name)
 
         text = re.sub(r"<img\b[^>]*>", img, text)
-        text = re.sub(r'<a\b[^>]*href="[^"]*shots/[a-z0-9-]+\.png"', link, text)
+        text = re.sub(r'<a\b[^>]*href="[^"]*shots/(?:[a-z0-9-]+/)*[a-z0-9-]+\.png"', link, text)
         page.write_text(text)
     return len(made)
+
+
+# ---- the games' step-by-step demos (games/)
+
+DEMOS = SRC / "shots" / "demo"   # <slug>/manifest.json and its captures (tools/import_demos.py)
+DEMO_BLOCK = re.compile(r'<!-- demo:([a-z0-9-]+) -->.*?<!-- /demo:\1 -->', re.S)
+TAP_R = 34   # the tap ring's radius, in the panel's pixels
+
+
+def demo_player(slug, up):
+    """A game's demo from src/shots/demo/<slug>/manifest.json, or None while there is none.
+
+    Written as what it is without JavaScript: a numbered list of the steps, each a
+    capture in the board's frame with its caption ("Step 3 of 8. Tap the stock.").
+    Where the finger taps next, a ring is drawn over the capture as an SVG of the
+    panel's own size, so it sits on the right spot at any width and needs no
+    inline style (the CSP allows none). games.js makes the list a player."""
+    path = DEMOS / slug / "manifest.json"
+    if not path.exists():
+        return None
+    m = json.loads(path.read_text())
+    portrait = m.get("orientation", "portrait") == "portrait"
+    w, h = (480, 800) if portrait else (800, 480)
+    steps = m["steps"]
+    esc = lambda s: html.escape(str(s), quote=True)
+    name = esc(m.get("game", slug))
+    out = [f'<div class="demo{"" if portrait else " landscape"}" data-demo="{slug}">',
+           f'  <h3 class="demo-title" id="demo-{slug}">{name}, step by step</h3>',
+           f'  <ol class="demo-steps" aria-labelledby="demo-{slug}">']
+    for i, s in enumerate(steps, 1):
+        src = DEMOS / slug / s["file"]
+        if not src.exists():
+            sys.exit(f"build: {src.relative_to(HERE)} is in its manifest but missing")
+        # A step's tap is the one that led to it, made on the screen before; the ring goes
+        # where the finger touched, so each screen shows the next step's tap.
+        tap = steps[i].get("tap") if i < len(steps) else None
+        ring = ""
+        if tap:
+            x, y = int(tap["x"]), int(tap["y"])
+            ring = (f'\n          <svg class="demo-tap" viewBox="0 0 {w} {h}" aria-hidden="true" focusable="false">'
+                    f'<circle class="ring-out" cx="{x}" cy="{y}" r="{TAP_R}"/>'
+                    f'<circle class="ring-in" cx="{x}" cy="{y}" r="{TAP_R}"/></svg>')
+        alt = esc(s.get("shows") or s["caption"])
+        out.append(f'''    <li class="demo-step">
+      <figure>
+        <div class="device{" portrait" if portrait else ""}"><div class="screen">
+          <img src="{up}shots/demo/{slug}/{esc(s["file"])}" width="{w}" height="{h}" loading="lazy" decoding="async" alt="{alt}">{ring}
+        </div></div>
+        <figcaption><span class="demo-n">Step {i} of {len(steps)}.</span> <span class="demo-text">{esc(s["caption"])}</span></figcaption>
+      </figure>
+    </li>''')
+    out += ['  </ol>', '</div>']
+    return "\n".join(out)
+
+
+def demos(text, rel):
+    """Puts each game's demo in its <!-- demo:<slug> --> block, where there is one."""
+    up = "../" * rel.count("/")
+
+    def one(m):
+        player = demo_player(m.group(1), up)
+        return m.group(0) if player is None else f"<!-- demo:{m.group(1)} -->\n{player}\n<!-- /demo:{m.group(1)} -->"
+    return DEMO_BLOCK.sub(one, text)
 
 
 def main():
@@ -251,18 +331,24 @@ def main():
         if old.name in keep:
             continue
         shutil.rmtree(old) if old.is_dir() else old.unlink()
-    shutil.copytree(SRC, DIST, dirs_exist_ok=True)
+    # the demos' manifests are read by the build, not published
+    shutil.copytree(SRC, DIST, dirs_exist_ok=True, ignore=shutil.ignore_patterns("manifest.json"))
     for page in DIST.rglob("*.html"):
         text = page.read_text()
+        rel = page.relative_to(DIST).as_posix()
         if "{{HEADER}}" in text:
-            text = text.replace("{{HEADER}}", header(page.relative_to(DIST).as_posix()))
+            text = text.replace("{{HEADER}}", header(rel))
         if "{{LATEST}}" in text:
             text = text.replace("{{LATEST}}", latest_posts())
+        if "<!-- demo:" in text:
+            text = demos(text, rel)
         page.write_text(touch_icon(text).replace("{{NAME}}", NAME))
     brand_kit()
     smooth = smooth_shots()
     shots = sorted(p.name for p in (DIST / "shots").glob("*.png"))
-    print(f"built {DIST} as {NAME!r}; screenshots ({smooth} drawn smooth): {', '.join(shots)}")
+    demo = sorted(p.parent.name for p in DEMOS.glob("*/manifest.json"))
+    print(f"built {DIST} as {NAME!r}; screenshots ({smooth} drawn smooth): {', '.join(shots)}; "
+          f"game demos: {', '.join(demo) or 'none yet'}")
 
 
 def publish_settings():
