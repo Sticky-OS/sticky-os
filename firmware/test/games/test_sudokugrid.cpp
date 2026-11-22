@@ -111,10 +111,16 @@ static void testClashes() {
   CHECK(pencil[40] & (1 << 7));
 }
 
+// The most search nodes a day's puzzle may take, per level: the worst of a year on the host with
+// some room. The board's time follows the nodes and the tries (about 32, 42 and 25 ms a try), so
+// this is what keeps the day's puzzle under 300 ms; a generator change that does more work fails here.
+static const uint32_t kMaxNodes[3] = {1500, 12500, 50000};
+
 static void testYear() {
   static const char *const NAMES[] = {"easy", "medium", "hard"};
   double total[3] = {}, worst[3] = {};
   int minClues[3] = {81, 81, 81}, maxClues[3] = {}, needs[3][3] = {}, maxTries[3] = {};
+  uint32_t maxMade[3] = {};  // the most search nodes one day's puzzle took, per level
   uint32_t maxNodes = 0;
   long date = 20260101;
   const int DAYS = 365;
@@ -137,7 +143,10 @@ static void testYear() {
       if (level == 0) CHECK(p.needs == sg::SINGLES);
       if (level == 1) CHECK(p.needs <= sg::PAIRS);
       needs[level][p.needs]++;
-      maxTries[level] = p.tries > maxTries[level] ? p.tries : maxTries[level];
+      maxTries[level] = p.attempts > maxTries[level] ? p.attempts : maxTries[level];
+      maxMade[level] = p.nodes > maxMade[level] ? p.nodes : maxMade[level];
+      CHECK(p.attempts >= 1 && p.attempts <= sg::kTries[level] && p.tries <= p.attempts);
+      CHECK(p.nodes <= kMaxNodes[level]);
       uint8_t s[81];
       memcpy(s, p.given, 81);
       CHECK(sg::solve(s, work) && memcmp(s, p.solution, 81) == 0);
@@ -156,11 +165,11 @@ static void testYear() {
   makeDay(a, 20261122, 0), makeDay(b, 20261123, 0), makeDay(c, 20261122, 1);
   CHECK(memcmp(a.solution, b.solution, 81) != 0 && memcmp(a.solution, c.solution, 81) != 0);
   for (int l = 0; l < 3; l++)
-    std::printf("sudoku %-6s %d days: clues %d..%d, needs singles %d / pairs %d / more %d, up to %d tries, %.2f ms on average, %.2f ms at most\n",
-                NAMES[l], DAYS, minClues[l], maxClues[l], needs[l][0], needs[l][1], needs[l][2], maxTries[l], total[l] / DAYS, worst[l]);
+    std::printf("sudoku %-6s %d days: clues %d..%d, needs singles %d / pairs %d / more %d, up to %d tries, %u nodes, %.2f ms on average, %.2f ms at most\n",
+                NAMES[l], DAYS, minClues[l], maxClues[l], needs[l][0], needs[l][1], needs[l][2], maxTries[l], (unsigned)maxMade[l], total[l] / DAYS, worst[l]);
   std::printf("sudoku: the most nodes to count a day's solutions: %u (budget %u)\n", (unsigned)maxNodes, (unsigned)sg::kNodeBudget);
-  CHECK(needs[1][sg::PAIRS] > DAYS / 3);  // Medium often needs a pair (else the closest of its tries: fewer clues than Easy)
-  CHECK(needs[2][sg::MORE] > DAYS * 8 / 10);   // Hard nearly always needs more
+  CHECK(needs[1][sg::PAIRS] > DAYS / 5);  // Medium: fewer clues than Easy; a pair on about a quarter of days
+  CHECK(needs[2][sg::MORE] > DAYS * 3 / 4);   // Hard mostly needs more than pairs
 }
 
 // Fixed dates give fixed puzzles (and the board shows the same: `game peek`). A change here

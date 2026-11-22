@@ -14,7 +14,7 @@
 //     (Easy: singles; Medium: singles and pairs), down to the level's fewest clues.
 //  4. A try that ends with too many clues, or that an easier level's techniques could solve
 //     (Medium wants a pair, Hard more than pairs), is made again from the next numbers, up to
-//     kTries times; then the closest try is taken.
+//     kTries[level] times; then the closest try is taken.
 //
 // Cells are 0..80, row * 9 + column; a value 0 is empty, else 1..9. Pencil marks are bits 1..9.
 #pragma once
@@ -27,7 +27,10 @@ static const int kCells = 81, kLevels = 3;
 static const int kFewest[kLevels] = {36, 30, 26};  // clues: Easy 36-40, Medium 30-34, Hard 26-29
 static const int kMost[kLevels] = {40, 34, 29};
 static const uint32_t kSalt[kLevels] = {0x53444B31u, 0x53444B32u, 0x53444B33u};  // 'SDK1', 'SDK2', 'SDK3'
-static const int kTries = 12;
+// Tries a level may take (a fixed count, never a time limit: every board must make the same
+// puzzle). Measured on the board, a try takes about 32 ms (Easy), 42 ms (Medium) and 25 ms (Hard),
+// so the worst day stays under the 300 ms the loop can spare.
+static const int kTries[kLevels] = {1, 5, 8};
 static const uint32_t kNodeBudget = 20000;  // one count of solutions; over it the cell stays
 
 // The techniques a puzzle needs (grade()).
@@ -278,7 +281,9 @@ inline Technique grade(const uint8_t puzzle[kCells]) {
 
 struct Puzzle {
   long date = -1;
-  int level = 0, clues = 0, tries = 0;
+  int level = 0, clues = 0, tries = 0;  // tries: which try was kept (1 the first)
+  int attempts = 0;                     // how many tries were made
+  uint32_t nodes = 0;                   // numbers tried by every search of those tries: the work done
   Technique needs = SINGLES;
   uint8_t given[kCells] = {};     // the puzzle: 0 an empty cell
   uint8_t solution[kCells] = {};  // its only solution
@@ -296,6 +301,7 @@ inline void attempt(Puzzle &p, int level, Work &w, Rand rnd) {
   Used u;
   memset(&u, 0, sizeof u);
   search(p.solution, u, 1, w, rnd);  // an empty grid always fills
+  p.nodes += w.nodes;
   memcpy(p.given, p.solution, kCells);
   // The pairs (i, 80 - i) for i 0..40 (40 is the middle, alone), in a random order.
   uint8_t order[41];
@@ -311,7 +317,9 @@ inline void attempt(Puzzle &p, int level, Work &w, Rand rnd) {
     if (clues - n < kFewest[level]) continue;
     uint8_t va = p.given[a], vb = p.given[b];
     p.given[a] = p.given[b] = 0;
-    bool ok = countSolutions(p.given, w, 2, kNodeBudget) == 1 && (level == 2 || logicSolves(p.given, level == 1));
+    bool ok = countSolutions(p.given, w, 2, kNodeBudget) == 1;
+    p.nodes += w.nodes;
+    ok = ok && (level == 2 || logicSolves(p.given, level == 1));
     if (ok) clues -= n;
     else p.given[a] = va, p.given[b] = vb;
   }
@@ -333,14 +341,18 @@ inline void make(Puzzle &p, long date, int level, Work &w, Puzzle &best, Rand rn
   p.date = date, p.level = level;
   best.clues = kCells + 1;
   int bestMiss = 1 << 20;
-  for (int t = 1; t <= kTries; t++) {
+  uint32_t nodes = 0;
+  for (int t = 1; t <= kTries[level]; t++) {
+    p.nodes = 0;
     attempt(p, level, w, rnd);
-    p.tries = t;
+    nodes += p.nodes;
+    p.tries = p.attempts = t, p.nodes = nodes;
     int m = miss(p);
     if (!m) return;
     if (m < bestMiss) best = p, bestMiss = m;
   }
   p = best;
+  p.attempts = kTries[level], p.nodes = nodes;
 }
 
 // ---- playing

@@ -26,7 +26,8 @@
 // <cell>=<digit> clashes <n> done <0|1>", then " card" when the levels card is up. On the Daily
 // screen: "daily maths <done 0|1> streak <n>, sudoku <easy medium hard done 0|1> streak <n>".
 // `game right` / `game wrong`: the next square (sudokugrid::nextCell) gets its number, or a wrong one.
-// Demo mode (`demo on`): Medium, half done, with pencil marks and a clash, at 12:34.
+// Demo mode (`demo on`): the first Sudoku opened is Medium, half done, with pencil marks and a
+// clash, from 12:34; nothing is saved.
 #include "sudokugrid.h"
 
 enum { DY_MENU, DY_SUDOKU };       // the Daily screen, or Sudoku
@@ -84,8 +85,8 @@ static void sdkMake(int level) {
     gameSeed(sudokugrid::seed(day, level));
     sudokugrid::make(p, day, level, dailyS->work, dailyS->spare, gameRnd);
     gameSeed(0);
-    Serial.printf("sudoku: %s for %ld made in %lu ms: %d clues, needs %d, %d tries\n", SDK_LEVEL_IDS[level], day,
-                  (unsigned long)(millis() - t0), p.clues, (int)p.needs, p.tries);
+    Serial.printf("sudoku: %s for %ld made in %lu ms: %d clues, needs %d, try %d of %d, %lu nodes\n", SDK_LEVEL_IDS[level], day,
+                  (unsigned long)(millis() - t0), p.clues, (int)p.needs, p.tries, p.attempts, (unsigned long)p.nodes);
   }
 }
 // The puzzle itself: a macro, as no function may return a sudokugrid type (see dailyEnsure).
@@ -148,8 +149,8 @@ static void sdkTick() {
   if (total >= 1000) s.secs += total / 1000, gamesDailyChanged();
   dailyS->carryMs = total % 1000, dailyS->lastMs = now;
 }
-static void sdkResume() {
-  if (demoMode || sdkNow().done) return;
+static void sdkResume() {  // in demo mode too (nothing is saved): screenshots show a clock that runs
+  if (sdkNow().done) return;
   dailyS->running = true, dailyS->lastMs = millis();
 }
 // Leaving the puzzle (Back, Levels, home): the clock stops, the time is kept.
@@ -218,7 +219,8 @@ static void sdkOpen() {
   d.screen = DY_SUDOKU;
   int l = gameProgress().sdkLevel;
   if (demoMode && !d.demoMade) l = 1;
-  if (gToday() && (demoMode || (sdkStartedToday(l) && !sdkSolvedToday(l)))) sdkStart(l);
+  bool demoFirst = demoMode && !d.demoMade;  // demo mode's first open: the half-done Medium
+  if (gToday() && (demoFirst || (sdkStartedToday(l) && !sdkSolvedToday(l)))) sdkStart(l);
   else d.sk = SK_CARD;
 }
 
@@ -346,7 +348,12 @@ static void sdkTools(int x, int y, int w, int h, int gap) {
   gButton(x, y, bw, h, T(S_SUDOKU_ERASE), false, SK_ERASE, f);
   gButton(x + bw + gap, y, bw, h, T(S_SUDOKU_PENCIL), dailyS->pencil, SK_PENCIL, f);
   if (dailyS->undoN) gButton(x + 2 * (bw + gap), y, bw, h, T(S_SUDOKU_UNDO), false, SK_UNDO, f);
-  else pillButton(x + 2 * (bw + gap), y, bw, h, fitted(f, T(S_SUDOKU_UNDO), bw - 24).c_str(), false, f);  // nothing to undo: no target
+  else {  // nothing to undo: a thin outline, the word in regular type, no target
+    int ux = x + 2 * (bw + gap);
+    canvas->drawRoundRect(ux, y, bw, h, min(h / 2, 20), INK);
+    const GFXfont *rf = f == &FreeSansBold12pt7b ? &FreeSans12pt7b : &FreeSans9pt7b;
+    textCentre(ux + bw / 2, y + h / 2 + 8, rf, fitted(rf, T(S_SUDOKU_UNDO), bw - 24).c_str());
+  }
 }
 
 static String sdkSay() {
