@@ -12,9 +12,9 @@
 #include "provjson.h"
 #include "recipes.h"  // aiText(), aiJsonObject()
 
-const char *const GAME_NAMES[GAME_COUNT] = {"2048", "Memory", "Maths Quest", "Daily maths", "Quiz", "Adventure", "X and O", "Tutor",
+const char *const GAME_NAMES[GAME_COUNT] = {"2048", "Memory", "Maths Quest", "Daily", "Quiz", "Adventure", "X and O", "Tutor",
                                            "Solitaire", "Mines", "Four in a Row", "Chess"};
-static const StrId GAME_STR[GAME_COUNT] = {S_G_2048, S_G_MEMORY, S_G_MATHS, S_G_DAILY, S_G_QUIZ, S_G_ADVENTURE, S_G_XO, S_G_TUTOR7,
+static const StrId GAME_STR[GAME_COUNT] = {S_G_2048, S_G_MEMORY, S_G_MATHS, S_G_DAILY_TILE, S_G_QUIZ, S_G_ADVENTURE, S_G_XO, S_G_TUTOR7,
                                            S_G_SOLITAIRE, S_G_MINES, S_G_FOUR, S_G_CHESS};
 const char *gameName(int g) { return g >= 0 && g < GAME_COUNT ? T(GAME_STR[g]) : ""; }
 
@@ -32,14 +32,14 @@ int gameRnd(int lo, int hi) {
 
 // ---------------------------------------------------------------- progress
 
-static const char *PROGRESS = "/games.txt", *PRACTICE = "/games-practice.txt";
+static const char *PROGRESS = "/games.txt", *PRACTICE = "/games-practice.txt", *DAILY = "/daily.txt";
 // What's kept, in PSRAM (gamesBegin()): only the pointer takes internal RAM.
 struct Store {
   GameProgress progress, realProgress;   // real*: put aside while demo mode shows made-up ones
   std::vector<MathQ> missed, realMissed;
 };
 static Store *store;
-static bool dirty, demo;
+static bool dirty, dailyDirty, demo;
 static void storeBegin() {
   if (store) return;
   void *p = heap_caps_malloc(sizeof(Store), MALLOC_CAP_SPIRAM);
@@ -49,6 +49,55 @@ static void storeBegin() {
 GameProgress &gameProgress() { return store->progress; }
 std::vector<MathQ> &mathMissed() { return store->missed; }
 void gamesChanged() { dirty = true; }
+void gamesDailyChanged() { dailyDirty = true; }
+
+// /daily.txt: a line a level, "sudoku<level> <date> <secs> <done> <81 digits> <81 pencil marks,
+// 3 hex digits each>". A line that doesn't read whole is dropped (that puzzle starts afresh);
+// games_sudoku.ino also checks the digits against the day's puzzle.
+static void sudokuRead(GameProgress::SudokuPlay &s, const String &v) {
+  GameProgress::SudokuPlay r;
+  char digits[82] = {}, marks[244] = {};
+  int done = 0;
+  if (sscanf(v.c_str(), "%ld %d %d %81s %243s", &r.date, &r.secs, &done, digits, marks) != 5 || strlen(digits) != 81 ||
+      strlen(marks) != 243)
+    return;
+  for (int i = 0; i < 81; i++) {
+    if (digits[i] < '0' || digits[i] > '9') return;
+    r.value[i] = digits[i] - '0';
+    char h[4] = {marks[i * 3], marks[i * 3 + 1], marks[i * 3 + 2], 0};
+    r.pencil[i] = strtoul(h, nullptr, 16) & 0x3FE;
+  }
+  r.done = done != 0, r.secs = max(r.secs, 0);
+  s = r;
+}
+
+static void dailyRead() {
+  File f = LittleFS.open(DAILY, "r");
+  while (f && f.available()) {
+    String line = f.readStringUntil('\n');
+    int sp = line.indexOf(' ');
+    if (sp == 7 && line.startsWith("sudoku") && line[6] >= '0' && line[6] <= '2')
+      sudokuRead(store->progress.sdkPlay[line[6] - '0'], line.substring(sp + 1));
+  }
+  if (f) f.close();
+}
+
+static void dailyWrite() {
+  File f = LittleFS.open(DAILY, "w");
+  if (!f) {
+    Serial.println("games: couldn't save the daily puzzles");
+    return;
+  }
+  for (int l = 0; l < 3; l++) {
+    const GameProgress::SudokuPlay &s = store->progress.sdkPlay[l];
+    if (!s.date) continue;
+    char digits[82], marks[244];
+    for (int i = 0; i < 81; i++) digits[i] = '0' + min<int>(s.value[i], 9), snprintf(marks + i * 3, 4, "%03x", s.pencil[i] & 0x3FE);
+    digits[81] = 0;
+    f.printf("sudoku%d %ld %d %d %s %s\n", l, s.date, s.secs, s.done ? 1 : 0, digits, marks);
+  }
+  f.close();
+}
 
 // One value a line, "name value"; the stars and bests are lists.
 void gamesBegin() {
@@ -78,6 +127,8 @@ void gamesBegin() {
              &p.minesBest[0], &p.minesBest[1], &p.minesBest[2]);
     else if (k == "four") sscanf(v.c_str(), "%d %d %d %d", &p.fourWins, &p.fourDraws, &p.fourLosses, &p.fourLevel);
     else if (k == "chess") sscanf(v.c_str(), "%d %d %d %d", &p.chessWins, &p.chessDraws, &p.chessLosses, &p.chessLevel);
+    else if (k == "sudoku")
+      sscanf(v.c_str(), "%ld %d %d %d %d %d", &p.sdkDay, &p.sdkStreak, &p.sdkBest[0], &p.sdkBest[1], &p.sdkBest[2], &p.sdkLevel);
     else if (k == "tutor7") {
       int from = 0;
       for (int i = 0; i < 16 && from < (int)v.length(); i++) {
@@ -104,12 +155,15 @@ void gamesBegin() {
   store->progress.minesLevel = constrain(store->progress.minesLevel, 0, 2);
   store->progress.fourLevel = constrain(store->progress.fourLevel, 0, 2);
   store->progress.chessLevel = constrain(store->progress.chessLevel, 0, 2);
+  store->progress.sdkLevel = constrain(store->progress.sdkLevel, 0, 2);
   {  // counts and bests from a damaged file: never negative (a negative best could never be beaten)
     GameProgress &p = store->progress;
     for (int *v : {&p.solPlayed, &p.solWon, &p.solBest, &p.minesLost, &p.fourWins, &p.fourDraws, &p.fourLosses, &p.chessWins,
                    &p.chessDraws, &p.chessLosses})
       *v = max(*v, 0);
     for (int i = 0; i < 3; i++) p.minesWon[i] = max(p.minesWon[i], 0), p.minesBest[i] = max(p.minesBest[i], 0);
+    for (int i = 0; i < 3; i++) p.sdkBest[i] = max(p.sdkBest[i], 0);
+    p.sdkStreak = max(p.sdkStreak, 0);
     p.solWon = min(p.solWon, p.solPlayed);
   }
 
@@ -134,11 +188,14 @@ void gamesBegin() {
     if (q.text.length()) store->missed.push_back(q);
   }
   if (f) f.close();
+  dailyRead();
   Serial.printf("games: progress read, maths level %d open, %d to practise\n", store->progress.mathsUnlocked, (int)store->missed.size());
 }
 
 void gamesSave() {
-  if (!dirty || demo) return;
+  if (demo) return;
+  if (dailyDirty) dailyDirty = false, dailyWrite();
+  if (!dirty) return;
   dirty = false;
   const GameProgress &p = store->progress;
   File f = LittleFS.open(PROGRESS, "w");
@@ -160,6 +217,7 @@ void gamesSave() {
   f.printf("sol %d %d %d\nmines %d %d %d %d %d %d %d %d\nfour %d %d %d %d\nchess %d %d %d %d\n", p.solPlayed, p.solWon, p.solBest,
            p.minesWon[0], p.minesWon[1], p.minesWon[2], p.minesLost, p.minesLevel, p.minesBest[0], p.minesBest[1], p.minesBest[2],
            p.fourWins, p.fourDraws, p.fourLosses, p.fourLevel, p.chessWins, p.chessDraws, p.chessLosses, p.chessLevel);
+  f.printf("sudoku %ld %d %d %d %d %d\n", p.sdkDay, p.sdkStreak, p.sdkBest[0], p.sdkBest[1], p.sdkBest[2], p.sdkLevel);
   f.close();
   f = LittleFS.open(PRACTICE, "w");
   if (f) {
@@ -181,7 +239,8 @@ void gamesDemo(bool on) {
     return;
   }
   store->realProgress = store->progress, store->realMissed = store->missed;
-  GameProgress p;
+  GameProgress &p = store->progress;  // made up in place: with the sudoku grids it's too big for the loop's stack
+  new (&p) GameProgress();
   p.best2048 = 5236, p.biggest2048 = 512;
   p.memBest[0] = 9, p.memBest[1] = 17;
   p.mathsUnlocked = 4;
@@ -198,7 +257,9 @@ void gamesDemo(bool on) {
   struct tm d = *localtime(&t);
   p.dailyDay = (d.tm_year + 1900) * 10000L + (d.tm_mon + 1) * 100 + d.tm_mday;
   p.dailyStreak = 4;
-  store->progress = p;
+  p.sdkDay = p.dailyDay, p.sdkStreak = 6;  // the same: today's still to do, the streak alive
+  p.sdkBest[0] = 312, p.sdkBest[1] = 655, p.sdkBest[2] = 1268;
+  p.sdkLevel = 1;  // games_sudoku.ino fills in a Medium grid half done
   store->missed.clear();
   for (int i = 0; i < 3; i++) store->missed.push_back(mathMake(3 + i, false));
 }
@@ -217,6 +278,22 @@ int gamesDailyStreak(long today) {
 }
 
 bool gamesDailyDone(long today) { return today > 0 && store->progress.dailyDay == today; }
+
+int gamesSudokuStreak(long today) {
+  const GameProgress &p = store->progress;
+  if (today <= 0 || !p.sdkDay) return 0;
+  return p.sdkDay == today || p.sdkDay == dayBefore(today) ? p.sdkStreak : 0;
+}
+
+bool gamesSudokuDone(long today) { return today > 0 && store->progress.sdkDay == today; }
+
+void gamesSudokuSolved(long today) {
+  GameProgress &p = store->progress;
+  if (today <= 0 || p.sdkDay == today) return;
+  p.sdkStreak = gamesSudokuStreak(today) + 1;
+  p.sdkDay = today;
+  gamesChanged();
+}
 
 // ---------------------------------------------------------------- 2048
 

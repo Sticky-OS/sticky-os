@@ -1055,15 +1055,21 @@ static void drawBar() {
     boltIcon(right - 12, 11);
     right -= 26;
   }
+  // `edge`: the left edge of the leftmost icon drawn, where the title must stop. The icons sit
+  // 10-12 px apart, so a game's name ("Solitaire") fits upright beside them.
+  int edge = right - 30;
   wifiIcon(right - 30, 11, netBars());
-  right -= 46;
+  right -= 42;
+  edge = right - 14;
   bluetoothIcon(right - 14, 10, setupMode);  // Bluetooth is on in setup mode only
-  right -= 32;
+  right -= 26;
   if (photosCardIn()) {
+    edge = right - 16;
     cardIcon(right - 16, 11);
-    right -= 32;
+    right -= 28;
   }
   if (sleepingNow) {
+    edge = right - 20;
     moonIcon(right - 20, 10, INK, PAPER);
     right -= 32;
   }
@@ -1078,7 +1084,7 @@ static void drawBar() {
     time_t t = time(nullptr);
     strftime(line, sizeof line, "%H:%M", localtime(&t));
     text(x, 29, &FreeSansBold12pt7b, line);
-    x = canvas->getCursorX() + 18;
+    x = canvas->getCursorX() + 14;
   }
   if (setupMode) utf8Copy(line, T(S_BAR_SETUP_MODE), sizeof line);
   else if (updScreen) utf8Copy(line, T(S_BAR_UPDATING), sizeof line);
@@ -1092,13 +1098,13 @@ static void drawBar() {
   }
   else if (app == APP_GAMES) utf8Copy(line, gamesBarTitle(), sizeof line);
   else utf8Copy(line, appName(app), sizeof line);
-  String name = fitted(&FreeSans12pt7b, line, right - x - 10);
+  String name = fitted(&FreeSans12pt7b, line, edge - 10 - x);  // the room up to the icons, measured
   text(x, 29, &FreeSans12pt7b, name.c_str());
   x = canvas->getCursorX() + 16;
 
   if (timerRunning && !(screen == SCREEN_APP && app == APP_TIMER)) {
     snprintf(line, sizeof line, T(S_MIN_SHORT), (timerSecondsLeft() + 59) / 60);
-    if (x + 20 + textW(&FreeSansBold12pt7b, line) < right - 8) {
+    if (x + 20 + textW(&FreeSansBold12pt7b, line) < edge - 12) {
       hourglassIcon(x, 11);
       text(x + 20, 29, &FreeSansBold12pt7b, line);
     }
@@ -6385,6 +6391,8 @@ static void devCommands() {
       booksCommand(line.length() > 5 ? line.substring(5) : String());
     } else if (line.startsWith("sdls") || line.startsWith("sdrm ") || line.startsWith("sdmkdir ")) {
       sdCommand(line);
+    } else if (line.startsWith("daily date ")) {  // the daily puzzles' today, test builds only: see dailyDateCommand()
+      dailyDateCommand(line.substring(11));
     } else if (line == "game" || line.startsWith("game ")) {  // the Games app: see gamesCommand()
       gamesCommand(line.length() > 5 ? line.substring(5) : String());
     } else if (line == "quote new") {  // the Quote app's New quote

@@ -41,7 +41,7 @@ Seeed's pages: [docs](https://www.seeedstudio.com/sticky/docs/),
     firmware/test/ics/run.sh [feed.ics ...]    # the calendar parser's tests, on this computer
     firmware/test/ebook/run.sh [name ...]      # the Books app's readers, pager, library and fonts, on this computer
     BOOKS_DIR=~/books firmware/test/ebook/run.sh    # the same, with real books too
-    firmware/test/games/run.sh                 # Solitaire, Mines, Four in a Row and Chess: their rules, on this computer
+    firmware/test/games/run.sh                 # Solitaire, Mines, Four in a Row, Chess and the daily Sudoku: their rules, on this computer
     firmware/tools/board.py put book.epub books/book.epub    # a file onto the board's microSD card, over the cable
 
 Needs [`arduino-cli`](https://arduino.github.io/arduino-cli/) with the
@@ -105,7 +105,7 @@ uses `PartitionScheme=custom`; the core takes the CSV from the sketch folder):
 | nvs | 0x9000 | 20 KB | settings; same place as the core's `default_8MB`, so they survive |
 | otadata | 0xE000 | 8 KB | which app slot boots |
 | app0, app1 | 0x10000, 0x610000 | 6 MB each | the running firmware and the next one |
-| spiffs | 0xC10000 | 19.9 MB | LittleFS: notes (`/notes.txt`), photos (`/photos/`), recipes (`/recipes/`), today's quote (`/quote.txt`), the games' progress (`/games.txt`, `/games-practice.txt`) (label `spiffs`, which `LittleFS.begin()` looks for) |
+| spiffs | 0xC10000 | 19.9 MB | LittleFS: notes (`/notes.txt`), photos (`/photos/`), recipes (`/recipes/`), today's quote (`/quote.txt`), the games' progress (`/games.txt`, `/games-practice.txt`) and today's sudoku grids (`/daily.txt`) (label `spiffs`, which `LittleFS.begin()` looks for) |
 | coredump | 0x1FF0000 | 64 KB | |
 
 Moving from the old 8 MB layout empties LittleFS. Back up the notes first

@@ -1,14 +1,15 @@
 // The Games folder's games: what they know and keep, apart from how they
 // look (games.ino draws them and takes the taps). 2048, Memory, Maths
-// Quest with its Daily challenge and Practice, Quiz, Adventure, X and O.
+// Quest with Practice, Daily (Daily maths and Sudoku), Quiz, Adventure, X and O...
 //
 // Quiz and Adventure ask the AI (the notes task's JOB_GAME, notes.h) when
 // there's a key, WiFi and `games.ai` is on; each also has its own built-in
 // questions and story, so they play offline too.
 //
-// Progress (best scores, levels, stars, the daily streak, the questions to
-// practise) is kept in LittleFS, /games.txt and /games-practice.txt. Only
-// the loop writes them (gamesSave()), never the notes task.
+// Progress (best scores, levels, stars, the daily streaks, the questions to
+// practise) is kept in LittleFS, /games.txt and /games-practice.txt, and
+// today's sudoku grids in /daily.txt. Only the loop writes them (gamesSave()),
+// never the notes task.
 #pragma once
 #include <Arduino.h>
 #include <new>
@@ -47,15 +48,33 @@ struct GameProgress {
   int minesBest[3] = {};  // the quickest win per size, in seconds (0: none yet)
   int fourWins = 0, fourDraws = 0, fourLosses = 0, fourLevel = 1;  // level 0 easy .. 2 hard
   int chessWins = 0, chessDraws = 0, chessLosses = 0, chessLevel = 0;  // level 0 easy .. 2 hard
+  // The Daily screen's Sudoku (games_sudoku.ino, sudokugrid.h; issue #18), in /games.txt:
+  long sdkDay = 0;       // the last day a sudoku of the day was solved (any level)
+  int sdkStreak = 0;     // days in a row, as of sdkDay
+  int sdkBest[3] = {};   // the quickest solve per level, in seconds (0: none yet)
+  int sdkLevel = 0;      // the level last played, 0 easy .. 2 hard
+  // ... and today's grids as played so far, one a level, in /daily.txt (so a day's work survives
+  // deep sleep, which restarts the board; a grid for another date is dropped when it's opened).
+  struct SudokuPlay {
+    long date = 0;             // the puzzle's day (0: none)
+    int secs = 0;              // the time taken so far
+    bool done = false;         // solved
+    uint8_t value[81] = {};    // the grid: the givens and the numbers put in, 0 empty
+    uint16_t pencil[81] = {};  // pencil marks, bits 1..9
+  } sdkPlay[3];
 };
 GameProgress &gameProgress();
 void gamesBegin();     // after LittleFS is mounted: reads what's saved
 void gamesChanged();   // progress changed: gamesSave() writes it on the loop
+void gamesDailyChanged();  // a grid in /daily.txt changed: gamesSave() writes it too
 void gamesSave();      // the loop only; nothing when nothing changed, or in demo mode
 void gamesDemo(bool on);  // screenshots: made-up progress, never saved
 
 int gamesDailyStreak(long today);  // the streak if it's still alive (done today or yesterday), else 0
 bool gamesDailyDone(long today);
+int gamesSudokuStreak(long today);   // the same for the daily Sudoku: days in a row with one solved
+bool gamesSudokuDone(long today);    // a sudoku solved today (any level)
+void gamesSudokuSolved(long today);  // one just was: the streak goes on (once a day)
 
 // ---------------------------------------------------------------- 2048
 
