@@ -383,6 +383,9 @@ footer p { margin: 0 0 .5rem; }
 /* A Short beside what it shows: the video on the left, a list of its beats on the right;
    stacked on a phone. Fills the column instead of a narrow video with gaps on both sides. */
 .short-feature { display: grid; gap: 1.5rem 2.25rem; align-items: center; margin: 2.75rem 0; }
+/* A game's "How to play" Short on the help page: a small poster under its steps. */
+.game-short { width: 100%; max-width: 13rem; margin: 1.5rem 0; }
+.game-short figcaption { margin-top: .5rem; font-size: .9rem; }
 .short-feature .video.short { width: 100%; max-width: 17rem; margin: 0 auto; }
 @media (min-width: 40rem) {
   .short-feature { grid-template-columns: 15rem 1fr; }
