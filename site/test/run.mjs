@@ -952,6 +952,7 @@ test('games: the help page has every game, passes the CSP, its demos and links w
   const src = await readFile(new URL('../src/games/index.html', import.meta.url), 'utf8');
   const page = new URL('../dist/games/index.html', import.meta.url);
   const html = (await readFile(page, 'utf8')).replace(/<!--[\s\S]*?-->/g, '');   // a comment isn't published
+  const smoothBuild = /smooth\/[^"\s]+\.webp/.test(html);   // the build had Pillow
   assert.ok(!/<script(?![^>]*\ssrc=)(?![^>]*type="application\/ld\+json")[^>]*>/i.test(html), 'games: an inline script');
   for (const [, json] of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) JSON.parse(json);
   assert.ok(!/<style[\s>]|\sstyle="|\son[a-z]+="|image-rendering/i.test(html), 'games: inline style, an event handler or pixelated pictures');
@@ -982,7 +983,9 @@ test('games: the help page has every game, passes the CSP, its demos and links w
       assert.match(img, /\salt="[^"]{10,}"/, `games: ${slug}: alt text`);
       assert.match(img, /loading="lazy"/, `games: ${slug}: lazy`);
       if (!/shots\/(?:demo\/)?[a-z0-9-]+(?:\/[a-z0-9-]+)?\.png/.test(img)) continue;
-      assert.match(img, /srcset="[^"]*smooth\/[^"]+\.webp 1x/, `games: ${slug}: drawn smooth`);
+      // Captures are drawn smooth only when the build has Pillow (CI runs these tests before
+      // installing it); when it does, every capture must have its smooth version.
+      if (smoothBuild) assert.match(img, /srcset="[^"]*smooth\/[^"]+\.webp 1x/, `games: ${slug}: drawn smooth`);
     }
   }
   for (const [, ref] of html.matchAll(/(?:href|src|srcset)="([^"#?:]+)"/g)) {   // throws if a file is missing
