@@ -32,7 +32,7 @@
 //   Photos, Quote        double-tap the picture / the words: full screen (no status bar, no
 //                        buttons); double-tap again to come back. Kept per app
 //   Recipes              say or type a dish, the AI writes it; tick ingredients, swipe the pages
-//   Games                a folder: 2048, Memory, Maths Quest, Daily maths, Quiz, Adventure,
+//   Games                a folder: 2048, Memory, Maths Quest, Daily (maths, Sudoku, Nonogram), Quiz, Adventure,
 //                        X and O (games.ino); UP / DOWN move a ring, OK presses it
 //   Calendar             read only: now / next, the week, then the agenda;
 //                        swipe up / down for its pages, tap an event to read it all,

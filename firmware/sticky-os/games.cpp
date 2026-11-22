@@ -52,8 +52,11 @@ void gamesChanged() { dirty = true; }
 void gamesDailyChanged() { dailyDirty = true; }
 
 // /daily.txt: a line a level, "sudoku<level> <date> <secs> <done> <81 digits> <81 pencil marks,
-// 3 hex digits each>". A line that doesn't read whole is dropped (that puzzle starts afresh);
-// games_sudoku.ino also checks the digits against the day's puzzle.
+// 3 hex digits each>"; then a line a nonogram size, "nonogram<size> <date> <secs> <done> <check>
+// <a square each, row by row: . unknown, # filled, x crossed>" (64 at 8 x 8, 100 at 10 x 10).
+// A line that doesn't read whole is dropped (that puzzle starts afresh); games_sudoku.ino also
+// checks the digits against the day's puzzle, games_nonogram.ino the check against its puzzle.
+// Firmware from before the nonogram skips its lines (they're 9 letters to the first space).
 static void sudokuRead(GameProgress::SudokuPlay &s, const String &v) {
   GameProgress::SudokuPlay r;
   char digits[82] = {}, marks[244] = {};
@@ -71,6 +74,23 @@ static void sudokuRead(GameProgress::SudokuPlay &s, const String &v) {
   s = r;
 }
 
+static const int NONO_SIDE[2] = {8, 10};
+static void nonogramRead(int size, const String &v) {
+  GameProgress::NonogramPlay r;
+  int done = 0;
+  unsigned check = 0;
+  char cells[101] = {};
+  int n = NONO_SIDE[size] * NONO_SIDE[size];
+  if (sscanf(v.c_str(), "%ld %d %d %u %100s", &r.date, &r.secs, &done, &check, cells) != 5 || (int)strlen(cells) != n) return;
+  for (int i = 0; i < n; i++) {
+    char c = cells[i];
+    if (c != '.' && c != '#' && c != 'x') return;
+    r.marks[i] = c == '#' ? 1 : c == 'x' ? 2 : 0;
+  }
+  r.done = done != 0, r.secs = max(r.secs, 0), r.check = (uint16_t)check;
+  store->progress.nonPlay[size] = r;
+}
+
 static void dailyRead() {
   File f = LittleFS.open(DAILY, "r");
   while (f && f.available()) {
@@ -78,6 +98,8 @@ static void dailyRead() {
     int sp = line.indexOf(' ');
     if (sp == 7 && line.startsWith("sudoku") && line[6] >= '0' && line[6] <= '2')
       sudokuRead(store->progress.sdkPlay[line[6] - '0'], line.substring(sp + 1));
+    else if (sp == 9 && line.startsWith("nonogram") && line[8] >= '0' && line[8] <= '1')
+      nonogramRead(line[8] - '0', line.substring(sp + 1));
   }
   if (f) f.close();
 }
@@ -95,6 +117,15 @@ static void dailyWrite() {
     for (int i = 0; i < 81; i++) digits[i] = '0' + min<int>(s.value[i], 9), snprintf(marks + i * 3, 4, "%03x", s.pencil[i] & 0x3FE);
     digits[81] = 0;
     f.printf("sudoku%d %ld %d %d %s %s\n", l, s.date, s.secs, s.done ? 1 : 0, digits, marks);
+  }
+  for (int z = 0; z < 2; z++) {
+    const GameProgress::NonogramPlay &g = store->progress.nonPlay[z];
+    if (!g.date) continue;
+    int n = NONO_SIDE[z] * NONO_SIDE[z];
+    char cells[101];
+    for (int i = 0; i < n; i++) cells[i] = g.marks[i] == 1 ? '#' : g.marks[i] == 2 ? 'x' : '.';
+    cells[n] = 0;
+    f.printf("nonogram%d %ld %d %d %u %s\n", z, g.date, g.secs, g.done ? 1 : 0, (unsigned)g.check, cells);
   }
   f.close();
 }
@@ -129,6 +160,7 @@ void gamesBegin() {
     else if (k == "chess") sscanf(v.c_str(), "%d %d %d %d", &p.chessWins, &p.chessDraws, &p.chessLosses, &p.chessLevel);
     else if (k == "sudoku")
       sscanf(v.c_str(), "%ld %d %d %d %d %d", &p.sdkDay, &p.sdkStreak, &p.sdkBest[0], &p.sdkBest[1], &p.sdkBest[2], &p.sdkLevel);
+    else if (k == "nonogram") sscanf(v.c_str(), "%ld %d %d %d %d", &p.nonDay, &p.nonStreak, &p.nonBest[0], &p.nonBest[1], &p.nonSize);
     else if (k == "tutor7") {
       int from = 0;
       for (int i = 0; i < 16 && from < (int)v.length(); i++) {
@@ -156,6 +188,7 @@ void gamesBegin() {
   store->progress.fourLevel = constrain(store->progress.fourLevel, 0, 2);
   store->progress.chessLevel = constrain(store->progress.chessLevel, 0, 2);
   store->progress.sdkLevel = constrain(store->progress.sdkLevel, 0, 2);
+  store->progress.nonSize = constrain(store->progress.nonSize, 0, 1);
   {  // counts and bests from a damaged file: never negative (a negative best could never be beaten)
     GameProgress &p = store->progress;
     for (int *v : {&p.solPlayed, &p.solWon, &p.solBest, &p.minesLost, &p.fourWins, &p.fourDraws, &p.fourLosses, &p.chessWins,
@@ -164,6 +197,8 @@ void gamesBegin() {
     for (int i = 0; i < 3; i++) p.minesWon[i] = max(p.minesWon[i], 0), p.minesBest[i] = max(p.minesBest[i], 0);
     for (int i = 0; i < 3; i++) p.sdkBest[i] = max(p.sdkBest[i], 0);
     p.sdkStreak = max(p.sdkStreak, 0);
+    for (int i = 0; i < 2; i++) p.nonBest[i] = max(p.nonBest[i], 0);
+    p.nonStreak = max(p.nonStreak, 0);
     p.solWon = min(p.solWon, p.solPlayed);
   }
 
@@ -218,6 +253,7 @@ void gamesSave() {
            p.minesWon[0], p.minesWon[1], p.minesWon[2], p.minesLost, p.minesLevel, p.minesBest[0], p.minesBest[1], p.minesBest[2],
            p.fourWins, p.fourDraws, p.fourLosses, p.fourLevel, p.chessWins, p.chessDraws, p.chessLosses, p.chessLevel);
   f.printf("sudoku %ld %d %d %d %d %d\n", p.sdkDay, p.sdkStreak, p.sdkBest[0], p.sdkBest[1], p.sdkBest[2], p.sdkLevel);
+  f.printf("nonogram %ld %d %d %d %d\n", p.nonDay, p.nonStreak, p.nonBest[0], p.nonBest[1], p.nonSize);
   f.close();
   f = LittleFS.open(PRACTICE, "w");
   if (f) {
@@ -260,6 +296,9 @@ void gamesDemo(bool on) {
   p.sdkDay = p.dailyDay, p.sdkStreak = 6;  // the same: today's still to do, the streak alive
   p.sdkBest[0] = 312, p.sdkBest[1] = 655, p.sdkBest[2] = 1268;
   p.sdkLevel = 1;  // games_sudoku.ino fills in a Medium grid half done
+  p.nonDay = p.dailyDay, p.nonStreak = 3;  // the same
+  p.nonBest[0] = 148, p.nonBest[1] = 402;
+  p.nonSize = 1;  // games_nonogram.ino fills in a 10 x 10 partly done
   store->missed.clear();
   for (int i = 0; i < 3; i++) store->missed.push_back(mathMake(3 + i, false));
 }
@@ -292,6 +331,22 @@ void gamesSudokuSolved(long today) {
   if (today <= 0 || p.sdkDay == today) return;
   p.sdkStreak = gamesSudokuStreak(today) + 1;
   p.sdkDay = today;
+  gamesChanged();
+}
+
+int gamesNonogramStreak(long today) {
+  const GameProgress &p = store->progress;
+  if (today <= 0 || !p.nonDay) return 0;
+  return p.nonDay == today || p.nonDay == dayBefore(today) ? p.nonStreak : 0;
+}
+
+bool gamesNonogramDone(long today) { return today > 0 && store->progress.nonDay == today; }
+
+void gamesNonogramSolved(long today) {
+  GameProgress &p = store->progress;
+  if (today <= 0 || p.nonDay == today) return;
+  p.nonStreak = gamesNonogramStreak(today) + 1;
+  p.nonDay = today;
   gamesChanged();
 }
 
