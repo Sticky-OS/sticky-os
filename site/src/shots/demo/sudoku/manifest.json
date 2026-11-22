@@ -33,7 +33,7 @@
     "x": 240,
     "y": 164
    },
-   "shows": "A fresh Easy board, 36 givens in bold, the clock at 0:00, the number pad, Erase, Pencil, Undo (thin: nothing to undo); 'Tap a square, then a number.'"
+   "shows": "A fresh Easy board, 36 givens in bold, the clock at 0:11, the number pad, Erase, Pencil, Undo (thin: nothing to undo); 'Tap a square, then a number.'"
   },
   {
    "file": "05-square.png",
@@ -42,7 +42,7 @@
     "x": 239,
     "y": 137
    },
-   "shows": "Row 1 column 5 ringed; its row, column and box hatched lightly; Easy 0:12; '45 squares to go'"
+   "shows": "Row 1 column 5 ringed; its row, column and box hatched lightly; Easy 0:22; '45 squares to go'"
   },
   {
    "file": "06-number.png",
@@ -51,7 +51,7 @@
     "x": 239,
     "y": 618
    },
-   "shows": "A 5 (regular type, yours) in the ringed square; Easy 0:23; '44 squares to go'"
+   "shows": "A 5 (regular type, yours) in the ringed square; Easy 0:32; '44 squares to go'"
   },
   {
    "file": "07-pencil.png",
@@ -78,7 +78,7 @@
     "x": 395,
     "y": 692
    },
-   "shows": "Row 2 column 1 empty and ringed again; Easy 1:12; '44 squares to go'"
+   "shows": "Row 2 column 1 empty and ringed again; Easy 1:22; '44 squares to go'"
   },
   {
    "file": "10-last.png",
@@ -87,7 +87,7 @@
     "x": 239,
     "y": 545
    },
-   "shows": "Last empty square (row 9 column 5) ringed; the pad shows 8 bold and the other numbers thin; Easy 2:17; '1 square to go'"
+   "shows": "Last empty square (row 9 column 5) ringed; the pad shows 8 bold and the other numbers thin; Easy 2:27; '1 square to go'"
   },
   {
    "file": "11-solved.png",
@@ -96,7 +96,7 @@
     "x": 392,
     "y": 618
    },
-   "shows": "The full grid; 'Solved!', 'Solved in 2:28', 'A new best time!', '1 day in a row', 'Come back tomorrow for a new one.'"
+   "shows": "The full grid; 'Solved!', 'Solved in 2:37', 'A new best time!', '1 day in a row', 'Come back tomorrow for a new one.'"
   }
  ]
 }
