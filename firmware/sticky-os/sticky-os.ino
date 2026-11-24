@@ -255,15 +255,16 @@ static Readings now;
 // "app <n>" uses them): a new app takes the next number, and APP_ORDER says
 // where it goes on the home screen.
 enum App { APP_CLOCK, APP_WEATHER, APP_CALENDAR, APP_NOTES, APP_TIMER, APP_PHOTOS, APP_CLAUDE, APP_SETTINGS, APP_ABOUT,
-           APP_QUOTE, APP_RECIPES, APP_GAMES, APP_BOOKS, APP_COUNT };
+           APP_QUOTE, APP_RECIPES, APP_GAMES, APP_BOOKS, APP_BUS, APP_COUNT };
 // English, for the log; the screens use appName().
 static const char *const APP_NAMES[] = {"Clock", "Weather", "Calendar", "Notes", "Timer", "Photos", "Claude", "Settings", "About",
-                                        "Quote", "Recipes", "Games", "Books"};
+                                        "Quote", "Recipes", "Games", "Books", "Bus"};
 static const StrId APP_LABELS[] = {S_APP_CLOCK, S_APP_WEATHER, S_APP_CALENDAR, S_APP_NOTES, S_APP_TIMER, S_APP_PHOTOS,
-                                   S_APP_CLAUDE, S_APP_SETTINGS, S_APP_ABOUT, S_APP_QUOTE, S_APP_RECIPES, S_APP_GAMES, S_APP_BOOKS};
+                                   S_APP_CLAUDE, S_APP_SETTINGS, S_APP_ABOUT, S_APP_QUOTE, S_APP_RECIPES, S_APP_GAMES, S_APP_BOOKS,
+                                   S_APP_BUS};
 #define appName(a) T(APP_LABELS[a])  // a macro: Arduino puts its prototypes above the first function
 static const int APP_ORDER[APP_COUNT] = {APP_CLOCK, APP_WEATHER, APP_CALENDAR, APP_NOTES, APP_TIMER, APP_PHOTOS,
-                                         APP_BOOKS, APP_QUOTE, APP_RECIPES, APP_GAMES, APP_CLAUDE, APP_SETTINGS, APP_ABOUT};
+                                         APP_BOOKS, APP_BUS, APP_QUOTE, APP_RECIPES, APP_GAMES, APP_CLAUDE, APP_SETTINGS, APP_ABOUT};
 
 // What fills the screen: the home screen, an app, the quick settings over
 // either, or the welcome screen of a board with no WiFi saved.
@@ -366,6 +367,8 @@ static int recipeMode = RM_LIST;  // Recipes: the saved list, one open, or the k
 static long hourlyDate;           // Weather: the day whose hours are open (20261114); 0: the app's own screen
 static struct { int16_t x, y, w, h; long date; } weatherDayHit[6];  // where Weather drew each day, for taps
 static int weatherDayHits;
+static int busPage;               // Bus: 0 the live times; 1 on the timetable's later ones (busapp.ino)
+static int busLastPage = -1;      // Bus: the last page there is, as last drawn; -1: not known yet
 static void quoteReset();         // the Quote app shows the day's quote again
 static int calendarPage, notesPage;
 static String notesSay;  // the AI's last line; empty: the hint (S_NOTES_HINT)
@@ -823,6 +826,18 @@ static void settingsLoad() {
   settings.fahrenheit = prefs.getBool("fahrenheit", false);
   settings.sleepChoice = constrain(prefs.getInt("sleep", 0), 0, 2);
   settings.hidden = prefs.getUInt("hidden", 0) & ~(1u << APP_SETTINGS);
+  // Bus is for the UK, so it starts hidden, until a stop is set: the first
+  // start after that shows it once (Settings can hide it again).
+  if (!prefs.getBool("bus_def", false)) {
+    if (!busConfigured()) settings.hidden |= 1u << APP_BUS;
+    prefs.putUInt("hidden", settings.hidden);
+    prefs.putBool("bus_def", true);
+  }
+  if (busConfigured() && !prefs.getBool("bus_shown", false)) {
+    settings.hidden &= ~(1u << APP_BUS);
+    prefs.putUInt("hidden", settings.hidden);
+    prefs.putBool("bus_shown", true);
+  }
   settings.gamesHidden = prefs.getUInt("ghidden", 0);
   settings.fullScreen = prefs.getUInt("full", 0) & (1u << APP_PHOTOS | 1u << APP_QUOTE);
   settings.fullTried = prefs.getBool("fulltried", false);
@@ -3534,6 +3549,7 @@ static void appIcon(int a, int cx, int cy, int s) {
     case APP_RECIPES: chefHat(cx, cy, s, t); break;
     case APP_GAMES: gamesFolderIcon(cx, cy, s * 135 / 100); break;  // a folder: four of its games, small
     case APP_BOOKS: booksIcon(cx, cy, s); break;
+    case APP_BUS: busIcon(cx, cy, s, t); break;
     case APP_ABOUT: {
       ring(cx, cy, r, t);
       canvas->fillCircle(cx, cy - r * 45 / 100, t, INK);
@@ -5198,6 +5214,7 @@ static void render(bool full) {
       if (booksDraw(fs)) return;  // the cover went up in greys by itself
       break;
     case APP_CLAUDE: xSemaphoreTake(dataLock, portMAX_DELAY); drawClaude(); xSemaphoreGive(dataLock); break;
+    case APP_BUS: xSemaphoreTake(dataLock, portMAX_DELAY); drawBus(); xSemaphoreGive(dataLock); break;
     case APP_CALENDAR: xSemaphoreTake(dataLock, portMAX_DELAY); drawCalendar(); xSemaphoreGive(dataLock); break;
     case APP_NOTES: drawNotes(); break;
     case APP_SETTINGS: drawSettings(); break;
@@ -5433,7 +5450,8 @@ static uint32_t photoAt;  // millis() when the photo on screen went up
 
 // Asks the network task to fetch for an app now. It also fetches on its own schedule.
 static void fetchFor(int which, bool force) {
-  bool have = which == APP_WEATHER ? weather.ok : which == APP_CLAUDE ? claude.ok : which == APP_CALENDAR ? calendarOk : true;
+  bool have = which == APP_WEATHER ? weather.ok : which == APP_CLAUDE ? claude.ok : which == APP_CALENDAR ? calendarOk
+            : which == APP_BUS ? busFresh() : true;
   if (force || !have) fetchAsk[which] = true;
 }
 
@@ -5693,6 +5711,8 @@ static void netTask(void *) {
         if (!nextAt[i]) nextAt[i] = 1;
         fetchDone[which] = true;
       }
+      serviceWifiAsks();
+      if (netUp()) busNetTick();  // only while Bus is on screen, or asked (busapp.ino)
     }
     serviceWifiAsks();
     if (netUp() && telemetryConfigured() && !voiceBusy && (!telemetryAt || millis() - telemetryAt > telemetryGap)) {
@@ -5887,6 +5907,7 @@ static void openApp(int next) {
   if (app == APP_QUOTE) quoteReset();  // it opens on the day's quote
   if (app == APP_GAMES) gamesOpenApp();  // it opens on its launcher (a game left half-played waits there)
   if (app == APP_BOOKS) booksOpenApp();  // the book left open, else the library
+  if (app == APP_BUS) busPage = 0;       // it opens on the live times
   Serial.printf("app: %s\n", APP_NAMES[app]);
   fetchFor(app, false);  // nothing to show yet: ask for it; the screen redraws when it arrives
   photoAt = millis();
@@ -5911,6 +5932,7 @@ static void swipe(int x0, int y0, int dx, int dy) {
   if (app == APP_BOOKS && booksSwipe(x0, y0, dx, dy)) return;  // pages and lists
   if (vertical && dy < 0 && y0 > H - 70) return goHome();
   if (app == APP_CALENDAR && calendarSwipe(dx, dy)) return;  // up / down: the agenda's pages
+  if (app == APP_BUS && busSwipe(dx, dy)) return;            // up / down: later and earlier buses
   if (app == APP_WEATHER && hourlyDate) return hourlySwipe(dx, dy);  // a day's hours: sideways the next day
   if (app == APP_RECIPES && recipesSwipe(dx, dy)) return;
   if (app == APP_NOTES && notesTyping) return;            // typing: a sloppy tap mustn't change app
@@ -6000,6 +6022,7 @@ static void action() {  // OK, or a tap in the middle of the screen
   if (app == APP_RECIPES) return recipesAction();
   if (app == APP_GAMES) return gamesOk();
   if (app == APP_BOOKS) return booksOk();
+  if (app == APP_BUS) busPage = 0;  // OK: back to now, and fetch
   readSensors();
   fetchFor(app, true);
   if (app == APP_ABOUT) dumpAbout();
@@ -6054,6 +6077,7 @@ static void tap(int x, int y) {
   if (app == APP_WEATHER && hourlyDate) return hourlyTap(x, y);
   if (app == APP_WEATHER && weatherTap(x, y)) return;  // a day: its hours
   if (app == APP_QUOTE) return quoteTap(x, y);
+  if (app == APP_BUS) return busTap(x, y);
   if (app == APP_RECIPES) return recipesTap(x, y);
   if (app == APP_GAMES) return gamesTap(x, y);
   if (app == APP_NOTES && notesTyping) return typedNoteTap(x, y);
@@ -6086,6 +6110,7 @@ static void setDemo(bool on) {
   notesDemo(on);
   recipesDemo(on);
   gamesDemo(on);
+  busDemo(on);
   if (!on) crossplayDemoEnded();
   if (recipeMode == RM_OPEN) recipeMode = RM_LIST;
   quoteReset();
@@ -6406,7 +6431,9 @@ static void devCommands() {
       dumpAbout();
     } else if (line == "gauge") {  // the battery gauge's registers as read, and the scale chosen
       gaugeDump();
-    } else if (line.startsWith("fetch ")) {  // fetch now for that app (1 Weather, 2 Calendar, 6 Claude), as OK in it does
+    } else if (line == "bus" || line.startsWith("bus ")) {  // the Bus app's stops and what each last got (busapp.ino)
+      busCommand(line.substring(3));
+    } else if (line.startsWith("fetch ")) {  // fetch now for that app (1 Weather, 2 Calendar, 6 Claude, 13 Bus), as OK in it does
       fetchFor(constrain(line.substring(6).toInt(), 0, APP_COUNT - 1), true);
     } else if (line == "wifi scan") {  // Settings -> WiFi -> Add network: the network task scans
       screen = SCREEN_APP, app = APP_SETTINGS;
@@ -6576,6 +6603,7 @@ void setup() {
   gamesUiBegin();
   booksBegin();
   hourlyCache = (HourlyDay *)heap_caps_calloc(HOURLY_DAYS, sizeof(HourlyDay), MALLOC_CAP_SPIRAM);
+  busBegin();
   photoStoreBegin(NW, NH - BAR_H, NH, NW - BAR_H, NW, NH);  // the Photos app's area, landscape and portrait; full screen
   netBegin();  // before the network task: what both tasks read is loaded once, here
   if (cfg::reverted()) prefs.putBool("revnote", true);  // shown until it's dismissed, across restarts

@@ -42,6 +42,7 @@ Seeed's pages: [docs](https://www.seeedstudio.com/sticky/docs/),
     firmware/test/ebook/run.sh [name ...]      # the Books app's readers, pager, library and fonts, on this computer
     BOOKS_DIR=~/books firmware/test/ebook/run.sh    # the same, with real books too
     firmware/test/games/run.sh                 # Solitaire, Mines, Four in a Row, Chess and the daily Sudoku and Nonogram: their rules, on this computer
+    firmware/test/bus/run.sh                   # the Bus app's stop codes and its TfL and NextBuses parsers, on this computer
     firmware/tools/board.py put book.epub books/book.epub    # a file onto the board's microSD card, over the cable
 
 Needs [`arduino-cli`](https://arduino.github.io/arduino-cli/) with the
