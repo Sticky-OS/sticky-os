@@ -107,7 +107,7 @@ static void tfl() {
   BusBoard m = {};
   CHECK(busParseTfl(many.c_str(), m) && m.n == BUS_MAX_DEPS);
   for (int i = 0; i < m.n; i++) {
-    char want[8];
+    char want[16];
     snprintf(want, sizeof want, "L%d", i);
     CHECK(!strcmp(m.dep[i].line, want));
   }
