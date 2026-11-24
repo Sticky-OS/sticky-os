@@ -6,6 +6,8 @@
 #include <WiFiClientSecure.h>
 #include <vector>
 
+#include "bus.h"
+
 struct Weather {
   bool ok;
   float temp, wind;       // now: degrees C, km/h
@@ -63,6 +65,7 @@ String netTimezone();     // the POSIX TZ in use (device.timezone, or the weathe
 bool weatherConfigured();   // weather.locate, or weather.lat and weather.lon
 bool claudeConfigured();    // mqtt.host and claude.topic
 bool telemetryConfigured(); // telemetry.enabled and mqtt.host
+bool busConfigured();       // bus.stops has a stop code in it
 
 bool weatherLocate();          // finds the town from the internet address; false if it can't
 bool weatherKnowsWhere();      // coordinates known: set, or found
@@ -70,7 +73,12 @@ const char *weatherPlace();    // the town the forecast is for ("" if none)
 // False, with a short plain reason for the screen in `error`, if they failed.
 bool fetchWeather(Weather &w, String &error);
 bool fetchClaude(ClaudeUsage &c, String &error);
-bool fetchHourly(long date, HourlyDay &out, String &error);  // date: 20261114, local to the forecast's place
+bool fetchHourly(long date, HourlyDay &out, String &error);
+// One bus stop's departures (bus.h): TfL for London's stops, NextBuses
+// through TransportAPI for the rest, which needs bus.tapi_id and
+// bus.tapi_key (busNeedsKey). b.code says which stop.
+bool busNeedsKey(const char *code);  // a NextBuses stop, and no TransportAPI key set
+bool fetchBus(BusBoard &b, String &error);  // b: filled in (half-filled when it fails)  // date: 20261114, local to the forecast's place
 
 // Every network wait is bounded: TLS handshakes 8 s, connects 5 s.
 static const int NET_HANDSHAKE_S = 8;

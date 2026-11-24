@@ -495,3 +495,4 @@ S(S_KB_ABC, "ABC")  // the key back to the letters, ~110 px, bold 12pt (Russian:
 #include "strings_nonogram.h"  // Games: the Daily screen's Nonogram (games_nonogram.ino)
 #include "strings_net.h"  // the network side: errors, statuses, the AI's own replies
 #include "strings_books.h"  // the Books app
+#include "strings_bus.h"  // the Bus app

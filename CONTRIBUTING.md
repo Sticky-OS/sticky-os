@@ -38,7 +38,7 @@ without touching the board:
 
 | Command | Does |
 |---|---|
-| `app <n>` | open app n (0 Clock, 1 Weather, 2 Calendar, 3 Notes, 4 Timer, 5 Photos, 6 Claude, 7 Settings, 8 About, 9 Quote, 10 Recipes, 11 Games, 12 Books). The numbers stay put (Settings keeps hidden apps as a bit each); `APP_ORDER` sets the home screen's order |
+| `app <n>` | open app n (0 Clock, 1 Weather, 2 Calendar, 3 Notes, 4 Timer, 5 Photos, 6 Claude, 7 Settings, 8 About, 9 Quote, 10 Recipes, 11 Games, 12 Books, 13 Bus). The numbers stay put (Settings keeps hidden apps as a bit each); `APP_ORDER` sets the home screen's order |
 | `home`, `quick`, `ok`, `move <n>` | home screen, quick settings, the OK button, UP / DOWN |
 | `tap <x> <y>`, `dtap <x> <y>`, `swipe <x0> <y0> <dx> <dy>` | touch, in the picture's own coordinates; `dtap` a double tap (Photos and Quote: full screen on or off). In Photos and Quote a single tap acts 0.35 s later, once no second one came |
 | `full` | which apps are full screen: `full: photos on/off, quote on/off, on screen yes/no` |
@@ -56,7 +56,8 @@ without touching the board:
 | `note open <n>` | Notes, with the item on row n open full screen (0 the first, in the list's order: open tasks, notes, finished tasks) |
 | `note type <words>` | Notes: the words sent as a typed note, as the keyboard's Done does: the AI answers and the list changes (in demo mode nothing is saved). Handy for trying the AI in another language |
 | `note ai <lines>` | applies `<lines>` to the Notes list as if the AI had answered them, `\|` between lines, e.g. `note ai TASK: Buy eggs\|TASK: Buy bread\|DONE: 1\|SAY: Added eggs and bread.` (numbers count from 1 in the order the items were added, as the AI sees the list, not the order shown). The new items get their *NEW* pill; in demo mode nothing is saved. Prints `note: <the SAY line>` |
-| `fetch <n>` | fetch now for app n (1 Weather, 2 Calendar, 6 Claude), as OK in it does |
+| `fetch <n>` | fetch now for app n (1 Weather, 2 Calendar, 6 Claude, 13 Bus), as OK in it does |
+| `bus`, `bus next` | the Bus app's stops: `bus: <n> stops, showing <i>; <n> NextBuses requests today`, then each stop's code, source, name, departures and age, its last error, and a line a departure (`bus:   214 20:22 live Highgate Village`); `next` switches to the other stop, as a tap does. `demo on` shows a made-up stop |
 | `cal` | the Calendar's sources: InfluxDB and each link (its label and host, never the address), how many events, the last read (status, bytes, time, ETag) and why it failed |
 | `wifi scan` | Settings → WiFi → Add network (the network task scans) |
 | `hours <n>` | Weather: the hours of day n of the forecast (0 the first) |
@@ -153,7 +154,7 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
 ## How the code is laid out
 
 - `firmware/sticky-os/sticky-os.ino`: the apps, the home screen, input and drawing.
-- `net.*` WiFi, weather (and a day's hours) and MQTT; `notes.*` notes and
+- `net.*` WiFi, weather (and a day's hours), a bus stop's departures and MQTT; `bus.*` the Bus app's stop codes and its TfL and NextBuses parsers (plain C++, tested on a computer: `firmware/test/bus/run.sh`) and `busapp.ino` its screen; `notes.*` notes and
   voice, and the network part of a recipe; `recipes.*` the recipe JSON (the
   schema the AI answers in, the defensive parser, the saved ones);
   `quotes.*` ZenQuotes, the built-in quotes and today's cache; `games.h` /

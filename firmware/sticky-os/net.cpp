@@ -13,6 +13,7 @@
 #include "esp_mac.h"
 #include "esp_sntp.h"
 #include "letsencrypt_ca.h"
+#include "ota.h"
 #include "settings.h"
 
 // ESP-IDF's bundle of public root CAs, in the core's mbedtls library.
@@ -77,6 +78,10 @@ bool weatherConfigured() {
   return cfg::flag("weather.locate") || (cfg::isSet("weather.lat") && cfg::isSet("weather.lon"));
 }
 bool claudeConfigured() { return cfg::str("mqtt.host").length() && cfg::str("claude.topic").length(); }
+bool busConfigured() {
+  char codes[BUS_MAX_STOPS][BUS_CODE_MAX];
+  return busStopCodes(cfg::str("bus.stops").c_str(), codes, BUS_MAX_STOPS) > 0;
+}
 bool telemetryConfigured() { return cfg::flag("telemetry.enabled") && cfg::str("mqtt.host").length(); }
 
 // ---------------------------------------------------------------- TLS
@@ -552,6 +557,56 @@ bool fetchWeather(Weather &w, String &error) {
   w = r;
   autoTimezone(body);
   Serial.printf("weather: %.1f C, code %d, %d days\n", w.temp, w.code, w.days);
+  return true;
+}
+
+// ---------------------------------------------------------------- bus stops
+
+bool busNeedsKey(const char *code) {
+  return busSource(code) == BUS_NEXTBUSES && !(cfg::str("bus.tapi_id").length() && cfg::str("bus.tapi_key").length());
+}
+
+// TfL's arrivals (no key), or NextBuses' departures through TransportAPI
+// (the owner's key, in headers so it never shows in a logged address).
+// Times come back as they are; the screen counts the minutes down itself.
+bool fetchBus(BusBoard &b, String &error) {
+  error = "";
+  if (!netUp()) return error = T(S_N_NO_WIFI), false;
+  bool tfl = busSource(b.code) == BUS_TFL;
+  if (!tfl && busNeedsKey(b.code)) return error = T(S_BUS_NEEDS_KEY), false;
+  const char *who = tfl ? "TfL" : "TransportAPI";
+  NetTls use;
+  WiFiClientSecure tls;
+  netTrust(tls, false);
+  tls.setTimeout(10000);
+  HTTPClient http;
+  http.setTimeout(10000);
+  http.setConnectTimeout(NET_CONNECT_MS);
+  http.setUserAgent(String("sticky-os/") + updVersion());
+  String url = tfl ? String("https://api.tfl.gov.uk/StopPoint/") + b.code + "/Arrivals"
+                   : String("https://transportapi.com/v3/uk/bus/stop/") + b.code + "/live.json?group=no&nextbuses=yes&limit=" + BUS_MAX_DEPS;
+  if (!http.begin(tls, url)) return error = netFailText(who, HTTPC_ERROR_CONNECTION_REFUSED), false;
+  if (!tfl) {
+    http.addHeader("X-App-Id", cfg::str("bus.tapi_id"));
+    http.addHeader("X-App-Key", cfg::str("bus.tapi_key"));
+  }
+  int status = http.GET();
+  String body;
+  bool read = status == 200 && netReadBody(http, body, 49152);
+  http.end();
+  if (status != 200 || !read) {
+    Serial.printf("bus: %s for %s failed, %d\n", who, b.code, status);
+    if (status == 404 || (tfl && status == 400)) error = TF(S_BUS_UNKNOWN_STOP, who, b.code);
+    else error = netFailText(who, status == 200 ? NET_ERR_BAD_BODY : status, "key");
+    return false;
+  }
+  bool ok = tfl ? busParseTfl(body.c_str(), b) : busParseNextBuses(body.c_str(), busUkTime, b);  // keeps b.code
+  if (!ok) {
+    Serial.printf("bus: %s's reply for %s isn't departures (%u bytes)\n", who, b.code, (unsigned)body.length());
+    return error = capFirst(TF(S_N_FAIL_UNREADABLE, who)), false;
+  }
+  b.at = time(nullptr);
+  Serial.printf("bus: %s %s, %d departures\n", b.code, b.name, b.n);
   return true;
 }
 

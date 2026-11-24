@@ -46,6 +46,9 @@ const KEYS = [
   { key: 'mqtt.user', type: 'string', secret: false, max_len: 64 },
   { key: 'mqtt.password', type: 'string', secret: true, max_len: 128 },
   { key: 'claude.topic', type: 'string', secret: false, default: 'claude/limits', max_len: 128 },
+  { key: 'bus.stops', type: 'string', secret: false, max_len: 200 },
+  { key: 'bus.tapi_id', type: 'string', secret: false, max_len: 64 },
+  { key: 'bus.tapi_key', type: 'string', secret: true, max_len: 128 },
   // calendar.ics is secret (the links hold private tokens): "keys" lists only their labels.
   { key: 'calendar.ics', type: 'string', secret: true, max_len: 1300, max_items: 3 },
   { key: 'influx.url', type: 'string', secret: false, max_len: 200 },
