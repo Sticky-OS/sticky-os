@@ -152,7 +152,7 @@ test('keys: the Sticky key list, grouped; secrets never come back', async () => 
   const raw = JSON.stringify(keys);
   assert.ok(!raw.includes('SECRET') && !raw.includes('hunter2'), 'no secret value in the key list');
   const groups = groupKeys(keys.map(normalizeKey));
-  assert.deepEqual(groups.map((g) => g.id), ['language', 'wifi', 'device', 'weather', 'voice', 'mqtt', 'claude', 'calendar', 'telemetry', 'quotes', 'games', 'update']);
+  assert.deepEqual(groups.map((g) => g.id), ['language', 'wifi', 'device', 'weather', 'voice', 'mqtt', 'claude', 'calendar', 'bus', 'telemetry', 'quotes', 'games', 'update']);
   assert.deepEqual(groups.filter((g) => !g.optional).map((g) => g.id), ['language', 'wifi', 'device', 'weather', 'voice']);
   const voice = groups.find((g) => g.id === 'voice');
   assert.deepEqual(voice.keys.filter((k) => !isAdvanced(k)).map((k) => k.key), ['openai.api_key'], 'a first-time visitor sees only the key');
