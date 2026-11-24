@@ -57,7 +57,7 @@ without touching the board:
 | `note type <words>` | Notes: the words sent as a typed note, as the keyboard's Done does: the AI answers and the list changes (in demo mode nothing is saved). Handy for trying the AI in another language |
 | `note ai <lines>` | applies `<lines>` to the Notes list as if the AI had answered them, `\|` between lines, e.g. `note ai TASK: Buy eggs\|TASK: Buy bread\|DONE: 1\|SAY: Added eggs and bread.` (numbers count from 1 in the order the items were added, as the AI sees the list, not the order shown). The new items get their *NEW* pill; in demo mode nothing is saved. Prints `note: <the SAY line>` |
 | `fetch <n>` | fetch now for app n (1 Weather, 2 Calendar, 6 Claude, 13 Bus), as OK in it does |
-| `bus`, `bus next` | the Bus app's stops: `bus: <n> stops, showing <i>; <n> NextBuses requests today`, then each stop's code, source, name, departures and age, its last error, and a line a departure (`bus:   214 20:22 live Highgate Village`); `next` switches to the other stop, as a tap does. `demo on` shows a made-up stop |
+| `bus`, `bus next` | the Bus app's stops: `bus: <n> stops, showing <i>; <n> NextBuses requests today`, then each stop's code, source, name, departures and age, its last error, and a line a departure (`bus:   214 20:22 live Highgate Village`); `next` switches to the other stop, as a tap does; `up` and `down` turn the later pages, as a swipe does. `demo on` shows a made-up stop |
 | `cal` | the Calendar's sources: InfluxDB and each link (its label and host, never the address), how many events, the last read (status, bytes, time, ETag) and why it failed |
 | `wifi scan` | Settings → WiFi → Add network (the network task scans) |
 | `hours <n>` | Weather: the hours of day n of the forecast (0 the first) |
