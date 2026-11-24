@@ -147,6 +147,63 @@ static void nextbuses() {
         e.n == 0);
 }
 
+static void schedules() {
+  CHECK(busScheduleCovers("Monday to Thursday", 1) && busScheduleCovers("Monday to Thursday", 4));
+  CHECK(!busScheduleCovers("Monday to Thursday", 5) && !busScheduleCovers("Monday to Thursday", 0));
+  CHECK(busScheduleCovers("Friday", 5) && !busScheduleCovers("Friday", 6));
+  CHECK(busScheduleCovers("Saturday and Sunday", 6) && busScheduleCovers("Saturday and Sunday", 0) && !busScheduleCovers("Saturday and Sunday", 1));
+  CHECK(busScheduleCovers("Monday - Friday", 1) && !busScheduleCovers("Monday - Friday", 3));  // no "to": the two days named
+  CHECK(busScheduleCovers("Friday Night/Saturday Morning", 5) && !busScheduleCovers("Friday Night/Saturday Morning", 6));
+  CHECK(busScheduleCovers("Monday Night/Tuesday Morning to Thursday Night/Friday Morning", 3));
+  CHECK(!busScheduleCovers("Monday Night/Tuesday Morning to Thursday Night/Friday Morning", 5));
+  CHECK(busScheduleCovers("Sunday to Saturday", 3));
+  CHECK(busScheduleCovers("Saturday to Monday", 0) && !busScheduleCovers("Saturday to Monday", 3));  // wraps
+  CHECK(!busScheduleCovers("Schooldays", 2) && !busScheduleCovers("", 2) && !busScheduleCovers(nullptr, 2));
+}
+
+static void tflTimetable() {
+  std::string sp = readFile("fixtures/tfl-stoppoint.json");
+  char ids[BUS_LINES_MAX][12];
+  CHECK(busTflLines(sp.c_str(), ids, BUS_LINES_MAX) == 2 && !strcmp(ids[0], "214") && !strcmp(ids[1], "88"));
+  CHECK(busTflLines(sp.c_str(), ids, 1) == 1);
+  CHECK(busTflLines("[]", ids, 2) == 0 && busTflLines(nullptr, ids, 2) == 0);
+
+  // A real timetable (route 214 from Lady Somerset Road): Monday to Thursday,
+  // Friday, Saturday and Sunday, hours past 24 after midnight. The counts
+  // and ends were worked out by a separate Python script from the same file.
+  std::string json = readFile("fixtures/tfl-timetable-214.json");
+  static BusLater l;  // big: not on the stack
+  l = {};
+  CHECK(busAddTflTimetable(json.c_str(), 2026, 11, 24, 2, "Highgate Village", londonTime, l));  // a Tuesday
+  CHECK(l.n == 238);
+  CHECK(l.dep[0].at == londonTime(2026, 11, 24, 0, 6) && l.dep[l.n - 1].at == londonTime(2026, 11, 25, 23, 56));
+  CHECK(!strcmp(l.dep[0].line, "214") && !strcmp(l.dep[0].dest, "Highgate Village") && !l.dep[0].live);
+  for (int i = 1; i < l.n; i++) CHECK(l.dep[i - 1].at < l.dep[i].at);
+  // Again: nothing new (each route and time once).
+  int before = l.n;
+  CHECK(busAddTflTimetable(json.c_str(), 2026, 11, 24, 2, "Highgate Village", londonTime, l) && l.n == before);
+
+  l = {};
+  CHECK(busAddTflTimetable(json.c_str(), 2026, 11, 29, 0, "", londonTime, l));  // a Sunday: Saturday's night, Sunday's into Monday
+  CHECK(l.n == 234);
+  CHECK(l.dep[0].at == londonTime(2026, 11, 29, 0, 0) && l.dep[l.n - 1].at == londonTime(2026, 11, 30, 23, 56));
+  CHECK(!strcmp(l.dep[0].dest, "Highgate School"));  // no live name: the timetable's last stop
+
+  l = {};
+  l.from = londonTime(2026, 11, 24, 22, 0);  // from now on only
+  CHECK(busAddTflTimetable(json.c_str(), 2026, 11, 24, 2, "", londonTime, l));
+  CHECK(l.n > 0 && l.dep[0].at >= l.from && l.n < 238);
+  CHECK(!busAddTflTimetable("{\"message\":\"nope\"}", 2026, 11, 24, 2, "", londonTime, l));
+
+  // NextBuses' timetable.json: added after what's there, each once.
+  std::string nb = readFile("fixtures/nextbuses-live.json");
+  l = {};
+  int added = 0;
+  CHECK(busAddNextBuses(nb.c_str(), londonTime, l, &added) && added == 4 && l.n == 4);
+  CHECK(busAddNextBuses(nb.c_str(), londonTime, l, &added) && added == 0 && l.n == 4);
+  CHECK(!busAddNextBuses("{}", londonTime, l, &added));
+}
+
 int main() {
   setenv("TZ", "Europe/London", 1);
   tzset();
@@ -154,6 +211,8 @@ int main() {
   times();
   tfl();
   nextbuses();
+  schedules();
+  tflTimetable();
   printf("bus: %d checks, %d failed\n", checks, failed);
   return failed ? 1 : 0;
 }

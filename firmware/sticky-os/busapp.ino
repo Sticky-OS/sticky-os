@@ -10,13 +10,27 @@
 // for OK, by itself only BUS_AUTO_PER_DAY times a day. The minutes count down
 // from the times it got, redrawn each minute with the clock.
 //
-//   OK, or a tap with one stop     fetch now
+// Swiping up pages on from the live times to the timetable's: the rest of
+// today, then tomorrow. TfL's comes as each route's whole timetable from the
+// stop, read once a day when the second page is first wanted; NextBuses' a
+// page at a time (each one a request of the day's 30).
+//
+//   swipe up / down                later and earlier pages
+//   OK, or a tap with one stop     back to now, and fetch now
 //   a tap with two stops           the other stop
 //   UP / DOWN, sideways swipes     the next app, as everywhere
 
 #define BUS_EVERY_MIN 1
 #define BUS_NEXTBUSES_EVERY_MIN 10
 static const int BUS_AUTO_PER_DAY = 24;
+static const int BUS_DAY_REQUESTS = 30;  // NextBuses' free plan
+
+// busPage and busLastPage are with the other apps' screens in sticky-os.ino.
+// The later departures of the stop on screen (from the timetable), under
+// dataLock, and the network task's copy it reads the next into. In PSRAM: about 38 KB each.
+static BusLater *busLater, *busLaterNext;
+static String busLaterError;             // why the timetable couldn't be read; under dataLock
+static volatile bool busLaterAsk, busLaterBusy;
 
 RTC_DATA_ATTR static int busShown;          // which stop is on screen, kept across deep sleep
 // Each stop's last good reply, under dataLock, and (the last one) where the
@@ -32,7 +46,11 @@ static const char *BUS_DEMO_CODE = "490DEMO";
 static void busBegin() {
   busBoard = (BusBoard *)heap_caps_calloc(BUS_MAX_STOPS + 1, sizeof(BusBoard), MALLOC_CAP_SPIRAM);
   if (!busBoard) busBoard = (BusBoard *)calloc(BUS_MAX_STOPS + 1, sizeof(BusBoard));
+  busLater = (BusLater *)heap_caps_calloc(1, sizeof(BusLater), MALLOC_CAP_SPIRAM);
+  busLaterNext = (BusLater *)heap_caps_calloc(1, sizeof(BusLater), MALLOC_CAP_SPIRAM);
 }
+
+void busRequestCounted() { busCounted(); }
 
 // The stops in the settings (demo mode: one made-up stop).
 static int busStops(char codes[][BUS_CODE_MAX]) {
@@ -63,6 +81,41 @@ static bool busFresh() {
   return fresh;
 }
 
+// The later pages' departures are for this stop and today.
+static bool busLaterFor(const char *code) {
+  return busLater && !strcmp(busLater->code, code) && busLater->date == localDate(time(nullptr));
+}
+
+// On the network task: the timetable's next part for the stop on screen.
+static void busLaterFetch(int i, const char *code) {
+  busLaterAsk = false;
+  if (!busLater || !busLaterNext) return;
+  busLaterBusy = true;
+  fetchDone[APP_BUS] = true;  // the page says it's getting them
+  BusLater &next = *busLaterNext;
+  xSemaphoreTake(dataLock, portMAX_DELAY);
+  bool more = busLaterFor(code);  // NextBuses: go on from where the last page ended
+  if (more) memcpy(&next, busLater, sizeof next);
+  xSemaphoreGive(dataLock);
+  if (!more) {
+    memset(&next, 0, sizeof next);
+    strlcpy(next.code, code, sizeof next.code);
+    next.date = localDate(time(nullptr));
+    next.from = time(nullptr);
+    next.until = next.from;
+  }
+  String error;
+  bool ok = false;
+  if (busSource(code) == BUS_NEXTBUSES && busToday() >= BUS_DAY_REQUESTS) error = T(S_BUS_NO_REQUESTS);
+  else ok = fetchBusLater(next, busBoard[i], error);  // busBoard: only this task writes it
+  xSemaphoreTake(dataLock, portMAX_DELAY);
+  if (ok) std::swap(busLater, busLaterNext);
+  busLaterError = error;
+  xSemaphoreGive(dataLock);
+  busLaterBusy = false;
+  fetchDone[APP_BUS] = true;
+}
+
 // On the network task: the stop on screen, when it's due or asked for.
 static void busNetTick() {
   static uint32_t nextAt;
@@ -72,10 +125,12 @@ static void busNetTick() {
   int n = busStops(codes);
   if (!n || busDemoOn) {
     fetchAsk[APP_BUS] = false;
+    busLaterAsk = false;
     return;
   }
   int i = constrain(busShown, 0, n - 1);
   const char *code = codes[i];
+  if (busLaterAsk) return busLaterFetch(i, code);
   bool asked = fetchAsk[APP_BUS], nextBuses = busSource(code) == BUS_NEXTBUSES;
   if (!asked) {
     if (!(screen == SCREEN_APP && app == APP_BUS)) return;
@@ -183,6 +238,7 @@ static void drawBus() {
   int i = busShown = constrain(busShown, 0, n - 1);
   const char *code = codes[i];
   if (!busDemoOn && busNeedsKey(code)) return drawSetupHint(T(S_BUS_SETUP_TITLE), T(S_BUS_NEEDS_KEY));
+  if (busDemoOn && (time(nullptr) - busBoard[0].at > 300 || !busLaterFor(BUS_DEMO_CODE))) busDemoFill(true);  // render holds dataLock
   const BusBoard &b = busBoard[i];
   bool have = b.ok && !strcmp(b.code, code), nextBuses = busSource(code) == BUS_NEXTBUSES;
   time_t now = time(nullptr);
@@ -190,15 +246,18 @@ static void drawBus() {
   for (int k = 0; have && k < b.n; k++)
     if (busMinutesTo(b.dep[k].at, now) >= 0) idx[m++] = k;
 
-  // The foot: which stop of two, and where the times come from.
+  if (busPage > 0) return drawBusLater(code, i, n, b, m ? b.dep[idx[m - 1]].at : 0, nextBuses);
+
+  // The foot: that there's more, which stop of two, and where the times come from.
   char foot[64];
+  const char *later = T(S_BUS_LATER_HINT), *source = T(nextBuses ? S_BUS_LIVE_NEXTBUSES : S_BUS_LIVE_TFL);
+  int laterW = textW(&FreeSans9pt7b, later);
+  text(16, H - 12, &FreeSans9pt7b, later);
+  textRight(W - 16, H - 12, &FreeSans9pt7b, fitted(&FreeSans9pt7b, source, W - 56 - laterW).c_str());
   if (n > 1) {
     snprintf(foot, sizeof foot, T(S_BUS_STOPS), i + 1, n);
-    text(16, H - 12, &FreeSans9pt7b, foot);
+    text(16, H - 34, &FreeSans9pt7b, foot);
   }
-  const char *source = T(nextBuses ? S_BUS_LIVE_NEXTBUSES : S_BUS_LIVE_TFL);
-  if (n > 1 && TALL) text(16, H - 36, &FreeSans9pt7b, fitted(&FreeSans9pt7b, source, W - 32).c_str());
-  else textRight(W - 16, H - 12, &FreeSans9pt7b, fitted(&FreeSans9pt7b, source, n > 1 ? W - 340 : W - 32).c_str());
 
   if (!have) {
     BusBoard none = {};
@@ -274,6 +333,114 @@ static void drawBus() {
   }
 }
 
+// The later pages: the timetable's departures after the live ones (after
+// `after`, or now), a row each, with the day as a heading where it changes.
+static void drawBusLater(const char *code, int i, int n, const BusBoard &b, time_t after, bool nextBuses) {
+  time_t now = time(nullptr);
+  char line[64];
+  const int top = BODY_Y + 46, rowH = 44, bottom = H - 30, slots = max(2, (bottom - top) / rowH);
+  text(16, BODY_Y + 30, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, b.name[0] ? b.name : code, W - 140).c_str());
+  canvas->fillRect(16, BODY_Y + 40, W - 32, 2, INK);
+  const char *source = T(nextBuses ? S_BUS_TIMETABLE_NEXTBUSES : S_BUS_TIMETABLE_TFL);
+  String right = nextBuses && !busDemoOn ? TF(S_BUS_TODAY, busToday()) : String(source);
+  text(16, H - 12, &FreeSans9pt7b, T(S_BUS_PAGE_HINT));
+  textRight(W - 16, H - 12, &FreeSans9pt7b, fitted(&FreeSans9pt7b, right, W - 40 - textW(&FreeSans9pt7b, T(S_BUS_PAGE_HINT))).c_str());
+
+  if (!busLaterFor(code)) {  // not read yet today: ask, and say so (or why it failed)
+    busLastPage = -1;
+    bool failed = busLaterError.length() && !busLaterBusy && !busLaterAsk;
+    if (!failed && !busLaterBusy) busLaterAsk = true;
+    textCentre(W / 2, H / 2, &FreeSansBold18pt7b, T(failed ? S_BUS_CANT_LATER : S_BUS_GETTING_LATER));
+    if (failed) {
+      failureLine(H / 2 + 44, busLaterError);
+      textCentre(W / 2, H / 2 + 80, &FreeSans12pt7b, T(S_BUS_SWIPE_RETRY));
+    }
+    return;
+  }
+  const BusLater &l = *busLater;
+  int first = 0;
+  time_t cut = max(after, now);
+  while (first < l.n && l.dep[first].at <= cut) first++;
+
+  // Lay the pages out: a heading at the top of each and where the day changes.
+  int page = 1, pageStart = first, used = 0, shownStart = -1, shownEnd = -1;
+  long day = 0;
+  for (int k = first; k <= l.n; k++) {
+    bool end = k == l.n;
+    long d = end ? 0 : localDate(l.dep[k].at);
+    int need = end ? 0 : (used == 0 || d != day ? 2 : 1);  // a heading and the row, or the row
+    if (!end && used + need > slots) {  // the next page
+      if (page == busPage) shownStart = pageStart, shownEnd = k;
+      page++, pageStart = k, used = 0, need = 2;
+    }
+    if (end) {
+      if (page == busPage || (busPage > page && l.complete)) shownStart = pageStart, shownEnd = k, busPage = page;
+      break;
+    }
+    used += need;
+    day = d;
+  }
+  busLastPage = l.complete ? page : -1;
+  snprintf(line, sizeof line, l.complete ? "%d / %d" : "%d", busPage + 1, page + 1);
+  textRight(W - 16, BODY_Y + 30, &FreeSans9pt7b, line);
+  if (shownStart < 0) {  // past what's read: NextBuses' next page
+    if (!busLaterBusy && !busLaterAsk && !busLaterError.length()) busLaterAsk = true;
+    bool failed = busLaterError.length() && !busLaterBusy;
+    textCentre(W / 2, H / 2, &FreeSansBold18pt7b, T(failed ? S_BUS_CANT_LATER : S_BUS_GETTING_LATER));
+    if (failed) failureLine(H / 2 + 44, busLaterError), textCentre(W / 2, H / 2 + 80, &FreeSans12pt7b, T(S_BUS_SWIPE_RETRY));
+    return;
+  }
+  int y = top;
+  day = 0;
+  for (int k = shownStart; k < shownEnd; k++) {
+    const BusDep &d = l.dep[k];
+    long dd = localDate(d.at);
+    if (k == shownStart || dd != day) {  // the day's heading
+      time_t at = d.at;
+      if (dd == localDate(now)) strlcpy(line, T(S_BUS_LATER_TODAY), sizeof line);
+      else tStrftime(line, sizeof line, T(S_BUS_TOMORROW), localtime(&at));
+      text(16, y + 30, &FreeSansBold9pt7b, upperText(line).c_str());
+      y += rowH;
+      day = dd;
+    }
+    char hm[8];
+    time_t at = d.at;
+    strftime(hm, sizeof hm, "%H:%M", localtime(&at));
+    int cy = y + rowH / 2;
+    int bw = busBadge(16, cy - 16, 32, &FreeSansBold12pt7b, d.line, INK, 62);
+    int timeW = textW(&FreeSansBold12pt7b, "00:00");
+    textRight(W - 16, cy + 8, &FreeSansBold12pt7b, hm);
+    text(16 + bw + 14, cy + 8, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, d.dest, W - 16 - timeW - 20 - (16 + bw + 14)).c_str());
+    canvas->drawFastHLine(16, y + rowH, W - 32, INK);
+    y += rowH;
+  }
+  if (shownEnd < l.n || y + rowH > bottom) return;
+  if (l.complete) {  // the last page: nothing after it
+    textCentre(W / 2, y + 30, &FreeSans12pt7b, T(S_BUS_END));
+  } else {           // NextBuses: the page isn't full, so read on
+    if (!busLaterBusy && !busLaterAsk && !busLaterError.length()) busLaterAsk = true;
+    textCentre(W / 2, y + 30, &FreeSans12pt7b, busLaterError.length() && !busLaterBusy ? busLaterError.c_str() : T(S_BUS_GETTING_LATER));
+  }
+}
+
+// Up and down: the later and earlier pages. True when it was one.
+static bool busSwipe(int dx, int dy) {
+  if (abs(dx) >= abs(dy)) return false;
+  if (dy < 0) {
+    if (busLastPage >= 0 && busPage >= busLastPage) return true;  // the last page
+    busPage++;
+    xSemaphoreTake(dataLock, portMAX_DELAY);
+    if (!busLaterBusy) busLaterError = "";  // a swipe after a failure tries again
+    xSemaphoreGive(dataLock);
+  } else {
+    if (!busPage) return true;
+    busPage--;
+  }
+  Serial.printf("bus: page %d\n", busPage + 1);
+  render(false);
+  return true;
+}
+
 // The app's icon: a bus from the front, its windscreen, lights and wheels.
 static void busIcon(int cx, int cy, int s, int t) {
   int w = s * 62 / 100, h = s * 72 / 100, x = cx - w / 2, y = cy - h / 2 - s / 20;
@@ -294,15 +461,16 @@ static void busTap(int x, int y) {
   int n = busStops(codes);
   if (n < 2) return action();
   busShown = (busShown + 1) % n;
+  busPage = 0, busLastPage = -1;
   Serial.printf("bus: stop %d of %d, %s\n", busShown + 1, n, codes[busShown]);
   fetchFor(APP_BUS, false);
   render(false);
 }
 
-// Demo mode (screenshots): a made-up stop with buses in the next half hour.
-static void busDemo(bool on) {
-  busDemoOn = on;
-  xSemaphoreTake(dataLock, portMAX_DELAY);
+// Demo mode (screenshots): a made-up stop with buses in the next half hour,
+// made again when it's gone stale (demo mode turned on before the clock was
+// set, or left on). Under dataLock.
+static void busDemoFill(bool on) {
   busBoard[0] = {};
   busError[0] = "";
   if (on) {
@@ -324,7 +492,35 @@ static void busDemo(bool on) {
     }
     b.at = time(nullptr);
     b.ok = true;
+    if (busLater) {  // and a made-up timetable: every 12 minutes, to the end of tomorrow
+      BusLater &l = *busLater;
+      memset(&l, 0, sizeof l);
+      strlcpy(l.code, BUS_DEMO_CODE, sizeof l.code);
+      l.date = localDate(t);
+      struct tm end = *localtime(&t);
+      end.tm_mday += 2, end.tm_hour = end.tm_min = end.tm_sec = 0, end.tm_isdst = -1;
+      time_t stop = mktime(&end);
+      static const char *const LINES[] = {"7", "12", "7", "12A"}, *const DESTS[] = {"Town Centre", "Hospital", "Town Centre", "Riverside"};
+      int k = 0;
+      for (time_t at = t + 27 * 60; at < stop && l.n < BUS_LATER_MAX; at += 12 * 60, k++) {
+        struct tm h = *localtime(&at);
+        if (h.tm_hour < 6) continue;  // no buses at night
+        BusDep &x = l.dep[l.n++];
+        strlcpy(x.line, LINES[k % 4], sizeof x.line);
+        strlcpy(x.dest, DESTS[k % 4], sizeof x.dest);
+        x.at = at;
+      }
+      l.complete = true;
+    }
+  } else if (busLater) {
+    memset(busLater, 0, sizeof *busLater);
   }
+}
+
+static void busDemo(bool on) {
+  busDemoOn = on;
+  xSemaphoreTake(dataLock, portMAX_DELAY);
+  busDemoFill(on);
   xSemaphoreGive(dataLock);
 }
 
@@ -334,8 +530,9 @@ static void busCommand(String args) {
   args.trim();
   char codes[BUS_MAX_STOPS][BUS_CODE_MAX];
   int n = busStops(codes);
+  if (args == "up" || args == "down") busSwipe(0, args == "up" ? -100 : 100);
   if (args == "next") {
-    if (n > 1) busShown = (busShown + 1) % n;
+    if (n > 1) busShown = (busShown + 1) % n, busPage = 0, busLastPage = -1;
     if (screen == SCREEN_APP && app == APP_BUS) fetchFor(APP_BUS, false), render(false);
   }
   Serial.printf("bus: %d stops, showing %d; %d NextBuses requests today\n", n, n ? constrain(busShown, 0, n - 1) + 1 : 0, busToday());

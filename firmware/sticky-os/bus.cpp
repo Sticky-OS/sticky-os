@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 // ---------------------------------------------------------------- stops
@@ -244,15 +245,27 @@ static bool eachElement(const char *s, long i, F f) {
 
 // ---------------------------------------------------------------- departures
 
-// Keeps the soonest BUS_MAX_DEPS: a new one goes in its place, the latest falls off.
-static void addDeparture(BusBoard &b, const BusDep &d) {
-  int at = b.n;
-  while (at > 0 && b.dep[at - 1].at > d.at) at--;
-  if (at >= BUS_MAX_DEPS) return;
-  int last = b.n < BUS_MAX_DEPS ? b.n : BUS_MAX_DEPS - 1;
-  for (int k = last; k > at; k--) b.dep[k] = b.dep[k - 1];
-  b.dep[at] = d;
-  if (b.n < BUS_MAX_DEPS) b.n++;
+// Keeps the soonest `cap`, sorted: a new one goes in its place, the latest
+// falls off. `dedupe`: the same route at the same time is there once.
+static bool insertDep(BusDep *dep, int &n, int cap, const BusDep &d, bool dedupe) {
+  int at = n;
+  while (at > 0 && dep[at - 1].at > d.at) at--;
+  if (dedupe)
+    for (int k = at - 1; k >= 0 && dep[k].at == d.at; k--)
+      if (!strcmp(dep[k].line, d.line)) return false;
+  if (at >= cap) return false;
+  int last = n < cap ? n : cap - 1;
+  for (int k = last; k > at; k--) dep[k] = dep[k - 1];
+  dep[at] = d;
+  if (n < cap) n++;
+  return true;
+}
+
+static void addDeparture(BusBoard &b, const BusDep &d) { insertDep(b.dep, b.n, BUS_MAX_DEPS, d, false); }
+
+static bool addLater(BusLater &out, const BusDep &d) {
+  if (d.at < out.from) return false;
+  return insertDep(out.dep, out.n, BUS_LATER_MAX, d, true);
 }
 
 static void startBoard(BusBoard &b) {
@@ -295,6 +308,29 @@ static bool ymd(const char *s, int &y, int &mo, int &d) {
   return strlen(s) >= 10 && s[4] == '-' && s[7] == '-' && digits(s, 4, y) && digits(s + 5, 2, mo) && digits(s + 8, 2, d);
 }
 
+// One departure of a NextBuses reply: false when it has no route or no usable time.
+static bool nextBusesDep(const char *json, long o, BusLocalTime local, BusDep &d) {
+  d = {};
+  if (json[o] != '{') return false;
+  char date[16] = "", time[8] = "", liveDate[16] = "", liveTime[8] = "";
+  if (!stringMember(json, o, "line_name", d.line, sizeof d.line)) stringMember(json, o, "line", d.line, sizeof d.line);
+  if (!d.line[0]) return false;
+  stringMember(json, o, "direction", d.dest, sizeof d.dest);
+  stringMember(json, o, "date", date, sizeof date);
+  stringMember(json, o, "aimed_departure_time", time, sizeof time);
+  stringMember(json, o, "expected_departure_date", liveDate, sizeof liveDate);
+  stringMember(json, o, "expected_departure_time", liveTime, sizeof liveTime);
+  int y, mo, dd, h, mi;
+  if (liveTime[0] && hhmm(liveTime, h, mi) && (ymd(liveDate, y, mo, dd) || ymd(date, y, mo, dd))) {
+    d.live = true;
+  } else {
+    if (!time[0]) stringMember(json, o, "best_departure_estimate", time, sizeof time);  // TransportAPI's best guess
+    if (!hhmm(time, h, mi) || !ymd(date, y, mo, dd)) return false;
+  }
+  d.at = local(y, mo, dd, h, mi);
+  return d.at != 0;
+}
+
 bool busParseNextBuses(const char *json, BusLocalTime local, BusBoard &b) {
   startBoard(b);
   if (!json || !local) return false;
@@ -307,26 +343,141 @@ bool busParseNextBuses(const char *json, BusLocalTime local, BusBoard &b) {
   long all = member(json, deps, "all");
   if (all < 0) return false;
   bool whole = eachElement(json, all, [&](long o) {
-    if (json[o] != '{') return;
-    BusDep d = {};
-    char date[16] = "", time[8] = "", liveDate[16] = "", liveTime[8] = "";
-    if (!stringMember(json, o, "line_name", d.line, sizeof d.line)) stringMember(json, o, "line", d.line, sizeof d.line);
-    if (!d.line[0]) return;
-    stringMember(json, o, "direction", d.dest, sizeof d.dest);
-    stringMember(json, o, "date", date, sizeof date);
-    stringMember(json, o, "aimed_departure_time", time, sizeof time);
-    stringMember(json, o, "expected_departure_date", liveDate, sizeof liveDate);
-    stringMember(json, o, "expected_departure_time", liveTime, sizeof liveTime);
-    int y, mo, dd, h, mi;
-    if (liveTime[0] && hhmm(liveTime, h, mi) && (ymd(liveDate, y, mo, dd) || ymd(date, y, mo, dd))) {
-      d.live = true;
-    } else {
-      char best[8] = "";  // no live time: the timetable's, or TransportAPI's best guess
-      if (!time[0]) stringMember(json, o, "best_departure_estimate", best, sizeof best), memcpy(time, best, sizeof time);
-      if (!hhmm(time, h, mi) || !ymd(date, y, mo, dd)) return;
-    }
-    d.at = local(y, mo, dd, h, mi);
-    if (d.at) addDeparture(b, d);
+    BusDep d;
+    if (nextBusesDep(json, o, local, d)) addDeparture(b, d);
   });
   return b.ok = whole;
+}
+
+// departures.all of a NextBuses reply: its index, -1 when it has none.
+static long nextBusesAll(const char *json) {
+  long root = skipSpace(json, 0);
+  if (json[root] != '{') return -1;
+  long deps = member(json, root, "departures");
+  if (deps < 0 || json[deps] != '{') return -1;
+  long all = member(json, deps, "all");
+  return all >= 0 && json[all] == '[' ? all : -1;
+}
+
+bool busAddNextBuses(const char *json, BusLocalTime local, BusLater &out, int *added) {
+  if (added) *added = 0;
+  if (!json || !local) return false;
+  long all = nextBusesAll(json);
+  if (all < 0) return false;
+  return eachElement(json, all, [&](long o) {
+    BusDep d;
+    if (nextBusesDep(json, o, local, d) && addLater(out, d) && added) (*added)++;
+  });
+}
+
+// ---------------------------------------------------------------- TfL's timetables
+
+int busTflLines(const char *json, char ids[][12], int max) {
+  if (!json) return 0;
+  long root = skipSpace(json, 0);
+  long lines = json[root] == '{' ? member(json, root, "lines") : -1;
+  if (lines < 0) return 0;
+  int n = 0;
+  eachElement(json, lines, [&](long o) {
+    char id[12] = "";
+    if (n >= max || json[o] != '{' || !stringMember(json, o, "id", id, sizeof id) || !id[0]) return;
+    for (int k = 0; k < n; k++)
+      if (!strcmp(ids[k], id)) return;
+    memcpy(ids[n++], id, sizeof id);
+  });
+  return n;
+}
+
+static const char *const DAY_NAMES[] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
+
+bool busScheduleCovers(const char *name, int weekday) {
+  // The days the name says, in order, and whether "to" joins two of them.
+  // A night's name counts its first day only: "Friday Night/Saturday Morning" is Friday.
+  int days[8], nd = 0;
+  bool range = false;
+  char word[16];
+  for (const char *p = name; p && *p;) {
+    while (*p && !isalpha((unsigned char)*p)) p++;
+    size_t len = 0;
+    while (isalpha((unsigned char)*p)) {
+      if (len + 1 < sizeof word) word[len++] = (char)tolower((unsigned char)*p);
+      p++;
+    }
+    word[len] = 0;
+    if (!len) break;
+    if (!strcmp(word, "to") && nd) range = true;
+    if (!strcmp(word, "morning") && nd && nd < 8) nd--;  // "... Night/Saturday Morning": not Saturday's
+    for (int k = 0; k < 7; k++)
+      if (!strcmp(word, DAY_NAMES[k]) && nd < 8) days[nd++] = k;
+  }
+  if (!nd) return false;
+  if (range && nd >= 2) {  // Monday to Thursday; Sunday to Saturday wraps
+    for (int k = days[0];; k = (k + 1) % 7) {
+      if (k == weekday) return true;
+      if (k == days[nd - 1]) break;
+    }
+    return false;
+  }
+  for (int k = 0; k < nd; k++)
+    if (days[k] == weekday) return true;
+  return false;
+}
+
+bool busAddTflTimetable(const char *json, int y, int m, int d, int weekday, const char *dest, BusLocalTime local, BusLater &out) {
+  if (!json || !local) return false;
+  long root = skipSpace(json, 0);
+  if (json[root] != '{') return false;
+  char line[8] = "";
+  if (!stringMember(json, root, "lineName", line, sizeof line) || !line[0]) return false;
+  long tt = member(json, root, "timetable");
+  long routes = tt >= 0 && json[tt] == '{' ? member(json, tt, "routes") : -1;
+  if (routes < 0 || json[routes] != '[') return false;
+  char where[44] = "";
+  if (dest && dest[0]) {
+    snprintf(where, sizeof where, "%s", dest);
+  } else {  // the last stop of the first route, by name
+    char last[24] = "";
+    eachElement(json, routes, [&](long r) {
+      if (last[0]) return;
+      long si = member(json, r, "stationIntervals");
+      if (si < 0) return;
+      eachElement(json, si, [&](long s) {
+        if (last[0]) return;
+        long iv = member(json, s, "intervals");
+        if (iv >= 0) eachElement(json, iv, [&](long i) { stringMember(json, i, "stopId", last, sizeof last); });
+      });
+    });
+    long stops = member(json, root, "stops");
+    if (last[0] && stops >= 0)
+      eachElement(json, stops, [&](long o) {
+        char id[24] = "";
+        if (!where[0] && stringMember(json, o, "id", id, sizeof id) && !strcmp(id, last)) stringMember(json, o, "name", where, sizeof where);
+      });
+  }
+  bool whole = eachElement(json, routes, [&](long r) {
+    long schedules = member(json, r, "schedules");
+    if (schedules < 0) return;
+    eachElement(json, schedules, [&](long s) {
+      char name[64] = "";
+      stringMember(json, s, "name", name, sizeof name);
+      long journeys = member(json, s, "knownJourneys");
+      if (journeys < 0) return;
+      for (int off = -1; off <= 1; off++) {  // the schedule as yesterday's, today's and tomorrow's
+        if (!busScheduleCovers(name, (weekday + off + 7) % 7)) continue;
+        eachElement(json, journeys, [&](long j) {
+          char hs[8] = "", ms[8] = "";
+          if (!stringMember(json, j, "hour", hs, sizeof hs) || !stringMember(json, j, "minute", ms, sizeof ms)) return;
+          int h = atoi(hs), mi = atoi(ms);
+          int day = off + h / 24;  // past midnight: the next day
+          if (day < 0 || day > 1 || h < 0 || h > 47 || mi < 0 || mi > 59) return;
+          BusDep dep = {};
+          memcpy(dep.line, line, sizeof dep.line);
+          memcpy(dep.dest, where, sizeof dep.dest);
+          dep.at = local(y, m, d + off, h, mi);  // d + off and h past 23 run on (busUkTime, mktime)
+          if (dep.at) addLater(out, dep);
+        });
+      }
+    });
+  });
+  return whole;
 }

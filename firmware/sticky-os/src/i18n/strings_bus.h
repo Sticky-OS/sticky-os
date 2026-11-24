@@ -20,3 +20,15 @@ S(S_BUS_LIVE_TFL, "Live times from TfL")  // at the foot, 9pt
 S(S_BUS_LIVE_NEXTBUSES, "Bold: live. Plain: timetable. From NextBuses")  // at the foot, 9pt: which times are live
 S(S_BUS_TODAY, "%d of 30 free requests today")  // at the foot, 9pt (NextBuses: what the free plan allows)
 S(S_BUS_PAUSED, "Refreshes only when you press OK, to save today's free requests")  // at the foot, bold 9pt
+// The later pages (swipe up): the timetable's departures after the live ones, today and tomorrow.
+S(S_BUS_LATER_HINT, "Swipe up: later buses")  // the first page's foot, 9pt, ~200 px
+S(S_BUS_PAGE_HINT, "Swipe up: later. Down: earlier")  // the later pages' foot, 9pt, ~260 px
+S(S_BUS_LATER_TODAY, "Later today")  // a heading over the rest of today's buses, small capitals (bold 9pt)
+S(S_BUS_TOMORROW, "Tomorrow, %A %e %B")  // a time format: the heading over tomorrow's ("Tomorrow, Wednesday 25 November"), small capitals
+S(S_BUS_GETTING_LATER, "Getting the timetable...")  // bold 18pt, or 12pt under a part-filled page
+S(S_BUS_CANT_LATER, "Can't get the timetable")  // bold 18pt
+S(S_BUS_SWIPE_RETRY, "Swipe up to try again")  // 12pt, under why it failed
+S(S_BUS_END, "No more buses until the day after tomorrow")  // 12pt, after the last one in the timetable
+S(S_BUS_NO_REQUESTS, "Today's 30 free requests are used up.")  // NextBuses: why a page of the timetable didn't come
+S(S_BUS_TIMETABLE_TFL, "Timetable from TfL")  // the later pages' foot, 9pt
+S(S_BUS_TIMETABLE_NEXTBUSES, "Timetable from NextBuses")

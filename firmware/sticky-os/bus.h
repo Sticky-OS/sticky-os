@@ -10,6 +10,9 @@ static const int BUS_MAX_STOPS = 2;  // the stops the app shows, one at a time
 static const int BUS_MAX_DEPS = 8;   // departures kept for a stop, soonest first
 static const int BUS_CODE_MAX = 24;  // an ATCO code with its 0: 490008660N, 2500717, 2500IMG1735
 
+static const int BUS_LATER_MAX = 600;  // later departures kept for the stop on screen (today and tomorrow)
+static const int BUS_LINES_MAX = 8;    // a TfL stop's routes whose timetables are read
+
 // Where a stop's times come from. London's stops (ATCO codes starting 490)
 // are TfL's, free and with no key; every other stop asks NextBuses through
 // TransportAPI, with the owner's own key (bus.tapi_id, bus.tapi_key).
@@ -33,6 +36,18 @@ struct BusBoard {
   time_t at;                // when it was fetched
 };
 
+// The departures after the live ones, from the timetable: the Bus app's
+// later pages (swipe up). Soonest first; times are the timetable's.
+struct BusLater {
+  char code[BUS_CODE_MAX];  // the stop they're for
+  long date;                // the local date they were read on (20261124); a new day reads them again
+  time_t from;              // nothing before this is kept
+  time_t until;             // NextBuses: read up to here; the next page asks from here
+  bool complete;            // every departure to the end of tomorrow is in
+  int n;
+  BusDep dep[BUS_LATER_MAX];
+};
+
 // The stops in the bus.stops setting, at most `max`: ATCO codes, one a line
 // or with spaces or commas between them. A bustimes.org stop address works
 // too (https://bustimes.org/stops/2500717): the code is taken from it.
@@ -54,6 +69,26 @@ bool busParseTfl(const char *json, BusBoard &b);
 // `local` turns one into a time_t (busUkTime on the board).
 typedef time_t (*BusLocalTime)(int year, int month, int day, int hour, int minute);
 bool busParseNextBuses(const char *json, BusLocalTime local, BusBoard &b);
+
+// A NextBuses timetable.json reply (the same shape as live.json), added to
+// `out` (from out.from on, the soonest kept, two the same once). False when
+// it isn't such a reply. `added`: how many were new.
+bool busAddNextBuses(const char *json, BusLocalTime local, BusLater &out, int *added = nullptr);
+
+// TfL's StopPoint/<code>: the ids of the routes that call there ("214",
+// "n20"), at most `max`. 0 when it isn't such a reply.
+int busTflLines(const char *json, char ids[][12], int max);
+
+// Whether a TfL schedule's name ("Monday to Thursday", "Saturday and
+// Sunday", "Friday Night/Saturday Morning") covers `weekday` (0 Sunday).
+bool busScheduleCovers(const char *name, int weekday);
+
+// TfL's Line/<id>/Timetable/<code>: the route's departures from the stop on
+// the local date y-m-d (`weekday`, 0 Sunday) and the day after, added to
+// `out` as busAddNextBuses does. A day's buses are its own schedule's hours
+// under 24 and the day before's from 24 on (past midnight). `dest` is where
+// the route goes, as the live times say it; empty: the timetable's last stop.
+bool busAddTflTimetable(const char *json, int y, int m, int d, int weekday, const char *dest, BusLocalTime local, BusLater &out);
 
 // Whole minutes from `now` until `at`, rounded down; 0 or less is "Due".
 long busMinutesTo(time_t at, time_t now);

@@ -367,6 +367,8 @@ static int recipeMode = RM_LIST;  // Recipes: the saved list, one open, or the k
 static long hourlyDate;           // Weather: the day whose hours are open (20261114); 0: the app's own screen
 static struct { int16_t x, y, w, h; long date; } weatherDayHit[6];  // where Weather drew each day, for taps
 static int weatherDayHits;
+static int busPage;               // Bus: 0 the live times; 1 on the timetable's later ones (busapp.ino)
+static int busLastPage = -1;      // Bus: the last page there is, as last drawn; -1: not known yet
 static void quoteReset();         // the Quote app shows the day's quote again
 static int calendarPage, notesPage;
 static String notesSay;  // the AI's last line; empty: the hint (S_NOTES_HINT)
@@ -5905,6 +5907,7 @@ static void openApp(int next) {
   if (app == APP_QUOTE) quoteReset();  // it opens on the day's quote
   if (app == APP_GAMES) gamesOpenApp();  // it opens on its launcher (a game left half-played waits there)
   if (app == APP_BOOKS) booksOpenApp();  // the book left open, else the library
+  if (app == APP_BUS) busPage = 0;       // it opens on the live times
   Serial.printf("app: %s\n", APP_NAMES[app]);
   fetchFor(app, false);  // nothing to show yet: ask for it; the screen redraws when it arrives
   photoAt = millis();
@@ -5929,6 +5932,7 @@ static void swipe(int x0, int y0, int dx, int dy) {
   if (app == APP_BOOKS && booksSwipe(x0, y0, dx, dy)) return;  // pages and lists
   if (vertical && dy < 0 && y0 > H - 70) return goHome();
   if (app == APP_CALENDAR && calendarSwipe(dx, dy)) return;  // up / down: the agenda's pages
+  if (app == APP_BUS && busSwipe(dx, dy)) return;            // up / down: later and earlier buses
   if (app == APP_WEATHER && hourlyDate) return hourlySwipe(dx, dy);  // a day's hours: sideways the next day
   if (app == APP_RECIPES && recipesSwipe(dx, dy)) return;
   if (app == APP_NOTES && notesTyping) return;            // typing: a sloppy tap mustn't change app
@@ -6018,6 +6022,7 @@ static void action() {  // OK, or a tap in the middle of the screen
   if (app == APP_RECIPES) return recipesAction();
   if (app == APP_GAMES) return gamesOk();
   if (app == APP_BOOKS) return booksOk();
+  if (app == APP_BUS) busPage = 0;  // OK: back to now, and fetch
   readSensors();
   fetchFor(app, true);
   if (app == APP_ABOUT) dumpAbout();

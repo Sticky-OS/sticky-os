@@ -569,35 +569,41 @@ bool busNeedsKey(const char *code) {
 // TfL's arrivals (no key), or NextBuses' departures through TransportAPI
 // (the owner's key, in headers so it never shows in a logged address).
 // Times come back as they are; the screen counts the minutes down itself.
+// One https GET for the Bus app into `body`: the status (200: read whole).
+static int busGet(const String &url, String &body, size_t max, bool tapi) {
+  NetTls use;
+  WiFiClientSecure tls;
+  netTrust(tls, false);
+  tls.setTimeout(15000);
+  HTTPClient http;
+  http.setTimeout(15000);
+  http.setConnectTimeout(NET_CONNECT_MS);
+  http.setUserAgent(String("sticky-os/") + updVersion());
+  if (!http.begin(tls, url)) return HTTPC_ERROR_CONNECTION_REFUSED;
+  if (tapi) {
+    http.addHeader("X-App-Id", cfg::str("bus.tapi_id"));
+    http.addHeader("X-App-Key", cfg::str("bus.tapi_key"));
+  }
+  int status = http.GET();
+  if (status == 200 && !netReadBody(http, body, max)) status = NET_ERR_BAD_BODY;
+  http.end();
+  return status;
+}
+
 bool fetchBus(BusBoard &b, String &error) {
   error = "";
   if (!netUp()) return error = T(S_N_NO_WIFI), false;
   bool tfl = busSource(b.code) == BUS_TFL;
   if (!tfl && busNeedsKey(b.code)) return error = T(S_BUS_NEEDS_KEY), false;
   const char *who = tfl ? "TfL" : "TransportAPI";
-  NetTls use;
-  WiFiClientSecure tls;
-  netTrust(tls, false);
-  tls.setTimeout(10000);
-  HTTPClient http;
-  http.setTimeout(10000);
-  http.setConnectTimeout(NET_CONNECT_MS);
-  http.setUserAgent(String("sticky-os/") + updVersion());
   String url = tfl ? String("https://api.tfl.gov.uk/StopPoint/") + b.code + "/Arrivals"
                    : String("https://transportapi.com/v3/uk/bus/stop/") + b.code + "/live.json?group=no&nextbuses=yes&limit=" + BUS_MAX_DEPS;
-  if (!http.begin(tls, url)) return error = netFailText(who, HTTPC_ERROR_CONNECTION_REFUSED), false;
-  if (!tfl) {
-    http.addHeader("X-App-Id", cfg::str("bus.tapi_id"));
-    http.addHeader("X-App-Key", cfg::str("bus.tapi_key"));
-  }
-  int status = http.GET();
   String body;
-  bool read = status == 200 && netReadBody(http, body, 49152);
-  http.end();
-  if (status != 200 || !read) {
+  int status = busGet(url, body, 49152, !tfl);
+  if (status != 200) {
     Serial.printf("bus: %s for %s failed, %d\n", who, b.code, status);
     if (status == 404 || (tfl && status == 400)) error = TF(S_BUS_UNKNOWN_STOP, who, b.code);
-    else error = netFailText(who, status == 200 ? NET_ERR_BAD_BODY : status, "key");
+    else error = netFailText(who, status, "key");
     return false;
   }
   bool ok = tfl ? busParseTfl(body.c_str(), b) : busParseNextBuses(body.c_str(), busUkTime, b);  // keeps b.code
@@ -607,6 +613,84 @@ bool fetchBus(BusBoard &b, String &error) {
   }
   b.at = time(nullptr);
   Serial.printf("bus: %s %s, %d departures\n", b.code, b.name, b.n);
+  return true;
+}
+
+bool fetchBusLater(BusLater &out, const BusBoard &live, String &error) {
+  error = "";
+  if (!netUp()) return error = T(S_N_NO_WIFI), false;
+  bool tfl = busSource(out.code) == BUS_TFL;
+  if (!tfl && busNeedsKey(out.code)) return error = T(S_BUS_NEEDS_KEY), false;
+  time_t now = time(nullptr);
+  struct tm tm;
+  localtime_r(&now, &tm);
+  String body;
+  if (tfl) {
+    // The routes that call here, then each one's timetable from this stop.
+    int status = busGet(String("https://api.tfl.gov.uk/StopPoint/") + out.code, body, 65536, false);
+    char ids[BUS_LINES_MAX][12];
+    int lines = status == 200 ? busTflLines(body.c_str(), ids, BUS_LINES_MAX) : 0;
+    if (!lines) {
+      Serial.printf("bus: TfL's routes for %s: %d\n", out.code, status);
+      error = status == 200 ? capFirst(TF(S_N_FAIL_UNREADABLE, "TfL")) : netFailText("TfL", status);
+      return false;
+    }
+    int read = 0;
+    for (int i = 0; i < lines; i++) {
+      body = "";
+      uint32_t t = millis();
+      status = busGet(String("https://api.tfl.gov.uk/Line/") + ids[i] + "/Timetable/" + out.code, body, 524288, false);
+      if (status != 200) {  // 400: the route doesn't run from this stop (it only arrives, say)
+        Serial.printf("bus: TfL's timetable of %s from %s: %d\n", ids[i], out.code, status);
+        if (status != 400 && !error.length()) error = netFailText("TfL", status);
+        continue;
+      }
+      const char *dest = "";
+      for (int k = 0; k < live.n; k++)
+        if (!strcasecmp(live.dep[k].line, ids[i])) dest = live.dep[k].dest;
+      int before = out.n;
+      bool ok = busAddTflTimetable(body.c_str(), tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_wday, dest, busUkTime, out);
+      Serial.printf("bus: TfL's timetable of %s: %u bytes, %d departures, %lu ms\n", ids[i], (unsigned)body.length(), out.n - before,
+                    (unsigned long)(millis() - t));
+      if (ok) read++;
+    }
+    body = String();
+    if (!read) {
+      if (!error.length()) error = capFirst(TF(S_N_FAIL_UNREADABLE, "TfL"));
+      return false;
+    }
+    error = "";
+    out.complete = true;
+    return true;
+  }
+  // NextBuses: a page of the timetable from out.until on; an empty one moves to tomorrow.
+  for (int tries = 0; tries < 2; tries++) {
+    time_t from = max(out.until, out.from);
+    struct tm f;
+    localtime_r(&from, &f);
+    long day = (f.tm_year + 1900) * 10000L + (f.tm_mon + 1) * 100 + f.tm_mday;
+    char q[64];
+    snprintf(q, sizeof q, "date=%04d-%02d-%02d&time=%02d:%02d", f.tm_year + 1900, f.tm_mon + 1, f.tm_mday, f.tm_hour, f.tm_min);
+    body = "";
+    int status = busGet(String("https://transportapi.com/v3/uk/bus/stop/") + out.code + "/timetable.json?group=no&limit=30&" + q, body, 65536, true);
+    busRequestCounted();
+    if (status != 200) {
+      Serial.printf("bus: NextBuses' timetable for %s: %d\n", out.code, status);
+      error = netFailText("TransportAPI", status, "key");
+      return false;
+    }
+    int added = 0;
+    if (!busAddNextBuses(body.c_str(), busUkTime, out, &added)) return error = capFirst(TF(S_N_FAIL_UNREADABLE, "TransportAPI")), false;
+    Serial.printf("bus: NextBuses' timetable for %s from %s: %d new\n", out.code, q, added);
+    if (added) {
+      out.until = out.dep[out.n - 1].at + 60;
+      return true;
+    }
+    if (day != localDate(now)) break;  // tomorrow has no more either
+    f.tm_mday += 1, f.tm_hour = f.tm_min = f.tm_sec = 0, f.tm_isdst = -1;
+    out.until = mktime(&f);  // tomorrow, from midnight
+  }
+  out.complete = true;
   return true;
 }
 

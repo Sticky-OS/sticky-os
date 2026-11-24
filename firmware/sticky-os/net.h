@@ -78,7 +78,13 @@ bool fetchHourly(long date, HourlyDay &out, String &error);
 // through TransportAPI for the rest, which needs bus.tapi_id and
 // bus.tapi_key (busNeedsKey). b.code says which stop.
 bool busNeedsKey(const char *code);  // a NextBuses stop, and no TransportAPI key set
-bool fetchBus(BusBoard &b, String &error);  // b: filled in (half-filled when it fails)  // date: 20261114, local to the forecast's place
+bool fetchBus(BusBoard &b, String &error);  // b: filled in (half-filled when it fails)
+// The Bus app's later pages, from the timetable, into `out` (out.code, out.from
+// set): TfL's routes' timetables for today and tomorrow, all at once (`live`
+// names where each goes); NextBuses one page from out.until on (a request of
+// the day's 30). False, with a reason, when it failed.
+bool fetchBusLater(BusLater &out, const BusBoard &live, String &error);
+void busRequestCounted();  // busapp.ino: one more of the day's NextBuses requests  // date: 20261114, local to the forecast's place
 
 // Every network wait is bounded: TLS handshakes 8 s, connects 5 s.
 static const int NET_HANDSHAKE_S = 8;
