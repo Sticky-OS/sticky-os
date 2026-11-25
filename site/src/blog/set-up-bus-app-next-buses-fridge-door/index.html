@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to set up the Bus app: the next buses at your stop, on the fridge door · {{NAME}}</title>
+<meta name="description" content="A step-by-step guide to {{NAME}} 1.10’s Bus app on the reTerminal Sticky: update the board, find your stop’s number, get a free TransportAPI key if you live outside London, and type them into the setup app. No technical knowledge needed.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ecede8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d1e20" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sticky-os.space.fast/blog/set-up-bus-app-next-buses-fridge-door/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="{{NAME}}">
+<meta property="og:title" content="How to set up the Bus app: the next buses at your stop, on the fridge door">
+<meta property="og:description" content="Step by step, with pictures: update the board, find your stop’s number, get a free TransportAPI key outside London, and type them into the setup app.">
+<meta property="og:url" content="https://sticky-os.space.fast/blog/set-up-bus-app-next-buses-fridge-door/">
+<meta property="og:image" content="https://sticky-os.space.fast/shots/social-home.jpg">
+<meta property="og:image:secure_url" content="https://sticky-os.space.fast/shots/social-home.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The {{NAME}} home screen on the reTerminal Sticky">
+<meta property="article:published_time" content="2026-11-25">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to set up the Bus app: the next buses at your stop, on the fridge door">
+<meta name="twitter:description" content="Step by step, with pictures: update the board, find your stop’s number, get a free TransportAPI key outside London, and type them into the setup app.">
+<meta name="twitter:image" content="https://sticky-os.space.fast/shots/social-home.jpg">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preload" href="../../fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../../fonts/atkinson.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../../site.css">
+<link rel="alternate" type="application/atom+xml" title="{{NAME}} blog" href="https://sticky-os.space.fast/blog/feed.xml">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "BlogPosting",
+   "headline": "How to set up the Bus app: the next buses at your stop, on the fridge door",
+   "description": "A step-by-step guide to Sticky OS 1.10’s Bus app on the reTerminal Sticky: update the board, find your stop’s number, get a free TransportAPI key if you live outside London, and type them into the setup app.",
+   "datePublished": "2026-11-25",
+   "dateModified": "2026-11-25",
+   "image": "https://sticky-os.space.fast/shots/social-home.jpg",
+   "url": "https://sticky-os.space.fast/blog/set-up-bus-app-next-buses-fridge-door/",
+   "mainEntityOfPage": "https://sticky-os.space.fast/blog/set-up-bus-app-next-buses-fridge-door/",
+   "author": {
+    "@type": "Organization",
+    "@id": "https://sticky-os.space.fast/#org",
+    "name": "Sticky OS",
+    "url": "https://sticky-os.space.fast/",
+    "logo": "https://sticky-os.space.fast/brand/assets/png/sticky-os-mark-colour-512.png",
+    "sameAs": [
+     "https://github.com/Sticky-OS/sticky-os"
+    ]
+   },
+   "publisher": {
+    "@type": "Organization",
+    "@id": "https://sticky-os.space.fast/#org",
+    "name": "Sticky OS",
+    "url": "https://sticky-os.space.fast/",
+    "logo": "https://sticky-os.space.fast/brand/assets/png/sticky-os-mark-colour-512.png",
+    "sameAs": [
+     "https://github.com/Sticky-OS/sticky-os"
+    ]
+   },
+   "inLanguage": "en"
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Sticky OS",
+     "item": "https://sticky-os.space.fast/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Blog",
+     "item": "https://sticky-os.space.fast/blog/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "How to set up the Bus app: the next buses at your stop, on the fridge door",
+     "item": "https://sticky-os.space.fast/blog/set-up-bus-app-next-buses-fridge-door/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<!-- Facts from docs/guide.md, busapp.ino and site/src/setup/app.js at v1.10.0. Board pictures are
+     the board's captures (bus-*.png; bus-setup.png is the app with a stop set and no key). The
+     setup app pictures are the demo's; transportapi-signup.webp is TransportAPI's public sign-up
+     page, as it was on 25 November 2026. -->
+<a class="skip" href="#main">Skip to content</a>
+
+{{HEADER}}
+
+<main id="main">
+<article class="post">
+  <header class="post-head wrap narrow">
+    <p class="kicker"><a href="../">Blog</a> · <time datetime="2026-11-25">25 November 2026</time></p>
+    <h1>How to set up the Bus app: the next buses at your stop, on the fridge door</h1>
+    <p class="lede">{{NAME}} 1.10 adds a Bus app: the next buses at your stop, counting down, for anywhere in Great Britain. This guide takes you through setting it up one step at a time. You don’t need to know anything technical: it takes about 15 minutes, and you only do it once.</p>
+  </header>
+
+  <div class="post-body wrap narrow">
+    <div class="shots two-portrait">
+      <figure class="device portrait">
+        <div class="screen">
+          <a href="../../shots/bus-live-portrait.png"><img src="../../shots/bus-live-portrait.png" width="480" height="800" alt="The Bus app at Lady Somerset Road, London: a black card with the next bus, the 214 to Highgate Village, Due, then 1 and 5 minutes; under it the departures, each with its route, where it goes, the minutes and the clock time"></a>
+        </div>
+        <figcaption>The next buses at your stop</figcaption>
+      </figure>
+      <figure class="device portrait">
+        <div class="screen">
+          <a href="../../shots/bus-later-portrait.png"><img src="../../shots/bus-later-portrait.png" width="480" height="800" alt="The Bus app’s later page: Later today, a list of departures from the timetable with their times"></a>
+        </div>
+        <figcaption>Swipe up for later buses. Tap a screenshot to see it whole.</figcaption>
+      </figure>
+    </div>
+
+    <h2>What you need</h2>
+    <ul>
+      <li>Your reTerminal Sticky, with {{NAME}} on it and connected to your WiFi.</li>
+      <li>A computer with <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>, and the USB-C cable that came with the board. (An Android phone with Chrome works too, over Bluetooth. iPhones and Safari can’t talk to the board.)</li>
+      <li>The name of your bus stop and the town it’s in.</li>
+      <li>Outside London only: an email address, for a free TransportAPI account (step 3 explains what that is).</li>
+    </ul>
+
+    <h2>Step 1: Put {{NAME}} 1.10 on the board</h2>
+    <p><strong>If your board already runs {{NAME}}</strong> (its home screen has a Settings tile), it updates itself over WiFi:</p>
+    <ol>
+      <li>On the board, tap <strong>Settings</strong>, then <strong>Software update</strong>.</li>
+      <li>Tap <strong>Check now</strong>. It should say version 1.10.0 is available.</li>
+      <li>Tap <strong>Install</strong>. The board downloads it, checks it and restarts by itself. Leave it alone for a couple of minutes.</li>
+    </ol>
+    <div class="shots two-portrait">
+      <figure class="device portrait">
+        <div class="screen">
+          <a href="../../shots/update.png"><img src="../../shots/update.png" width="480" height="800" loading="lazy" alt="Software update: this version, a newer one available, and Install and Check now buttons"></a>
+        </div>
+        <figcaption>Settings → Software update (pictured with an older version)</figcaption>
+      </figure>
+    </div>
+    <p><strong>If your board still has the software it came with</strong> (Seeed’s own), {{NAME}} has to be put on it once, with the USB cable. <a href="../install-custom-firmware-reterminal-sticky/">How to install {{NAME}}</a> walks you through it; you can do it all in Chrome, with nothing to install. It puts 1.10 on straight away, so you can skip the update above.</p>
+
+    <h2>Step 2: Find your stop’s number</h2>
+    <p>Every bus stop in Great Britain has its own number. The easiest place to find it is <a href="https://bustimes.org" target="_blank" rel="noopener noreferrer">bustimes.org</a>:</p>
+    <ol>
+      <li>Open bustimes.org and type your stop’s name and town in the search box, for example <em>Adelaide Street Accrington</em>.</li>
+      <li>Pick your stop. If there are two with the same name, one on each side of the road, pick the side you catch the bus from: its page lists where the buses go.</li>
+      <li>Look at the address at the top of your browser. The number at the end is your stop’s number. In <em>bustimes.org/stops/2500717</em>, it’s <strong>2500717</strong>.</li>
+    </ol>
+    <p>Write it down, or keep the page open: you’ll need it in step 4. You can also copy the whole address; the setup app understands either.</p>
+    <p><strong>In London?</strong> London’s stop numbers start with <em>490</em>, and their times come free from Transport for London, with no sign-up. Skip step 3 and go straight to step 4.</p>
+
+    <h2>Step 3: Get a free TransportAPI key (outside London)</h2>
+    <p>Outside London, the board gets the bus times from <em>NextBuses</em>, Traveline’s bus times service, through a company called <strong>TransportAPI</strong>. TransportAPI wants to know who is asking, so it gives you a <strong>key</strong>: two codes, an <em>app ID</em> and an <em>app key</em>, that work like a library card. The board shows them each time it asks for the times. It’s free, and you don’t need a credit card.</p>
+    <ol>
+      <li>Go to <a href="https://developer.transportapi.com/signup" target="_blank" rel="noopener noreferrer">developer.transportapi.com/signup</a>.</li>
+      <li>Fill in the form. Where it asks for a <strong>Company</strong>, type <em>Personal</em>. Choose a username, and give your email address and name.</li>
+      <li>If it asks you to pick a plan, pick the <strong>free</strong> one: 30 requests a day, free for good.</li>
+      <li>TransportAPI sends you an email. Open it and click the link in it to confirm your address, then sign in.</li>
+      <li>Your account comes with one <em>app</em> already made. Open it: its page shows your <strong>app ID</strong> (a short code) and your <strong>app key</strong> (a longer one). Keep the page open for step 4.</li>
+    </ol>
+    <div class="shots">
+      <figure class="browser">
+        <img src="../../shots/transportapi-signup.webp" width="640" height="780" loading="lazy" alt="TransportAPI’s sign-up page: Sign up with GitHub, or a form with Company (if for personal use, please write Personal), Username, Email, First Name and Last Name">
+        <figcaption>TransportAPI’s sign-up page. For Company, type “Personal”.</figcaption>
+      </figure>
+    </div>
+    <p><strong>What “30 requests a day” means for you:</strong> each time the board fetches the times counts as one. The board only fetches while the Bus app is on its screen, every 10 minutes, and never more than 24 times a day by itself, so a few are always left over for when you press OK to get the latest. At midnight the count starts again. You will never be charged: when the 30 are used up, the board says so and waits for the next day.</p>
+    <p>Keep the key to yourself, as you would a password. Your board keeps it and sends it only to TransportAPI.</p>
+
+    <h2>Step 4: Type them into the setup app</h2>
+    <ol>
+      <li>Plug the board into your computer with the USB-C cable.</li>
+      <li>In Chrome or Edge, open <a href="../../setup/">sticky-os.space.fast/setup</a>.</li>
+      <li>Click <strong>Connect over USB</strong>. A small window lists the ports: pick the one called <em>USB Single Serial</em> (on a Mac it may start with <em>cu.usbmodem</em>, on Windows it’s a COM port) and click <strong>Connect</strong>. The board restarts; that’s normal and takes a few seconds.</li>
+    </ol>
+    <div class="shots">
+      <figure class="browser">
+        <img src="../../shots/setup-connect.webp" width="770" height="680" loading="lazy" alt="The setup app’s Connect to your board page: USB cable, with four steps and a Connect over USB button, and Bluetooth, with four steps and a Connect over Bluetooth button">
+        <figcaption>The setup app: Connect over USB</figcaption>
+      </figure>
+    </div>
+    <ol start="4">
+      <li>In the list on the left, under <em>Optional</em>, click <strong>Bus stop</strong>.</li>
+      <li>In <strong>Stops</strong>, type your stop’s number from step 2 (or paste the bustimes.org address).</li>
+      <li>Outside London: in <strong>TransportAPI app ID</strong>, type or paste your app ID. Under <strong>TransportAPI app key</strong>, click <strong>Set</strong>, paste your app key and click <strong>Use</strong>.</li>
+      <li>Click <strong>Save and restart</strong> at the bottom. The board saves them and restarts.</li>
+    </ol>
+    <div class="shots">
+      <figure class="browser">
+        <img src="../../shots/setup-bus.webp" width="772" height="746" loading="lazy" alt="The setup app’s Bus stop page: Stops, holding a bustimes.org address and a London stop number; TransportAPI app ID; and TransportAPI app key, marked secret, Set, with Replace and Clear buttons">
+        <figcaption>The Bus stop page, filled in with made-up codes. You can enter two stops, for example one each side of the road.</figcaption>
+      </figure>
+    </div>
+    <p>No computer? On an Android phone, open the same page in Chrome and choose <strong>Connect over Bluetooth</strong>; the page tells you what to do on the board.</p>
+
+    <h2>Step 5: Your buses</h2>
+    <p>After the restart a <strong>Bus</strong> tile appears on the board’s home screen. Tap it.</p>
+    <ul>
+      <li>Under the stop’s name, the black card is the next bus: its number, how many minutes until it comes (<em>Due</em> when it’s here) and where it’s going. Below it are the buses after it.</li>
+      <li>Minutes in <strong>bold</strong> are live, from the bus itself. Plain ones are from the timetable.</li>
+      <li><strong>Swipe up</strong> for later buses: the rest of today, then tomorrow. Swipe down to go back, or press OK to come back to now.</li>
+      <li>With two stops, tap the screen to switch between them.</li>
+    </ul>
+    <div class="shots two-portrait">
+      <figure class="device portrait">
+        <div class="screen">
+          <a href="../../shots/bus-setup.png"><img src="../../shots/bus-setup.png" width="480" height="800" loading="lazy" alt="The Bus app saying: Bus stop. Stops outside London get their times from NextBuses, through TransportAPI. It needs a TransportAPI key: free for 30 requests a day. Set this up in the setup app, on a computer with Chrome or Edge, with a QR code for sticky-os.space.fast/setup"></a>
+        </div>
+        <figcaption>If you see this, the key is missing: go back to step 4</figcaption>
+      </figure>
+    </div>
+
+    <h2>If something isn’t right</h2>
+    <ul>
+      <li><strong>No Bus tile on the home screen:</strong> check the board shows version 1.10 in Settings → Software update, and that the stop number was saved (step 4).</li>
+      <li><strong>The screen above, asking for a key:</strong> the app ID or app key is missing. Go back to step 4 and enter both.</li>
+      <li><strong>“Can’t get the times”:</strong> check the board is on your WiFi, then press OK to try again. If it keeps saying it, check the app ID and key are typed exactly as TransportAPI shows them.</li>
+      <li><strong>“… doesn’t know the stop”:</strong> the stop number is wrong. Check it on bustimes.org (step 2).</li>
+      <li><strong>“Today’s 30 free requests are used up”:</strong> nothing is wrong. The times come back after midnight.</li>
+      <li><strong>The setup app doesn’t list a port:</strong> try another USB-C cable (some only charge), and close any other tab that uses the board.</li>
+    </ul>
+    <p>Still stuck? <a href="https://github.com/Sticky-OS/sticky-os/issues" target="_blank" rel="noopener noreferrer">Tell us on GitHub</a> what the board says and the town of your stop, and we’ll help.</p>
+
+    <nav class="more-posts" aria-labelledby="more-h">
+      <h2 id="more-h">More from the blog</h2>
+      <ul>
+      <li><a href="../install-custom-firmware-reterminal-sticky/">How to install custom firmware on the reTerminal Sticky</a></li>
+      <li><a href="../google-calendar-e-paper-fridge-display-no-subscription/">Google Calendar on an e-paper fridge display, with no subscription</a></li>
+      <li><a href="../sticky-os-1-9-daily-sudoku-fridge-door/">{{NAME}} 1.9: a daily Sudoku for the fridge door</a></li>
+      </ul>
+    </nav>
+    <p class="post-end"><a class="button" href="../../setup/">Open the setup app</a> <a href="../../#install">Install {{NAME}}</a></p>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><span class="brand">{{NAME}}</span></p>
+    <div>
+      <p>An independent, open-source firmware for the <a href="https://www.seeedstudio.com/sticky/" target="_blank" rel="noopener noreferrer">Seeed reTerminal Sticky</a>. Not made by or affiliated with Seeed Studio. Seeed and reTerminal are trademarks of their owners, named here only to say which board this firmware runs on.</p>
+      <p>Every screenshot of the board is the board’s own picture, captured as drawn. TransportAPI and NextBuses are named only to say where the bus times come from; {{NAME}} is not affiliated with them.</p>
+      <p><a href="https://github.com/Sticky-OS/sticky-os" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://www.youtube.com/@stickyosapp" target="_blank" rel="noopener noreferrer">YouTube</a> · <a href="../../brand/">Brand</a> · <a href="https://github.com/Sticky-OS/sticky-os/issues" target="_blank" rel="noopener noreferrer">Issues</a> · <a href="https://github.com/Sticky-OS/sticky-os/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licence</a></p>
+    </div>
+  </div>
+</footer>
+<script src="../../lightbox.js" defer></script>
+<script type="module" src="../../menu.js"></script>
+</body>
+</html>
