@@ -1,0 +1,11 @@
+// Unit 6's kinds, one line per kind and level the lessons use (included in tutor7_test.cpp's list of runs).
+      {K_RATIO, 1, "ratio, 1"},                 {K_RATIO, 2, "ratio, units"},
+      {K_DIVIDE_SEGMENT, 1, "divide, 1"},       {K_DIVIDE_SEGMENT, 2, "divide, 2"},
+      {K_THALES, 1, "thales, 1"},               {K_THALES, 2, "thales, 2"},
+      {K_THALES_X, 1, "thales X, 1"},           {K_THALES_X, 2, "thales X, 2"},
+      {K_THALES_CONVERSE, 1, "converse, 1"},    {K_THALES_CONVERSE, 2, "converse, 2"},
+      {K_BISECTOR, 1, "bisector, 1"},           {K_BISECTOR, 2, "bisector, 2"},
+      {K_SIM_SIDE, 1, "similar side, 1"},       {K_SIM_SIDE, 2, "similar side, 2"},
+      {K_SIM_CRITERION, 1, "criterion, 1"},     {K_SIM_CRITERION, 2, "criterion, 2"}, {K_SIM_CRITERION, 3, "criterion, 3"},
+      {K_SIM_PERIMETER_AREA, 1, "perimeter and area, 1"}, {K_SIM_PERIMETER_AREA, 2, "perimeter and area, 2"},
+      {K_TFA, 1, "fundamental theorem, 1"},     {K_TFA, 2, "fundamental theorem, 2"},

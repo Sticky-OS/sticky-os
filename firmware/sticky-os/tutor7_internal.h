@@ -12,6 +12,7 @@
 #define SQ "\xC2\xB2"  // the superscript two
 #define RT "\xE2\x88\x9A"
 #define DEG "\xC2\xB0"
+#define PI_ "\xCF\x80"  // the Greek small letter pi: the screen draws it itself (the fonts have none)
 
 // An exercise's words, in its language: PR(ex.text, TX(TX_HYP_Q), ab, ac). Every generator's exercise is `ex`.
 #define TX(id) tx(ex.lang, (id))
@@ -57,5 +58,15 @@ bool u4Generate(Kind kind, int level, Rng &rng, Exercise &ex);
 // The answer a kind's givens lead to, worked out again from ex.fig.v alone. False (and err) when they make no sense.
 bool u4Expect(const Exercise &ex, double &expect, const char *&unit, char *err, int cap);
 bool u4VerifyClassify(const Exercise &ex, char *err, int cap);
+
+// Unit 5 (tutor7_u5.cpp) and Unit 6 (tutor7_u6.cpp): the same contract as Unit 4's. A generator fails (false)
+// when the numbers it drew do not make a good exercise; the caller draws again.
+bool u5Generate(Kind kind, int level, Rng &rng, Exercise &ex);
+bool u5Expect(const Exercise &ex, double &expect, const char *&unit, char *err, int cap);
+bool u6Generate(Kind kind, int level, Rng &rng, Exercise &ex);
+// K_THALES_CONVERSE and K_SIM_CRITERION are choices (the options are statements, not numbers): they check
+// themselves in u6VerifyChoice(); the others give their answer through u6Expect() like Unit 4's.
+bool u6Expect(const Exercise &ex, double &expect, const char *&unit, char *err, int cap);
+bool u6VerifyChoice(const Exercise &ex, char *err, int cap);
 
 }  // namespace t7

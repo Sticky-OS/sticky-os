@@ -22,7 +22,15 @@
 
 using namespace t7;
 
+struct Needle {  // a worked example's text must hold this (Romanian, English): the numbers recomputed by the test
+  int slot, page;
+  const char *ro, *en;
+};
 static int failures = 0, checks = 0;
+// T7_UNIT=5 or 6 (or 4, 7): only that unit's kinds and lessons, so one unit can be built while another is unfinished.
+static int onlyUnit() { const char *e = getenv("T7_UNIT"); return e ? atoi(e) : 0; }
+static int kindUnit(int k) { return k >= K_U6_FIRST ? 6 : k >= K_U5_FIRST ? 5 : k >= K_U4_FIRST ? 4 : 7; }
+static int slotUnit(int slot) { return slot == 0 ? 7 : slot <= 8 ? 4 : slot <= 14 ? 5 : 6; }
 #define CHECK(cond, ...)                                     \
   do {                                                       \
     checks++;                                                \
@@ -237,7 +245,7 @@ static void testSameInEveryLanguage(const Run &r, const std::vector<int> &langs)
         for (int k = 0; k < 4; k++) same = same && a.fig.v[k] == b.fig.v[k];
         for (int i = 0; i < a.nopt; i++) same = same && exactSame(a.value[i], b.value[i]);
         // the answers say the same numbers (the converse's and the classify's are words)
-        if (r.kind != K_CONVERSE && r.kind != K_CLASSIFY)
+        if (r.kind != K_CONVERSE && r.kind != K_CLASSIFY && r.kind != K_THALES_CONVERSE && r.kind != K_SIM_CRITERION)
           for (int i = 0; i < a.nopt; i++) same = same && !strcmp(a.opt[i], b.opt[i]);
       }
       if (!same && differ++ < 5)
@@ -259,7 +267,7 @@ static bool utf8ok(const char *s) {
   return true;
 }
 
-// The first code point the fonts can't draw (ASCII, src/fonts' extra letters, and √, which the screen
+// The first code point the fonts can't draw (ASCII, src/fonts' extra letters, and √ and π, which the screen
 // draws itself), or 0. Newlines are paragraph breaks.
 static uint32_t missingGlyph(const char *s) {
   const unsigned char *p = (const unsigned char *)s;
@@ -272,7 +280,7 @@ static uint32_t missingGlyph(const char *s) {
     else c = *p & 0x07, n = 3;
     p++;
     for (int i = 0; i < n && *p; i++, p++) c = (c << 6) | (*p & 0x3F);
-    if (c == '\n' || (c >= 0x20 && c < 0x7F) || c == 0x221A) continue;
+    if (c == '\n' || (c >= 0x20 && c < 0x7F) || c == 0x221A || c == 0x3C0) continue;  // √ and π: the screen draws them
     bool found = false;
     for (uint16_t e : EXT_CODES) found |= e == c;
     if (!found) return c;
@@ -313,11 +321,17 @@ static void testTables() {
   }
 }
 
+// Unit 5's and Unit 6's worked examples: needles (NEEDLES_U5/6) and the arithmetic behind them (arithmeticU5/6).
+// The files are written with the lessons' words; CHECK and fmt are as above.
+#include "needles_u5.h"
+#include "needles_u6.h"
+
 // The lessons: every language's words fit the plan (as many pages, none empty, short enough for a
 // screen), the plan's exercises can be made, and the worked examples' arithmetic is right.
 static void testLessons(const std::vector<int> &langs) {
   for (int li = 0; li < LESSON_COUNT; li++) {
     const Lesson &l = lesson(li);
+    if (onlyUnit() && slotUnit(l.slot) != onlyUnit()) continue;
     CHECK(l.slot >= 0 && l.slot < LESSON_COUNT, "lesson %d slot", li);
     for (int lj = 0; lj < li; lj++) CHECK(lesson(lj).slot != l.slot, "lessons %d and %d share slot %d", lj, li, l.slot);
     CHECK(l.nSummary >= 1 && l.nSummary <= MAX_PAGES && l.nExample >= 1 && l.nExample <= MAX_PAGES, "lesson %d page counts", li);
@@ -364,10 +378,6 @@ static void testLessons(const std::vector<int> &langs) {
 
   // The worked examples: the numbers in the text are recomputed here and looked for in it, in each
   // language's notation. {slot, example page, Romanian, English}
-  struct Needle {
-    int slot, page;
-    const char *ro, *en;
-  };
   static const Needle NEEDLES[] = {
       {0, 0, "1681", "1681"}, {0, 0, "41 cm", "41 cm"},
       {0, 1, "= 32", "= 32"}, {0, 1, "4" RTS "2", "4" RTS "2"},
@@ -407,6 +417,7 @@ static void testLessons(const std::vector<int> &langs) {
   CHECK(180 - 100 == 80 && (12 + 6) / 2 == 9 && (12 - 6) / 2 == 3 && (20 - 8) / 2 == 6 && 10 * 10 - 6 * 6 == 64, "4.6");
   CHECK(10 * 6 == 60 && 2 * (10 + 7) == 34 && 12 * 16 / 2 == 96 && (10 + 7) * 4 / 2 == 34, "4.7");
   CHECK(3 * 60 == 180 && 6 * 8 / 2 == 24 && 48.0 / 10 == 4.8, "4.8");
+  if (!onlyUnit() || onlyUnit() == 4 || onlyUnit() == 7) {
   for (const Needle &n : NEEDLES)
     for (int lang : langs) {
       const char *want = lang == L_RO ? n.ro : lang == L_EN ? n.en : nullptr;
@@ -414,6 +425,22 @@ static void testLessons(const std::vector<int> &langs) {
       const char *body = lessonText(lang, n.slot).example[n.page].body;
       CHECK(body && strstr(body, want), "%s slot %d example %d: \"%s\" not found", LANGS[lang].code, n.slot, n.page + 1, want);
     }
+  }
+  // Units 5 and 6: each has its own file with the needles and the arithmetic behind them
+  auto needles = [&](const Needle *ns, size_t n, int unit) {
+    if (onlyUnit() && onlyUnit() != unit) return;
+    for (size_t i = 0; i < n; i++)
+      for (int lang : langs) {
+        const char *want = lang == L_RO ? ns[i].ro : lang == L_EN ? ns[i].en : nullptr;
+        if (!want) continue;
+        const char *body = lessonText(lang, ns[i].slot).example[ns[i].page].body;
+        CHECK(body && strstr(body, want), "%s slot %d example %d: \"%s\" not found", LANGS[lang].code, ns[i].slot, ns[i].page + 1, want);
+      }
+  };
+  needles(NEEDLES_U5, sizeof NEEDLES_U5 / sizeof NEEDLES_U5[0], 5);
+  needles(NEEDLES_U6, sizeof NEEDLES_U6 / sizeof NEEDLES_U6[0], 6);
+  if (!onlyUnit() || onlyUnit() == 5) arithmeticU5();
+  if (!onlyUnit() || onlyUnit() == 6) arithmeticU6();
   CHECK(strstr(lessonText(L_RO, 0).summary[2].body, "16·2") && strstr(lessonText(L_EN, 0).summary[2].body, "16 × 2"), "the simplification shown on Pythagoras page 3");
   // the content language: a complete language is itself, any other falls back to English
   CHECK(contentLang(L_RO) == L_RO && contentLang(L_EN) == L_EN && contentLang(L_DE) == L_EN && contentLang(-1) == L_EN, "contentLang");
@@ -437,21 +464,26 @@ int main(int argc, char **argv) {
       {K_TRAP_ANGLE, 1, "trapezoid angle"},         {K_TRAP_MIDLINE, 2, "trapezoid midline"},     {K_TRAP_HEIGHT, 1, "trapezoid height, ints"},
       {K_TRAP_HEIGHT, 2, "trapezoid height, radicals"}, {K_AREA, 2, "area"},                      {K_PERIMETER, 1, "perimeter"},
       {K_HEIGHT_FROM_AREA, 1, "height from area"},  {K_HEIGHT_FROM_AREA, 2, "height, right triangle"},
+#include "runs_u5.h"
+#include "runs_u6.h"
   };
+  std::vector<Run> chosen;
+  for (const Run &r : runs)
+    if (!onlyUnit() || kindUnit(r.kind) == onlyUnit()) chosen.push_back(r);
   for (int lang : langs) {
     FILE *samples = nullptr;
     if (wantSamples) {
       char path[64];
-      if (lang == L_RO) snprintf(path, sizeof path, "build/samples.txt");  // as before the other languages came
-      else snprintf(path, sizeof path, "build/samples_%s.txt", LANGS[lang].code);
+      if (lang == L_RO) snprintf(path, sizeof path, "%s/samples.txt", getenv("BUILD") ? getenv("BUILD") : "build");  // as before the other languages came
+      else snprintf(path, sizeof path, "%s/samples_%s.txt", getenv("BUILD") ? getenv("BUILD") : "build", LANGS[lang].code);
       samples = fopen(path, "w");
     }
-    for (const Run &r : runs) testKind(r, lang, samples);
+    for (const Run &r : chosen) testKind(r, lang, samples);
     if (samples) fclose(samples);
     testVerifyCatches(lang);
     testSlipReasons(lang);
   }
-  for (const Run &r : runs) testSameInEveryLanguage(r, langs);
+  for (const Run &r : chosen) testSameInEveryLanguage(r, langs);
   testTables();
   testLessons(langs);
   if (wantSamples) printf("samples written to build/samples*.txt\n");

@@ -26,9 +26,10 @@ struct Lesson {
   Step steps[MAX_STEPS];
 };
 
-static const int LESSON_COUNT = 9;  // Unit 4 (eight lessons), then the Pythagorean theorem of Unit 7
+static const int LESSON_COUNT = 21;  // Unit 4 (eight lessons), Unit 5 (six), Unit 6 (six), then the Pythagorean theorem of Unit 7
 const Lesson &lesson(int i);  // in the order of the lesson list
 // The textbook's number for a lesson (by its slot): "4.1" is Unit 4, lesson 1; "7.2" is Unit 7, lesson 2.
+// The last lesson of Unit 4, 5 and 6 (x.8 / 5.6 / 6.6) is that unit's own review.
 // The numbers follow the Romanian textbook, in every language.
 const char *lessonNumber(int slot);
 

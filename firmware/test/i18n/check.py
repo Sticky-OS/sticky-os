@@ -10,7 +10,7 @@
     to look at on the screen.
 
 Tutor (src/tutor): t7_strings.h's English rows and each language's pairs (ro.h...): ids, doubles,
-placeholders in order, letters; lessons_<code>.h: letters (√ is drawn by the screen). Its page counts
+placeholders in order, letters; lessons_<code>.h: letters (√ and π are drawn by the screen). Its page counts
 and lengths are checked by firmware/test/tutor7.
 
   python3 firmware/test/i18n/check.py [--widths] [--missing] [lang ...]
@@ -97,7 +97,7 @@ def check_tutor(codes, err):
             en[m.group(1)] = c_string(m.group(2))
     def letters(lang, sid, t):
         for c in t:
-            if c != '\n' and c != '\u221a' and not (0x20 <= ord(c) < 0x7F) and ord(c) not in codes:
+            if c != '\n' and c not in '\u221a\u03c0' and not (0x20 <= ord(c) < 0x7F) and ord(c) not in codes:
                 err('tutor ' + lang, sid, f'"{c}" (U+{ord(c):04X}) is not in the fonts')
     for sid, t in en.items():
         letters('en', sid, t)

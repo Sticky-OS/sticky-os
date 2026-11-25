@@ -17,7 +17,7 @@
 
 
 // Tutor's screens (tutor7.ino draws them): the class, the subject, the lessons, then a lesson's pages and practice.
-enum { T7_CLASSES, T7_SUBJECTS, T7_LESSONS, T7_LESSON, T7_PAGE, T7_QUESTION, T7_CLUE, T7_WRONG, T7_SOLUTION, T7_RESULT };
+enum { T7_CLASSES, T7_SUBJECTS, T7_LESSONS, T7_LESSON, T7_PAGE, T7_QUESTION, T7_CLUE, T7_WRONG, T7_SOLUTION, T7_RESULT, T7_UNITS };
 static void drawTutor7();
 static void actTutor7(int id);
 static void tutor7Open();
@@ -94,7 +94,7 @@ struct GState {
   int xoWin = -1;
   StrId xoSay = S_G_XO_START;     // what's happening, under the board
   // Tutor (the code says tutor7: it began as the 7th grade maths tutor)
-  int t7Screen = T7_CLASSES, t7Lesson = 0, t7Part = 0, t7Page = 0;  // t7Part: 0 the summary, 1 the worked examples
+  int t7Screen = T7_CLASSES, t7Lesson = 0, t7Unit = 4, t7Part = 0, t7Page = 0;  // t7Part: 0 the summary, 1 the worked examples
   int t7Index = 0, t7Right = 0, t7Tries = 0, t7Clues = 0, t7Picked = -1;  // the exercise; right first time; wrong tries and clues on it
   bool t7Crossed[4] = {}, t7GaveUp = false, t7NewBest = false;
   bool t7ResetArmed = false;  // the lesson's Reset was tapped once: the next tap on it clears the progress
