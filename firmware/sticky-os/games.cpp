@@ -52,7 +52,9 @@ void gamesChanged() { dirty = true; }
 void gamesDailyChanged() { dailyDirty = true; }
 
 // /daily.txt: a line a level, "sudoku<level> <date> <secs> <done> <81 digits> <81 pencil marks,
-// 3 hex digits each>"; then a line a nonogram size, "nonogram<size> <date> <secs> <done> <check>
+// 3 hex digits each> <hints> <the numbers struck through: 3 words of 8 hex digits, cells 0-31,
+// 32-63, 64-80>" (the last two from 1.12; older lines read with none, and older firmware stops
+// reading before them); then a line a nonogram size, "nonogram<size> <date> <secs> <done> <check>
 // <a square each, row by row: . unknown, # filled, x crossed>" (64 at 8 x 8, 100 at 10 x 10).
 // A line that doesn't read whole is dropped (that puzzle starts afresh); games_sudoku.ino also
 // checks the digits against the day's puzzle, games_nonogram.ino the check against its puzzle.
@@ -70,6 +72,13 @@ static void sudokuRead(GameProgress::SudokuPlay &s, const String &v) {
     char h[4] = {marks[i * 3], marks[i * 3 + 1], marks[i * 3 + 2], 0};
     r.pencil[i] = strtoul(h, nullptr, 16) & 0x3FE;
   }
+  int skip = 0;  // past the marks: the hints and what's struck through, when the line has them
+  unsigned m0 = 0, m1 = 0, m2 = 0;
+  if (sscanf(v.c_str(), "%*ld %*d %*d %*81s %*243s%n", &skip) >= 0 && skip &&
+      sscanf(v.c_str() + skip, "%d %x %x %x", &r.hints, &m0, &m1, &m2) == 4)
+    r.hints = max(r.hints, 0), r.marked[0] = m0, r.marked[1] = m1, r.marked[2] = m2 & 0x1FFFF;
+  else
+    r.hints = 0;
   r.done = done != 0, r.secs = max(r.secs, 0);
   s = r;
 }
@@ -116,7 +125,8 @@ static void dailyWrite() {
     char digits[82], marks[244];
     for (int i = 0; i < 81; i++) digits[i] = '0' + min<int>(s.value[i], 9), snprintf(marks + i * 3, 4, "%03x", s.pencil[i] & 0x3FE);
     digits[81] = 0;
-    f.printf("sudoku%d %ld %d %d %s %s\n", l, s.date, s.secs, s.done ? 1 : 0, digits, marks);
+    f.printf("sudoku%d %ld %d %d %s %s %d %08x %08x %08x\n", l, s.date, s.secs, s.done ? 1 : 0, digits, marks, s.hints,
+             (unsigned)s.marked[0], (unsigned)s.marked[1], (unsigned)s.marked[2]);
   }
   for (int z = 0; z < 2; z++) {
     const GameProgress::NonogramPlay &g = store->progress.nonPlay[z];

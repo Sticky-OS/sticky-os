@@ -198,9 +198,71 @@ static void testGolden() {
   }
 }
 
+// The Hint button (issue #25): your wrong numbers, then where to go next. Hints alone, from the
+// givens, fill every day's puzzle: each one names an empty cell and the solution's number for it,
+// and says why truly (one number fits; the one place in a row, column or box). Easy, which
+// singles solve, never needs a HINT_NEXT.
+static void testHints() {
+  sg::Puzzle p;
+  makeDay(p, 20261122, 1);
+  uint8_t v[81];
+  uint32_t m[3];
+  memcpy(v, p.given, 81);
+  CHECK(sg::wrongCells(v, p, m) == 0 && !m[0] && !m[1] && !m[2]);
+  int a = -1, b = -1;  // two empty cells: one right, one wrong
+  for (int i = 0; i < 81 && b < 0; i++)
+    if (!p.given[i]) {
+      if (a < 0) a = i;
+      else b = i;
+    }
+  v[a] = p.solution[a], v[b] = p.solution[b] % 9 + 1;
+  CHECK(sg::wrongCells(v, p, m) == 1 && sg::marked(m, b) && !sg::marked(m, a));
+  sg::unmark(m, b);
+  CHECK(!sg::marked(m, b));
+  memcpy(v, p.solution, 81);
+  sg::Hint h;
+  CHECK(!sg::findHint(v, p, h));  // full: nothing to hint
+
+  int kinds[3][5] = {}, steps[3] = {};
+  long date = 20260101;
+  for (int day = 0; day < 120; day++, date = dateAfter(date, 3))
+    for (int level = 0; level < 3; level++) {
+      makeDay(p, date, level);
+      memcpy(v, p.given, 81);
+      int empty = 81 - p.clues, n = 0;
+      while (sg::findHint(v, p, h) && n <= empty) {
+        n++;
+        CHECK(h.cell >= 0 && h.cell < 81 && !v[h.cell] && h.digit == p.solution[h.cell]);
+        sg::Used u = {};
+        for (int i = 0; i < 81; i++)
+          if (v[i]) sg::put(u, i, v[i]);
+        uint16_t c = sg::allowed(u, h.cell);
+        CHECK(c & (1u << h.digit));
+        if (h.kind == sg::HINT_ONLY) CHECK(sg::bits(c) == 1);
+        if (h.kind >= sg::HINT_ROW && h.kind <= sg::HINT_BOX) {  // no other empty cell of that unit can take it
+          int places = 0;
+          for (int j = 0; j < 81; j++) {
+            bool same = h.kind == sg::HINT_ROW ? sg::rowOf(j) == sg::rowOf(h.cell) : h.kind == sg::HINT_COL ? sg::colOf(j) == sg::colOf(h.cell) : sg::boxOf(j) == sg::boxOf(h.cell);
+            if (same && !v[j] && (sg::allowed(u, j) & (1u << h.digit))) places++;
+          }
+          CHECK(places == 1);
+        }
+        if (level == 0) CHECK(h.kind != sg::HINT_NEXT);
+        kinds[level][h.kind]++;
+        v[h.cell] = h.digit;
+      }
+      CHECK(n == empty && sg::solved(v, p));
+      steps[level] += n;
+    }
+  for (int l = 0; l < 3; l++)
+    std::printf("sudoku hints, level %d, %d hints: only one fits %d, row %d, column %d, box %d, next %d\n", l, steps[l], kinds[l][0], kinds[l][1],
+                kinds[l][2], kinds[l][3], kinds[l][4]);
+}
+
 int main() {
   testSolverAndGrader();
   testClashes();
+  testHints();
   testYear();
   testGolden();
   std::printf("sudokugrid: %d checks, %d failed\n", checks, failures);

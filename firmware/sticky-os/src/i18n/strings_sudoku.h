@@ -20,13 +20,21 @@ S(S_SUDOKU_LEVELS, "Levels")  // a button top right, ~120 px (bold 9pt): back to
 S(S_SUDOKU_ERASE, "Erase")  // pad buttons, ~140 px upright, ~95 px sideways (bold 12pt, else 9pt)
 S(S_SUDOKU_PENCIL, "Pencil")  // a switch: numbers go in small, as notes
 S(S_SUDOKU_UNDO, "Undo")
+S(S_SUDOKU_HINT, "Hint")  // issue #25: shows your wrong numbers, else rings a square to do next (4 across upright ~105 px; 2 across sideways ~160 px)
 // Under the board (9pt, ~460 px, two lines) or beside it (9pt, ~300 px, four lines).
 S(S_SUDOKU_HOW, "Tap a square, then a number.")
 S(S_SUDOKU_HOW_PENCIL, "Pencil is on: numbers go in small, as notes.")
 S(S_SUDOKU_GIVEN, "That number is given: it can't change.")
-S(S_SUDOKU_CLASH, "Struck through: the same number twice in a row, column or box.")
+// After Hint: your wrong numbers struck through; else a square ringed, and why it's the one to do (%d the number).
+S(S_SUDOKU_HINT_WRONG, "Struck through: 1 of your numbers is wrong.|Struck through: %ld of your numbers are wrong.")
+S(S_SUDOKU_HINT_ONLY, "Only one number fits the ringed square. Hint again fills it in.")
+S(S_SUDOKU_HINT_ROW, "The ringed square is the only place in its row for a %d. Hint again fills it in.")
+S(S_SUDOKU_HINT_COL, "The ringed square is the only place in its column for a %d. Hint again fills it in.")
+S(S_SUDOKU_HINT_BOX, "The ringed square is the only place in its box for a %d. Hint again fills it in.")
+S(S_SUDOKU_HINT_NEXT, "Try the ringed square next. Hint again fills it in.")
 S(S_SUDOKU_LEFT, "1 square to go|%ld squares to go")
 S(S_SUDOKU_SOLVED, "Solved!")  // bold 24pt
+S(S_SUDOKU_WITH_HINTS, "With 1 hint|With %ld hints")  // solved with hints (12pt, under the time): no best time then
 S(S_SUDOKU_NEW_BEST, "A new best time!")
 S(S_SUDOKU_TOMORROW, "Come back tomorrow for a new one.")
 S(S_SUDOKU_L_DONE, "Solved today: %s")  // the Daily screen's line: %s the levels, "Easy, Hard"
