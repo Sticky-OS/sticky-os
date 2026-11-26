@@ -1,5 +1,5 @@
 // Sudoku's rules, apart from the screen (games_sudoku.ino draws them): the puzzle of the day,
-// made on the board from the date (issue #18), its solver, its grader and the clash check. Plain
+// made on the board from the date (issue #18), its solver, its grader, the clash check and the Hint button's. Plain
 // C++ with no Arduino, so firmware/test/games/test_sudokugrid.cpp runs it on a computer.
 //
 // The puzzle of the day, for a date (20261122) and a level:
@@ -381,6 +381,69 @@ inline bool fits(const uint8_t v[kCells], const Puzzle &p) {
     if (v[i] > 9 || (p.given[i] && v[i] != p.given[i])) return false;
   return true;
 }
+// The Hint button (issue #25). Your numbers that aren't the solution's: a bit a cell in `out`
+// (bit i % 32 of out[i / 32]); the count. Givens are never wrong.
+inline int wrongCells(const uint8_t v[kCells], const Puzzle &p, uint32_t out[3]) {
+  int n = 0;
+  out[0] = out[1] = out[2] = 0;
+  for (int i = 0; i < kCells; i++)
+    if (v[i] && !p.given[i] && v[i] != p.solution[i]) out[i / 32] |= 1u << (i % 32), n++;
+  return n;
+}
+inline bool marked(const uint32_t m[3], int i) { return m[i / 32] & (1u << (i % 32)); }
+inline void unmark(uint32_t m[3], int i) { m[i / 32] &= ~(1u << (i % 32)); }
+
+// What a hint points at, when your numbers are all right: an empty cell and its number, and why.
+enum HintKind {
+  HINT_ONLY = 0,  // only one number fits the cell (the others are in its row, column or box)
+  HINT_ROW = 1,   // the only cell in its row where that number can go
+  HINT_COL = 2,   // ... in its column
+  HINT_BOX = 3,   // ... in its box
+  HINT_NEXT = 4,  // neither: the empty cell with the fewest numbers left (the number from the solution)
+};
+struct Hint {
+  int cell = -1, digit = 0;
+  HintKind kind = HINT_NEXT;
+};
+// The next hint for v, whose numbers should all be right (wrongCells first): a cell where only one
+// number fits, else a number with one place in a row, column or box, else the empty cell with the
+// fewest candidates. Candidates come from the numbers on the grid, not the pencil marks. False when
+// the grid is full.
+inline bool findHint(const uint8_t v[kCells], const Puzzle &p, Hint &h) {
+  Used u = {};
+  for (int i = 0; i < kCells; i++)
+    if (v[i]) put(u, i, v[i]);
+  uint16_t cand[kCells];
+  int fewest = -1;
+  for (int i = 0; i < kCells; i++) {
+    cand[i] = v[i] ? 0 : allowed(u, i);
+    if (v[i]) continue;
+    if (bits(cand[i]) == 1 && __builtin_ctz(cand[i]) == p.solution[i]) {
+      h.cell = i, h.digit = p.solution[i], h.kind = HINT_ONLY;
+      return true;
+    }
+    if (fewest < 0 || bits(cand[i]) < bits(cand[fewest])) fewest = i;
+  }
+  if (fewest < 0) return false;
+  static const HintKind kinds[3] = {HINT_ROW, HINT_COL, HINT_BOX};
+  for (int kind = 0; kind < 3; kind++)
+    for (int k = 0; k < 9; k++)
+      for (int d = 1; d <= 9; d++) {
+        int where = -1, n = 0;
+        for (int j = 0; j < 9 && n < 2; j++) {
+          int i = unitCell(kind, k, j);
+          if (v[i] == d) n = 2;
+          else if (!v[i] && (cand[i] & (1u << d))) where = i, n++;
+        }
+        if (n == 1 && p.solution[where] == d) {
+          h.cell = where, h.digit = d, h.kind = kinds[kind];
+          return true;
+        }
+      }
+  h.cell = fewest, h.digit = p.solution[fewest], h.kind = HINT_NEXT;
+  return true;
+}
+
 // The first empty cell, else the first wrong one (-1: solved): what `game right` fills.
 inline int nextCell(const uint8_t v[kCells], const Puzzle &p) {
   for (int i = 0; i < kCells; i++)

@@ -10,9 +10,14 @@
 // the same on every board), once a day: kept in PSRAM, so reopening never makes it again. Tap a
 // square (ringed; its row, column and box hatched lightly), then a number on the pad; Pencil puts
 // numbers in small, as notes; Erase clears a square, Undo takes back a step. Given numbers are
-// bold and can't change; a number of yours that clashes with another in its row, column or box
-// is struck through (never refused). Placing a number takes its pencil marks off the row, column
-// and box. Solved: a full refresh, the time, the streak, "Come back tomorrow".
+// bold and can't change; nothing you put in is refused or flagged until you ask. Hint (issue #25):
+// your numbers that aren't the solution's are struck through ("2 of your numbers are wrong"), and
+// stay so until you change them; with none wrong, a square is ringed and the board says why it's
+// the one to do (only one number fits; the only place for a number in its row, column or box; or
+// just "try this one"), and Hint again puts its number in. Each tap that shows something counts;
+// a puzzle solved with hints keeps its streak and shows them, but sets no best time. Placing a
+// number takes its pencil marks off the row, column and box. Solved: a full refresh, the time,
+// the streak, "Come back tomorrow".
 //
 // Today's grids (numbers, pencil marks, time) are in GameProgress::sdkPlay, written to
 // /daily.txt from the loop (gamesDailyChanged()), so a day's work survives deep sleep; a grid for
@@ -21,27 +26,30 @@
 //
 // Ids, for taps, the ring and `game pick <id>`:
 //   10 Daily maths, 11 Sudoku, 12 Nonogram (the Daily screen; the Nonogram's own: games_nonogram.ino)
-//   0..80 a square (row * 9 + column); 101..109 the numbers; 110 Erase; 111 Pencil; 112 Undo
+//   0..80 a square (row * 9 + column); 101..109 the numbers; 110 Erase; 111 Pencil; 112 Undo; 113 Hint
 //   120 / 121 / 122 a level (the levels card); 130 Levels (back to the card); ID_BACK (900)
 // `game peek`: "sudoku <level> <date> grid <81: digit or .> given <81: g or -> sel <cell> next
-// <cell>=<digit> clashes <n> done <0|1>", then " card" when the levels card is up. On the Daily
+// <cell>=<digit> clashes <n> done <0|1> hints <n> struck <n> ringed <cell>", then " card" when the
+// levels card is up. On the Daily
 // screen: "daily maths <done 0|1> streak <n>, sudoku <easy medium hard done 0|1> streak <n>,
 // nonogram <8x8 10x10 done 0|1> streak <n>".
 // `game right` / `game wrong`: the next square (sudokugrid::nextCell) gets its number, or a wrong one.
 // Demo mode (`demo on`): the first Sudoku opened is Medium, half done, with pencil marks and a
-// clash, from 12:34; nothing is saved.
+// wrong number a hint has struck through, from 12:34; nothing is saved.
 #include "sudokugrid.h"
 
 enum { DY_MENU, DY_SUDOKU, DY_NONO };  // the Daily screen, Sudoku, or the Nonogram
 enum { SK_CARD, SK_PLAY };         // Sudoku: the levels card, or a puzzle
-enum { DY_MATHS = 10, DY_SDK = 11, DY_NONOGRAM = 12, SK_DIGIT = 100, SK_ERASE = 110, SK_PENCIL = 111, SK_UNDO = 112, SK_LEVEL = 120, SK_LEVELS = 130 };
-enum { SAY_NONE, SAY_GIVEN };
+enum { DY_MATHS = 10, DY_SDK = 11, DY_NONOGRAM = 12, SK_DIGIT = 100, SK_ERASE = 110, SK_PENCIL = 111, SK_UNDO = 112, SK_HINT = 113, SK_LEVEL = 120, SK_LEVELS = 130 };
+enum { SAY_NONE, SAY_GIVEN, SAY_WRONG, SAY_HINT };
 static const uint32_t SDK_GAP_MS = 10 * 60 * 1000UL;
 static const int SDK_UNDO = 32;
 
 struct DailyState {
   int screen = DY_MENU, sk = SK_CARD;
   int level = 0, sel = -1, say = SAY_NONE;
+  int wrongN = 0;                 // SAY_WRONG: how many a hint struck through
+  sudokugrid::Hint hint;          // SAY_HINT: the square it ringed (cell -1: none); Hint again fills it
   bool pencil = false, newBest = false, demoMade = false;
   bool running = false;           // the clock
   uint32_t lastMs = 0, carryMs = 0;
@@ -114,7 +122,7 @@ static GameProgress::SudokuPlay &sdkGrid(int level) {
 }
 static GameProgress::SudokuPlay &sdkNow() { return gameProgress().sdkPlay[dailyS->level]; }
 
-// The demo's grid: Medium, about half the empty squares filled, a few pencil marks, a clash.
+// The demo's grid: Medium, about half the empty squares filled, a few pencil marks, a clash struck through.
 static void sdkDemoGrid() {
   const sudokugrid::Puzzle &p = sdkPuzzle(1);
   GameProgress::SudokuPlay &s = gameProgress().sdkPlay[1];
@@ -128,9 +136,11 @@ static void sdkDemoGrid() {
     else if (i >= 54 && clash < 0) clash = i;
     else if (empties % 3 == 0) s.pencil[i] = (1u << p.solution[i]) | (1u << (p.solution[i] % 9 + 1));
   }
-  if (clash >= 0) {  // a number that's already in its row
+  if (clash >= 0) {  // a number that's already in its row, which a hint has struck through
     for (int j = clash - clash % 9; j < clash - clash % 9 + 9; j++)
       if (p.given[j] && p.given[j] != p.solution[clash]) s.value[clash] = p.given[j];
+    sudokugrid::wrongCells(s.value, p, s.marked);
+    s.hints = 1;
   }
   dailyS->level = 1, dailyS->sel = clash, dailyS->demoMade = true;
 }
@@ -209,7 +219,7 @@ static void sdkStart(int level) {
   bool demoGrid = demoMode && !d.demoMade && d.level == 1;
   if (demoGrid) sdkDemoGrid();
   sdkGrid(d.level);
-  d.sk = SK_PLAY, d.say = SAY_NONE, d.newBest = false, d.undoN = 0, d.pencil = false;
+  d.sk = SK_PLAY, d.say = SAY_NONE, d.newBest = false, d.undoN = 0, d.pencil = false, d.hint.cell = -1;
   if (!demoGrid) d.sel = -1;
   GameProgress &p = gameProgress();
   if (p.sdkLevel != d.level) p.sdkLevel = d.level, gamesChanged();
@@ -270,8 +280,8 @@ static void sdkCheckMark(int x, int y, int s, uint16_t ink) {  // a tick, s wide
 }
 
 // One square: hatched lightly when it's in the picked square's row, column or box; ringed when
-// it's the picked one; its number (bold given, regular yours, struck through when it clashes) or
-// its pencil marks.
+// it's the picked one; its number (bold given, regular yours, struck through when a hint showed it
+// wrong) or its pencil marks.
 static void sdkDrawCell(int i) {
   DailyState &d = *dailyS;
   const sudokugrid::Puzzle &p = sdkPuzzle(d.level);
@@ -289,7 +299,7 @@ static void sdkDrawCell(int i) {
     int tw = textW(f, t), bx = x + c / 2 - tw / 2;
     canvas->fillRect(bx - 4, y + c / 2 - 15, tw + 8, 30, PAPER);  // clear of the hatching
     text(bx, y + c / 2 + 12, f, t);
-    if (!given && sudokugrid::clashes(s.value, i)) thickLine(x + c / 5, y + c * 4 / 5, x + c * 4 / 5, y + c / 5, 3);
+    if (!given && sudokugrid::marked(s.marked, i)) thickLine(x + c / 5, y + c * 4 / 5, x + c * 4 / 5, y + c / 5, 3);
   } else if (s.pencil[i]) {
     int sub = c / 3;
     for (int k = 1; k <= 9; k++) {
@@ -343,19 +353,27 @@ static void sdkDigitKey(int x, int y, int w, int h, int digit) {
   gTarget(x, y, w, h, SK_DIGIT + digit);
 }
 
-static void sdkTools(int x, int y, int w, int h, int gap) {
-  int bw = (w - 2 * gap) / 3;
+// Erase, Pencil, Undo and Hint: in a row of `perRow` (4 upright, 2 sideways: two rows), each h high.
+static void sdkTools(int x, int y, int w, int h, int gap, int perRow) {
+  int bw = (w - (perRow - 1) * gap) / perRow;
   const GFXfont *f = &FreeSansBold12pt7b;
-  for (StrId id : {S_SUDOKU_ERASE, S_SUDOKU_PENCIL, S_SUDOKU_UNDO})
-    if (textW(f, T(id)) > bw - 20) f = &FreeSansBold9pt7b;
-  gButton(x, y, bw, h, T(S_SUDOKU_ERASE), false, SK_ERASE, f);
-  gButton(x + bw + gap, y, bw, h, T(S_SUDOKU_PENCIL), dailyS->pencil, SK_PENCIL, f);
-  if (dailyS->undoN) gButton(x + 2 * (bw + gap), y, bw, h, T(S_SUDOKU_UNDO), false, SK_UNDO, f);
-  else {  // nothing to undo: a thin outline, the word in regular type, no target
-    int ux = x + 2 * (bw + gap);
-    canvas->drawRoundRect(ux, y, bw, h, min(h / 2, 20), INK);
-    const GFXfont *rf = f == &FreeSansBold12pt7b ? &FreeSans12pt7b : &FreeSans9pt7b;
-    textCentre(ux + bw / 2, y + h / 2 + 8, rf, fitted(rf, T(S_SUDOKU_UNDO), bw - 24).c_str());
+  for (StrId id : {S_SUDOKU_ERASE, S_SUDOKU_PENCIL, S_SUDOKU_UNDO, S_SUDOKU_HINT})
+    if (textW(f, T(id)) > bw - 14) f = &FreeSansBold9pt7b;
+  struct Tool {
+    StrId label;
+    int id;
+  } tools[] = {{S_SUDOKU_ERASE, SK_ERASE}, {S_SUDOKU_PENCIL, SK_PENCIL}, {S_SUDOKU_UNDO, SK_UNDO}, {S_SUDOKU_HINT, SK_HINT}};
+  for (int k = 0; k < 4; k++) {
+    int tx = x + k % perRow * (bw + gap), ty = y + k / perRow * (h + gap);
+    if (tools[k].id == SK_UNDO && !dailyS->undoN) {  // nothing to undo: a thin outline, the word in regular type, no target
+      canvas->drawRoundRect(tx, ty, bw, h, min(h / 2, 20), INK);
+      const GFXfont *rf = f == &FreeSansBold12pt7b ? &FreeSans12pt7b : &FreeSans9pt7b;
+      textCentre(tx + bw / 2, ty + h / 2 + 8, rf, fitted(rf, T(S_SUDOKU_UNDO), bw - 14).c_str());
+      continue;
+    }
+    // Four across upright leave ~107 px: the words get all but 7 px a side (gButton keeps 12).
+    pillButton(tx, ty, bw, h, fitted(f, T(tools[k].label), bw - 14).c_str(), tools[k].id == SK_PENCIL && dailyS->pencil, f);
+    gTarget(tx, ty, bw, h, tools[k].id);
   }
 }
 
@@ -363,13 +381,18 @@ static String sdkSay() {
   DailyState &d = *dailyS;
   const GameProgress::SudokuPlay &s = sdkNow();
   if (d.say == SAY_GIVEN) return T(S_SUDOKU_GIVEN);
-  bool clash = false;
-  int empty = 0;
-  for (int i = 0; i < 81; i++) {
-    empty += !s.value[i];
-    if (!clash && !sdkPuzzle(d.level).given[i] && sudokugrid::clashes(s.value, i)) clash = true;
+  if (d.say == SAY_WRONG) return TP(S_SUDOKU_HINT_WRONG, d.wrongN);
+  if (d.say == SAY_HINT && d.hint.cell >= 0) {
+    switch (d.hint.kind) {
+      case sudokugrid::HINT_ONLY: return T(S_SUDOKU_HINT_ONLY);
+      case sudokugrid::HINT_ROW: return TF(S_SUDOKU_HINT_ROW, d.hint.digit);
+      case sudokugrid::HINT_COL: return TF(S_SUDOKU_HINT_COL, d.hint.digit);
+      case sudokugrid::HINT_BOX: return TF(S_SUDOKU_HINT_BOX, d.hint.digit);
+      default: return T(S_SUDOKU_HINT_NEXT);
+    }
   }
-  if (clash) return T(S_SUDOKU_CLASH);
+  int empty = 0;
+  for (int i = 0; i < 81; i++) empty += !s.value[i];
   if (d.pencil) return T(S_SUDOKU_HOW_PENCIL);
   if (d.sel < 0) return T(S_SUDOKU_HOW);
   return TP(S_SUDOKU_LEFT, empty);
@@ -382,6 +405,7 @@ static void sdkSolvedPanel(int cx, int y, int w) {
   String time = TF(S_SUDOKU_SOLVED_IN, sdkTime(sdkNow().secs).c_str());
   textCentre(cx, y + 76, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, time, w).c_str());
   int yy = y + 76;
+  if (sdkNow().hints) yy += 28, textCentre(cx, yy, &FreeSans12pt7b, fitted(&FreeSans12pt7b, TP(S_SUDOKU_WITH_HINTS, sdkNow().hints), w).c_str());
   if (dailyS->newBest) yy += 28, textCentre(cx, yy, &FreeSans12pt7b, fitted(&FreeSans12pt7b, T(S_SUDOKU_NEW_BEST), w).c_str());
   if (gamesSudokuStreak(today)) yy += 30, textCentre(cx, yy, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, TP(S_G_DAYS_IN_ROW, gamesSudokuStreak(today)), w).c_str());
   gCentred(cx, yy + 30, &FreeSans12pt7b, T(S_SUDOKU_TOMORROW), w, 26, 2);
@@ -402,7 +426,7 @@ static void drawSudokuPlay() {
     int py = y0 + side + 12;
     if (s.done) return sdkSolvedPanel(W / 2, py, W - 40);
     for (int k = 1; k <= 9; k++) sdkDigitKey(x0 + (k - 1) * c + 2, py, c - 4, 70, k);
-    sdkTools(x0, py + 82, side, 54, 10);
+    sdkTools(x0, py + 82, side, 54, 6, 4);
     gCentred(W / 2, py + 82 + 54 + 26, &FreeSans9pt7b, sdkSay(), W - 24, 20, 2);
   } else {  // the board on the left; beside it Back and Levels, the level and the time, the pad, what's happening
     sdkDrawBoard();
@@ -411,11 +435,12 @@ static void drawSudokuPlay() {
     gButton(W - 14 - 124, BODY_Y + 8, 124, 48, T(S_SUDOKU_LEVELS), false, SK_LEVELS, &FreeSansBold9pt7b);
     textCentre(px + pw / 2, BODY_Y + 88, &FreeSansBold12pt7b, fitted(&FreeSansBold12pt7b, info, pw).c_str());
     if (s.done) return sdkSolvedPanel(px + pw / 2, BODY_Y + 104, pw);
-    int gap = 8, kw = (pw - 2 * gap) / 3, kh = 62, ky = BODY_Y + 102;
+    // The tools in two rows of two (four across are too narrow for their words in some languages).
+    int gap = 8, kw = (pw - 2 * gap) / 3, kh = 50, ky = BODY_Y + 100;
     for (int k = 1; k <= 9; k++) sdkDigitKey(px + (k - 1) % 3 * (kw + gap), ky + (k - 1) / 3 * (kh + gap), kw, kh, k);
-    int ty = ky + 3 * (kh + gap) + 4;
-    sdkTools(px, ty, pw, 52, gap);
-    gLeft(px, ty + 52 + 26, &FreeSans9pt7b, sdkSay(), pw, 20, 3);
+    int ty = ky + 3 * (kh + gap) + 2, th = 44;
+    sdkTools(px, ty, pw, th, gap, 2);
+    gLeft(px, ty + 2 * th + gap + 18, &FreeSans9pt7b, sdkSay(), pw, 19, 3);
   }
 }
 
@@ -511,13 +536,13 @@ static void sdkSolved() {
   d.running = false;
   s.done = true;
   int secs = max(1, s.secs);
-  d.newBest = !p.sdkBest[d.level] || secs < p.sdkBest[d.level];
+  d.newBest = !s.hints && (!p.sdkBest[d.level] || secs < p.sdkBest[d.level]);  // with hints: no best time
   if (d.newBest) p.sdkBest[d.level] = secs;
   gamesSudokuSolved(gToday());
   gamesChanged(), gamesDailyChanged();
   d.sel = -1, d.undoN = 0;
   gs->gFocusId = -1;
-  Serial.printf("sudoku: %s solved in %d s\n", SDK_LEVEL_IDS[d.level], secs);
+  Serial.printf("sudoku: %s solved in %d s, %d hints\n", SDK_LEVEL_IDS[d.level], secs, s.hints);
   beep(2400, 120);
   render(true);
 }
@@ -528,7 +553,7 @@ static void sdkPut(int digit) {
   DailyState &d = *dailyS;
   GameProgress::SudokuPlay &s = sdkNow();
   const sudokugrid::Puzzle &p = sdkPuzzle(d.level);
-  d.say = SAY_NONE;
+  d.say = SAY_NONE, d.hint.cell = -1;
   if (d.sel < 0) return render(false);
   int i = d.sel;
   if (p.given[i]) return d.say = SAY_GIVEN, beep(900, 40), render(false);
@@ -537,9 +562,9 @@ static void sdkPut(int digit) {
   if (d.pencil) {
     s.pencil[i] ^= 1u << digit;
   } else if (s.value[i] == digit) {
-    s.value[i] = 0;
+    s.value[i] = 0, sudokugrid::unmark(s.marked, i);
   } else {
-    s.value[i] = digit, s.pencil[i] = 0;
+    s.value[i] = digit, s.pencil[i] = 0, sudokugrid::unmark(s.marked, i);
     sudokugrid::clearPeersMark(s.pencil, i, digit);
   }
   sdkTick();
@@ -549,23 +574,58 @@ static void sdkPut(int digit) {
   render(false);
 }
 
+// Hint: the square it ringed, picked still and empty, gets its number; else your wrong numbers are
+// struck through; else a square is ringed, with why. A tap that shows nothing new doesn't count.
+static void sdkHint() {
+  DailyState &d = *dailyS;
+  GameProgress::SudokuPlay &s = sdkNow();
+  const sudokugrid::Puzzle &p = sdkPuzzle(d.level);
+  if (d.say == SAY_HINT && d.hint.cell >= 0 && d.sel == d.hint.cell && !s.value[d.hint.cell]) {
+    bool pencil = d.pencil;
+    d.pencil = false;
+    sdkPut(d.hint.digit);  // undone like any number
+    d.pencil = pencil;
+    return;
+  }
+  uint32_t wrong[3];
+  int n = sudokugrid::wrongCells(s.value, p, wrong);
+  d.hint.cell = -1;
+  if (n) {
+    bool fresh = (wrong[0] & ~s.marked[0]) || (wrong[1] & ~s.marked[1]) || (wrong[2] & ~s.marked[2]);
+    memcpy(s.marked, wrong, sizeof wrong);
+    if (fresh) s.hints++;
+    d.say = SAY_WRONG, d.wrongN = n;
+  } else if (sudokugrid::findHint(s.value, p, d.hint)) {
+    s.hints++;
+    d.sel = d.hint.cell, d.say = SAY_HINT;
+  }
+  sdkTick(), gamesDailyChanged();
+  beep(2200, 15);
+  render(false);
+}
+
 static void sdkCommand(int id) {
   DailyState &d = *dailyS;
   GameProgress::SudokuPlay &s = sdkNow();
   if (id >= 0 && id < 81) {
-    d.sel = d.sel == id ? -1 : id, d.say = SAY_NONE;
+    d.sel = d.sel == id ? -1 : id, d.say = SAY_NONE, d.hint.cell = -1;
     return render(false);
   }
+  if (id == SK_HINT) return sdkHint();
   if (id > SK_DIGIT && id <= SK_DIGIT + 9) return sdkPut(id - SK_DIGIT);
-  if (id == SK_PENCIL) return d.pencil = !d.pencil, d.say = SAY_NONE, render(false);
+  if (id == SK_PENCIL) return d.pencil = !d.pencil, d.say = d.say == SAY_HINT ? SAY_HINT : SAY_NONE, render(false);  // a ringed hint stays
+  d.hint.cell = -1;
   if (id == SK_ERASE) {
     d.say = SAY_NONE;
     if (d.sel >= 0 && sdkPuzzle(d.level).given[d.sel]) d.say = SAY_GIVEN;
-    else if (d.sel >= 0 && (s.value[d.sel] || s.pencil[d.sel])) sdkPush(), s.value[d.sel] = 0, s.pencil[d.sel] = 0, sdkTick(), gamesDailyChanged();
+    else if (d.sel >= 0 && (s.value[d.sel] || s.pencil[d.sel]))
+      sdkPush(), s.value[d.sel] = 0, s.pencil[d.sel] = 0, sudokugrid::unmark(s.marked, d.sel), sdkTick(), gamesDailyChanged();
     return render(false);
   }
   if (id == SK_UNDO && d.undoN) {
     d.undoTop = (d.undoTop + SDK_UNDO - 1) % SDK_UNDO, d.undoN--;
+    for (int i = 0; i < 81; i++)  // a square that changes back loses its strike
+      if (s.value[i] != d.undo[d.undoTop].value[i]) sudokugrid::unmark(s.marked, i);
     memcpy(s.value, d.undo[d.undoTop].value, 81), memcpy(s.pencil, d.undo[d.undoTop].pencil, sizeof s.pencil);
     d.say = SAY_NONE;
     sdkTick(), gamesDailyChanged();
@@ -654,9 +714,12 @@ static void dailyPeek(String &s) {
   }
   grid[81] = given[81] = 0;
   int next = sudokugrid::nextCell(current ? g.value : p.given, p);
-  char head[300];
-  snprintf(head, sizeof head, "sudoku %s %ld grid %s given %s sel %d next %d=%d clashes %d done %d", SDK_LEVEL_IDS[d.level], today, grid,
-           given, d.sel, next, next >= 0 ? p.solution[next] : 0, current ? sudokugrid::countClashes(g.value) : 0, current && g.done ? 1 : 0);
+  int struck = 0;
+  for (int i = 0; i < 81; i++) struck += current && sudokugrid::marked(g.marked, i);
+  char head[340];
+  snprintf(head, sizeof head, "sudoku %s %ld grid %s given %s sel %d next %d=%d clashes %d done %d hints %d struck %d ringed %d", SDK_LEVEL_IDS[d.level],
+           today, grid, given, d.sel, next, next >= 0 ? p.solution[next] : 0, current ? sudokugrid::countClashes(g.value) : 0, current && g.done ? 1 : 0,
+           current ? g.hints : 0, struck, d.say == SAY_HINT ? d.hint.cell : -1);
   s += head;
   if (d.sk == SK_CARD) s += " card";
 }

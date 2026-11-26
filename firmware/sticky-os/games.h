@@ -61,6 +61,8 @@ struct GameProgress {
     bool done = false;         // solved
     uint8_t value[81] = {};    // the grid: the givens and the numbers put in, 0 empty
     uint16_t pencil[81] = {};  // pencil marks, bits 1..9
+    int hints = 0;             // Hint taps that showed something (issue #25); a solve with any sets no best time
+    uint32_t marked[3] = {};   // numbers a hint showed wrong (struck through), a bit a cell, until they change
   } sdkPlay[3];
   // The Daily screen's Nonogram (games_nonogram.ino, nonogrid.h; issue #18), the same way: in
   // /games.txt the streak and bests, 0 the 8 x 8 .. 1 the 10 x 10 ...
