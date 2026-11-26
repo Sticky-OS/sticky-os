@@ -41,7 +41,7 @@ struct GameProgress {
   int quizPlayed = 0, quizBest = 0;  // rounds finished; the most right in one (of 8)
   int stories = 0;          // adventures played to the end
   int xoWins = 0, xoDraws = 0, xoLosses = 0, xoLevel = 1;  // level 0 easy .. 3 can't be beaten
-  uint8_t tutor7Best[16] = {};  // Tutor7: the most exercises right first time in each lesson (of its practice)
+  uint8_t tutor7Best[32] = {};  // Tutor7: the most exercises right first time in each lesson (of its practice)
   // The games from CrossPlay (src/crossplay): Solitaire (Klondike), Mines, Four in a Row, Chess.
   int solPlayed = 0, solWon = 0, solBest = 0;  // deals played, won; the fewest moves in a win (0: none yet)
   int minesWon[3] = {}, minesLost = 0, minesLevel = 0;  // wins per board size (0 small .. 2 large); the size last played

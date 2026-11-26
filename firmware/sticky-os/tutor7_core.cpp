@@ -391,7 +391,10 @@ bool generate(Kind kind, int level, Rng &rng, Exercise &ex, int lang) {
     case K_CONVERSE: return genConverse(rng, ex);
     case K_SQUARE_DIAGONAL: return genSquareDiagonal(rng, ex);
     case K_EQUILATERAL_HEIGHT: return genEquilateralHeight(rng, ex);
-    default: return u4Generate(kind, level, rng, ex);
+    default:
+      if (kind >= K_U6_FIRST) return u6Generate(kind, level, rng, ex);
+      if (kind >= K_U5_FIRST) return u5Generate(kind, level, rng, ex);
+      return u4Generate(kind, level, rng, ex);
   }
 }
 
@@ -480,12 +483,17 @@ bool verify(const Exercise &ex, char *err, int cap) {
     snprintf(tokens2[1], sizeof tokens2[1], "%d", s[2] * s[2]);
   } else if (ex.kind == K_CLASSIFY) {
     if (!u4VerifyClassify(ex, err, cap)) return false;
+  } else if (ex.kind == K_THALES_CONVERSE || ex.kind == K_SIM_CRITERION) {
+    if (!u6VerifyChoice(ex, err, cap)) return false;
   } else {
     double expect = 0;
     const char *unit = ex.unit;
-    if (ex.kind >= K_Q_FOURTH_ANGLE && ex.kind < K_COUNT) {
+    if (ex.kind >= K_U4_FIRST && ex.kind < K_COUNT) {
       const char *want = "";
-      if (!u4Expect(ex, expect, want, err, cap)) return false;
+      bool ok = ex.kind >= K_U6_FIRST ? u6Expect(ex, expect, want, err, cap)
+                : ex.kind >= K_U5_FIRST ? u5Expect(ex, expect, want, err, cap)
+                                        : u4Expect(ex, expect, want, err, cap);
+      if (!ok) return false;
       if (strcmp(want, ex.unit)) return fail(err, cap, "the unit of the options is not the kind's unit");
     } else if (ex.kind == K_HYPOTENUSE) {
       if (f.kind != FIG_RIGHT_TRIANGLE || f.v[0] <= 0 || f.v[1] <= 0 || f.v[2] != 0) return fail(err, cap, "hypotenuse figure");

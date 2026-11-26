@@ -94,14 +94,122 @@ static const Lesson U4_REVIEW = {  // 4.8 the unit's review
     {{K_CLASSIFY, 3}, {K_Q_FOURTH_ANGLE, 1}, {K_PAR_ANGLE, 1}, {K_CLASSIFY, 3}, {K_MIDLINE, 1}, {K_RECT_ANGLE, 2}, {K_TRAP_MIDLINE, 2}, {K_AREA, 2}},
 };
 
-// The list, in the order the menu shows it: Unit 4 first, then Unit 7's Pythagorean theorem.
+
+// ---- Unit 5, the circle. Concepts as the textbook's unit teaches them (chords and arcs, the inscribed angle,
+// tangents, regular polygons inscribed in a circle, the length of the circle and the area of the disc), in our
+// own words. Slots 9..14. Pages: see the comment on each lesson (the words are in src/tutor/lessons_<code>_u5.h).
+
+static const Lesson U5_CHORDS = {  // 5.1 chords and arcs
+    9,
+    5, {FIG_CIRCLE_ARC, FIG_CIRCLE_ARC, FIG_CHORD, FIG_CHORD, FIG_CHORD, NOFIG},
+    3, NOFIGS,
+    7,
+    {{K_ARC_CENTRAL, 1}, {K_CHORD_DISTANCE, 1}, {K_ARC_CENTRAL, 1}, {K_CHORD_DISTANCE, 1}, {K_ARC_CENTRAL, 2}, {K_CHORD_DISTANCE, 2}, {K_CHORD_DISTANCE, 2}},
+};
+
+static const Lesson U5_INSCRIBED = {  // 5.2 the inscribed angle
+    10,
+    4, {FIG_INSCRIBED, FIG_INSCRIBED, FIG_CYCLIC, FIG_INSCRIBED, NOFIG, NOFIG},
+    3, NOFIGS,
+    7,
+    {{K_INSCRIBED, 1}, {K_CYCLIC_QUAD, 1}, {K_INSCRIBED, 1}, {K_CYCLIC_QUAD, 1}, {K_INSCRIBED, 2}, {K_CYCLIC_QUAD, 2}, {K_INSCRIBED, 2}},
+};
+
+static const Lesson U5_TANGENTS = {  // 5.3 tangents from an outside point
+    11,
+    5, {NOFIG, FIG_TANGENT, FIG_TANGENT, NOFIG, NOFIG, NOFIG},
+    3, NOFIGS,
+    7,
+    {{K_TANGENT_LENGTH, 1}, {K_CIRCUMSCRIBED, 1}, {K_INCIRCLE_AREA, 1}, {K_TANGENT_LENGTH, 1}, {K_CIRCUMSCRIBED, 1}, {K_TANGENT_LENGTH, 2}, {K_INCIRCLE_AREA, 1}},
+};
+
+static const Lesson U5_REGULAR = {  // 5.4 regular polygons inscribed in a circle
+    12,
+    4, {FIG_REGULAR, FIG_REGULAR, FIG_REGULAR, FIG_REGULAR, NOFIG, NOFIG},
+    3, NOFIGS,
+    6,
+    {{K_REGULAR_POLYGON, 1}, {K_REGULAR_POLYGON, 1}, {K_REGULAR_POLYGON, 2}, {K_REGULAR_POLYGON, 2}, {K_REGULAR_POLYGON, 3}, {K_REGULAR_POLYGON, 3}},
+};
+
+static const Lesson U5_CIRCLE_AREA = {  // 5.5 the length of the circle and the area of the disc
+    13,
+    5, {NOFIG, NOFIG, FIG_SECTOR, FIG_SECTOR, FIG_ANNULUS, NOFIG},
+    3, NOFIGS,
+    8,
+    {{K_CIRCUMFERENCE, 1}, {K_DISC_AREA, 1}, {K_ARC_SECTOR, 1}, {K_ANNULUS, 1}, {K_CIRCUMFERENCE, 2}, {K_DISC_AREA, 2}, {K_ARC_SECTOR, 2}, {K_ANNULUS, 1}},
+};
+
+static const Lesson U5_REVIEW = {  // 5.6 the unit's review
+    14,
+    3, NOFIGS,
+    3, NOFIGS,
+    8,
+    {{K_ARC_CENTRAL, 1}, {K_INSCRIBED, 1}, {K_CHORD_DISTANCE, 1}, {K_TANGENT_LENGTH, 1}, {K_REGULAR_POLYGON, 2}, {K_CIRCUMFERENCE, 1}, {K_DISC_AREA, 1}, {K_ARC_SECTOR, 1}},
+};
+
+// ---- Unit 6, similarity (proportional segments, Thales's theorem and its converse, similar triangles and their
+// criteria). Slots 15..20 (the words are in src/tutor/lessons_<code>_u6.h).
+
+static const Lesson U6_SEGMENTS = {  // 6.1 proportional segments
+    15,
+    4, {FIG_SEGMENT, NOFIG, FIG_SEGMENT, NOFIG, NOFIG, NOFIG},
+    3, NOFIGS,
+    6,
+    {{K_RATIO, 1}, {K_DIVIDE_SEGMENT, 1}, {K_RATIO, 1}, {K_DIVIDE_SEGMENT, 2}, {K_RATIO, 2}, {K_DIVIDE_SEGMENT, 2}},
+};
+
+static const Lesson U6_THALES = {  // 6.2 Thales's theorem, the bisector theorem
+    16,
+    4, {FIG_THALES, FIG_THALES, FIG_XFIG, FIG_BISECTOR, NOFIG, NOFIG},
+    3, NOFIGS,
+    7,
+    {{K_THALES, 1}, {K_THALES_X, 1}, {K_THALES, 1}, {K_BISECTOR, 1}, {K_THALES, 2}, {K_THALES_X, 2}, {K_BISECTOR, 2}},
+};
+
+static const Lesson U6_CONVERSE = {  // 6.3 the converse of Thales's theorem
+    17,
+    3, {FIG_THALES, NOFIG, NOFIG, NOFIG, NOFIG, NOFIG},
+    3, NOFIGS,
+    6,
+    {{K_THALES_CONVERSE, 1}, {K_THALES_CONVERSE, 1}, {K_THALES, 1}, {K_THALES_CONVERSE, 2}, {K_THALES_CONVERSE, 2}, {K_THALES, 2}},
+};
+
+static const Lesson U6_SIMILAR = {  // 6.4 similar triangles, the fundamental theorem
+    18,
+    4, {FIG_SIMILAR, FIG_THALES, FIG_SIMILAR, NOFIG, NOFIG, NOFIG},
+    3, NOFIGS,
+    6,
+    {{K_SIM_SIDE, 1}, {K_TFA, 1}, {K_SIM_SIDE, 1}, {K_TFA, 1}, {K_SIM_SIDE, 2}, {K_TFA, 2}},
+};
+
+static const Lesson U6_CRITERIA = {  // 6.5 the criteria, heights, perimeters and areas
+    19,
+    5, {FIG_SIMILAR, FIG_SIMILAR, FIG_SIMILAR, FIG_SIMILAR, NOFIG, NOFIG},
+    3, NOFIGS,
+    8,
+    {{K_SIM_CRITERION, 1}, {K_SIM_PERIMETER_AREA, 1}, {K_SIM_CRITERION, 2}, {K_SIM_PERIMETER_AREA, 2}, {K_SIM_CRITERION, 3}, {K_SIM_SIDE, 2}, {K_SIM_PERIMETER_AREA, 2}, {K_TFA, 2}},
+};
+
+static const Lesson U6_REVIEW = {  // 6.6 the unit's review
+    20,
+    3, NOFIGS,
+    3, NOFIGS,
+    8,
+    {{K_RATIO, 1}, {K_THALES, 1}, {K_THALES_CONVERSE, 1}, {K_BISECTOR, 1}, {K_SIM_SIDE, 1}, {K_SIM_CRITERION, 1}, {K_SIM_PERIMETER_AREA, 1}, {K_TFA, 1}},
+};
+
+// The list, in the textbook's order: Unit 4, Unit 5, Unit 6, then Unit 7's Pythagorean theorem.
 static const Lesson *const ALL[LESSON_COUNT] = {&U4_ANGLES, &U4_PARALLELOGRAM, &U4_MIDLINE, &U4_RECTANGLE, &U4_RHOMBUS,
-                                                 &U4_TRAPEZOID, &U4_AREAS, &U4_REVIEW, &PITAGORA};
+                                                 &U4_TRAPEZOID, &U4_AREAS, &U4_REVIEW,
+                                                 &U5_CHORDS, &U5_INSCRIBED, &U5_TANGENTS, &U5_REGULAR, &U5_CIRCLE_AREA, &U5_REVIEW,
+                                                 &U6_SEGMENTS, &U6_THALES, &U6_CONVERSE, &U6_SIMILAR, &U6_CRITERIA, &U6_REVIEW,
+                                                 &PITAGORA};
 
 const Lesson &lesson(int i) { return *ALL[i < 0 ? 0 : i >= LESSON_COUNT ? LESSON_COUNT - 1 : i]; }
 
 const char *lessonNumber(int slot) {
-  static const char *const NUM[] = {"7.2", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8"};  // slot 0 is Pitagora; 1..8 are Unit 4's lessons
+  static const char *const NUM[] = {"7.2", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8",
+                                       "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6"};  // slot 0 is Pitagora; 1..8 Unit 4; 9..14 Unit 5; 15..20 Unit 6
   return slot >= 0 && slot < (int)(sizeof NUM / sizeof NUM[0]) ? NUM[slot] : "";
 }
 

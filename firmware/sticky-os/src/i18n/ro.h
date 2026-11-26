@@ -736,6 +736,7 @@
 {S_G_T7_GRADE7, "Clasa a VII-a"},
 {S_G_T7_PICK_SUBJECT, "Alege materia. Alte materii vor fi adăugate treptat."},
 {S_G_T7_MATHS_GEOMETRY, "Matematică - Geometrie"},
+{S_G_T7_PICK_UNIT, "Alege o unitate din manual."},
 {S_G_T7_PICK_LESSON, "Alege o lecție."},
 {S_G_T7_PART_SUMMARY, "1. Rezumatul lecției"},
 {S_G_T7_PART_EXAMPLES, "2. Exemple rezolvate"},

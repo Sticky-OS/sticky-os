@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------- Tutor
 //
 // A school tutor, class by class and subject by subject. It starts with 7th grade maths (geometry,
-// units 4 and 7 of the Romanian textbook); other subjects (chemistry, geography...) and classes are
+// units 4, 5, 6 and 7 of the Romanian textbook); other subjects (chemistry, geography...) and classes are
 // meant to be added the same way: a class menu, a subject menu, then lessons. Each lesson has a summary and worked
 // examples, then practice that is made from numbers and checked before it is
 // shown (tutor7_core.cpp), with a clue button and an explanation of every
@@ -11,8 +11,8 @@
 // headers are the board's own strings (S_G_T7_*). This tab draws the screens and takes
 // the taps; it follows the other games (gHeader, gButton, gTarget).
 //
-// The fonts have no square root sign, so t7Text() draws it: a stroke down and
-// up, and a bar over what is under the root. Everything is laid out from W and
+// The fonts have no square root sign and no pi, so t7Text() draws them: for the root a stroke down and
+// up, and a bar over what is under it; for pi a bar over two legs. Everything is laid out from W and
 // H on every draw, so a rotation just works.
 
 // ---- text with square roots
@@ -30,12 +30,25 @@ static bool t7IsRoot(const String &str, int i) {
   return i + 2 < n && (uint8_t)str[i] == 0xE2 && (uint8_t)str[i + 1] == 0x88 && (uint8_t)str[i + 2] == 0x9A;
 }
 
+static bool t7IsPi(const String &str, int i) {
+  return i + 1 < (int)str.length() && (uint8_t)str[i] == 0xCF && (uint8_t)str[i + 1] == 0x80;
+}
+
 // "2√34 cm" -> "2", root "34", " cm". A root takes the digits after it, or a parenthesised expression.
+// A pi is a piece of its own ("12π cm" -> "12", pi, " cm").
 static std::vector<T7Piece> t7Pieces(const String &str) {
   std::vector<T7Piece> out;
   String cur;
   int n = str.length();
   for (int i = 0; i < n;) {
+    if (t7IsPi(str, i)) {
+      if (cur.length()) out.push_back({cur, false}), cur = "";
+      T7Piece pc{"", false};
+      pc.pi = true;
+      out.push_back(pc);
+      i += 2;
+      continue;
+    }
     if (!t7IsRoot(str, i)) {
       cur += str[i++];
       continue;
@@ -63,17 +76,27 @@ static std::vector<T7Piece> t7Pieces(const String &str) {
   return out;
 }
 
+static int t7PiW(const GFXfont *f) { return t7Cap(f) * 72 / 100 + 4; }
 static int t7RootW(const GFXfont *f, const String &rad) { return t7Cap(f) * 55 / 100 + 3 + t7Adv(f, rad) + 3; }
 
 static int t7TextW(const GFXfont *f, const String &str) {
   int w = 0;
-  for (const T7Piece &p : t7Pieces(str)) w += p.root ? t7RootW(f, p.s) : t7Adv(f, p.s);
+  for (const T7Piece &p : t7Pieces(str)) w += p.pi ? t7PiW(f) : p.root ? t7RootW(f, p.s) : t7Adv(f, p.s);
   return w;
 }
 
 // y is the baseline, as for text().
 static void t7Text(int x, int y, const GFXfont *f, const String &str) {
   for (const T7Piece &p : t7Pieces(str)) {
+    if (p.pi) {  // a bar over two legs, the right one with a foot
+      int h = t7Cap(f) * 72 / 100, w = t7PiW(f) - 4, top = y - h * 86 / 100, t = max(2, f->yAdvance / 14);
+      thickLine(x + 1, top, x + 1 + w, top, t);
+      thickLine(x + 1 + w * 28 / 100, top, x + 1 + w * 22 / 100, y, t);
+      thickLine(x + 1 + w * 70 / 100, top, x + 1 + w * 70 / 100, y - 3, t);
+      thickLine(x + 1 + w * 70 / 100, y - 3, x + 1 + w * 90 / 100, y, t);
+      x += t7PiW(f);
+      continue;
+    }
     if (!p.root) {
       text(x, y, f, p.s.c_str());
       x += t7Adv(f, p.s);
@@ -377,6 +400,290 @@ static void t7FigMedians(int bx, int by, int bw, int bh) {
   t7Tag((X[0] + X[1] + X[2]) / 3 + 16, (Y[0] + Y[1] + Y[2]) / 3 + 6, "G", true);
 }
 
+
+// ---- Unit 5 (the circle) and Unit 6 (similarity) figures: to scale from the figure's numbers, vertices named
+
+static void t7Ring(int cx, int cy, int r, int t) {
+  for (int i = -(t / 2); i <= t / 2; i++) canvas->drawCircle(cx, cy, r + i, INK);
+}
+
+// A point on a circle at deg (counter-clockwise from the right, as in maths; the screen's y goes down).
+static void t7Polar(int cx, int cy, int r, float deg, int &x, int &y) {
+  float a = deg * 3.14159265f / 180.0f;
+  x = cx + (int)lroundf(r * cosf(a));
+  y = cy - (int)lroundf(r * sinf(a));
+}
+
+// The arc from deg0 to deg1 (counter-clockwise), thick.
+static void t7ArcLine(int cx, int cy, int r, float deg0, float deg1, int t) {
+  int steps = max(6, (int)fabsf(deg1 - deg0) / 4);
+  int px, py;
+  t7Polar(cx, cy, r, deg0, px, py);
+  for (int i = 1; i <= steps; i++) {
+    int x, y;
+    t7Polar(cx, cy, r, deg0 + (deg1 - deg0) * i / steps, x, y);
+    thickLine(px, py, x, y, t);
+    px = x, py = y;
+  }
+}
+
+// A name outside a point of a circle: pushed away from the centre.
+static void t7NameAt(int cx, int cy, int x, int y, const char *s, int d = 17) {
+  float dx = x - cx, dy = y - cy, len = sqrtf(dx * dx + dy * dy);
+  if (len < 1) len = 1;
+  t7Tag(x + (int)(dx / len * d), y + (int)(dy / len * d) + 7, s, true);
+}
+
+static void t7Dot(int x, int y) { canvas->fillCircle(x, y, 3, INK); }
+
+static T7Box t7CircleBox(int bx, int by, int bw, int bh) { return {bx + bw / 2, by + bh / 2, max(20, min(bw / 2, bh / 2) - 30)}; }
+
+static void t7FigCircleArc(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Box b = t7CircleBox(bx, by, bw, bh);
+  float th = fg.v[0] <= 0 ? 70 : fg.v[0] < 10 ? 10 : fg.v[0] > 170 ? 170 : fg.v[0];  // 0: a lesson page's picture
+  t7Ring(b.cx, b.cy, b.R, 2);
+  int ax, ay, qx, qy;
+  t7Polar(b.cx, b.cy, b.R, 90 + th / 2, ax, ay);
+  t7Polar(b.cx, b.cy, b.R, 90 - th / 2, qx, qy);
+  t7ArcLine(b.cx, b.cy, b.R, 90 - th / 2, 90 + th / 2, 6);
+  thickLine(b.cx, b.cy, ax, ay, 3);
+  thickLine(b.cx, b.cy, qx, qy, 3);
+  t7Dashed(ax, ay, qx, qy);
+  t7Dot(b.cx, b.cy);
+  t7Tag(b.cx + 14, b.cy + 22, "O", true);
+  t7NameAt(b.cx, b.cy, ax, ay, "A");
+  t7NameAt(b.cx, b.cy, qx, qy, "B");
+}
+
+static void t7FigChord(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Box b = t7CircleBox(bx, by, bw, bh);
+  float r = fg.v[0] > 0 ? fg.v[0] : 1, d = fg.v[1] > 0 ? fg.v[1] : 0.5f * r;  // 0: a lesson page's picture
+  float f = d / r;
+  f = f < 0.15f ? 0.15f : f > 0.85f ? 0.85f : f;
+  t7Ring(b.cx, b.cy, b.R, 2);
+  int dy = (int)(f * b.R), half = (int)sqrtf((float)(b.R * b.R - dy * dy));
+  int ay = b.cy - dy, ax = b.cx - half, qx = b.cx + half;
+  thickLine(ax, ay, qx, ay, 4);
+  t7Dashed(b.cx, b.cy, b.cx, ay);
+  t7Dashed(b.cx, b.cy, ax, ay);
+  canvas->drawRect(b.cx, ay, 9, 9, INK);  // the right angle at M
+  t7Dot(b.cx, b.cy);
+  t7Tag(b.cx + 16, b.cy + 22, "O", true);
+  t7Tag(b.cx + 16, ay + 26, "M", true);
+  t7NameAt(b.cx, b.cy, ax, ay, "A");
+  t7NameAt(b.cx, b.cy, qx, ay, "B");
+}
+
+static void t7FigInscribed(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Box b = t7CircleBox(bx, by, bw, bh);
+  float arc = fg.v[0] <= 0 ? 100 : fg.v[0] < 20 ? 20 : fg.v[0] > 340 ? 340 : fg.v[0];
+  t7Ring(b.cx, b.cy, b.R, 2);
+  int ax, ay, px, py, qx, qy;
+  t7Polar(b.cx, b.cy, b.R, 90, ax, ay);
+  t7Polar(b.cx, b.cy, b.R, 270 - arc / 2, px, py);  // B, C: the arc BC is the one under (away from) A
+  t7Polar(b.cx, b.cy, b.R, 270 + arc / 2, qx, qy);
+  t7ArcLine(b.cx, b.cy, b.R, 270 - arc / 2, 270 + arc / 2, 6);
+  thickLine(ax, ay, px, py, 3);
+  thickLine(ax, ay, qx, qy, 3);
+  t7Dot(b.cx, b.cy);
+  t7Tag(b.cx + 14, b.cy + 22, "O", true);
+  t7NameAt(b.cx, b.cy, ax, ay, "A");
+  t7NameAt(b.cx, b.cy, px, py, "B");
+  t7NameAt(b.cx, b.cy, qx, qy, "C");
+}
+
+static void t7FigCyclic(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Box b = t7CircleBox(bx, by, bw, bh);
+  t7Ring(b.cx, b.cy, b.R, 2);
+  int X[4], Y[4];
+  float a = 125;
+  for (int i = 0; i < 4; i++) {
+    t7Polar(b.cx, b.cy, b.R, a, X[i], Y[i]);
+    a -= fg.v[i] > 0 ? fg.v[i] : 90;
+  }
+  for (int i = 0; i < 4; i++) thickLine(X[i], Y[i], X[(i + 1) % 4], Y[(i + 1) % 4], 3);
+  static const char *N[4] = {"A", "B", "C", "D"};
+  for (int i = 0; i < 4; i++) t7NameAt(b.cx, b.cy, X[i], Y[i], N[i]);
+}
+
+static void t7FigTangent(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  float r = fg.v[0] > 0 ? fg.v[0] : 1, oa = fg.v[1] > r ? fg.v[1] : r * 2;
+  if (oa > r * 3) oa = r * 3;
+  int room = bw - 70, R = min(bh / 2 - 26, (int)(room * r / (r + oa)));  // O ... A across the box, A beyond the circle
+  R = max(18, R);
+  int cx = bx + 30 + R, cy = by + bh / 2, ax = cx + (int)(R * oa / r);
+  if (ax > bx + bw - 24) ax = bx + bw - 24;
+  float ratio = (float)(R) / (float)(ax - cx);
+  float phi = acosf(ratio) * 180.0f / 3.14159265f;
+  int px, py, qx, qy;
+  t7Polar(cx, cy, R, phi, px, py);
+  t7Polar(cx, cy, R, -phi, qx, qy);
+  t7Ring(cx, cy, R, 2);
+  thickLine(ax, cy, px, py, 3);
+  thickLine(ax, cy, qx, qy, 3);
+  t7Dashed(cx, cy, px, py);
+  t7Dashed(cx, cy, qx, qy);
+  t7Dashed(cx, cy, ax, cy);
+  t7Dot(cx, cy);
+  t7Tag(cx - 14, cy + 24, "O", true);
+  t7Tag(ax + 16, cy + 7, "A", true);
+  t7Tag(px + 4, py - 12, "C", true);
+  t7Tag(qx + 4, qy + 28, "D", true);
+}
+
+static void t7FigRegular(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Box b = t7CircleBox(bx, by, bw, bh);
+  int n = fg.v[0] <= 0 ? 6 : fg.v[0] < 3 ? 3 : fg.v[0] > 12 ? 12 : fg.v[0];
+  t7Ring(b.cx, b.cy, b.R, 1);
+  int X[12], Y[12];
+  for (int i = 0; i < n; i++) t7Polar(b.cx, b.cy, b.R, 90 - 360.0f * i / n, X[i], Y[i]);
+  for (int i = 0; i < n; i++) thickLine(X[i], Y[i], X[(i + 1) % n], Y[(i + 1) % n], 3);
+  t7Dashed(b.cx, b.cy, X[0], Y[0]);
+  t7Dashed(b.cx, b.cy, X[1], Y[1]);
+  t7Dot(b.cx, b.cy);
+  t7Tag(b.cx - 14, b.cy + 24, "O", true);
+  static const char *N[12] = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"};
+  for (int i = 0; i < n; i++) t7NameAt(b.cx, b.cy, X[i], Y[i], N[i]);
+}
+
+static void t7FigAnnulus(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Box b = t7CircleBox(bx, by, bw, bh);
+  float R = fg.v[0] > 0 ? fg.v[0] : 2, r = fg.v[1] > 0 && fg.v[1] < R ? fg.v[1] : R / 2;
+  int ri = max(8, (int)(b.R * r / R));
+  t7Ring(b.cx, b.cy, b.R, 3);
+  t7Ring(b.cx, b.cy, ri, 3);
+  t7Dot(b.cx, b.cy);
+  thickLine(b.cx, b.cy, b.cx + b.R, b.cy, 2);
+  t7Tag(b.cx + (b.R + ri) / 2, b.cy - 8, "R", true);
+  int x, y;
+  t7Polar(b.cx, b.cy, ri, 135, x, y);
+  t7Dashed(b.cx, b.cy, x, y);
+  t7Tag(b.cx + (x - b.cx) / 2 - 12, b.cy + (y - b.cy) / 2, "r", true);
+}
+
+static void t7FigSector(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Box b = t7CircleBox(bx, by, bw, bh);
+  float th = fg.v[0] <= 0 ? 60 : fg.v[0] < 10 ? 10 : fg.v[0] > 350 ? 350 : fg.v[0];
+  t7Ring(b.cx, b.cy, b.R, 1);
+  float a0 = 90 - th / 2, a1 = 90 + th / 2;
+  int ax, ay, qx, qy;
+  t7Polar(b.cx, b.cy, b.R, a1, ax, ay);
+  t7Polar(b.cx, b.cy, b.R, a0, qx, qy);
+  t7ArcLine(b.cx, b.cy, b.R, a0, a1, 6);
+  thickLine(b.cx, b.cy, ax, ay, 3);
+  thickLine(b.cx, b.cy, qx, qy, 3);
+  t7Dot(b.cx, b.cy);
+  t7Tag(b.cx + 4, b.cy + 26, "O", true);
+  t7NameAt(b.cx, b.cy, ax, ay, "A");
+  t7NameAt(b.cx, b.cy, qx, qy, "B");
+}
+
+static void t7FigSegment(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  float am = fg.v[0] > 0 ? fg.v[0] : 1, mb = fg.v[1] > 0 ? fg.v[1] : 1;
+  float f = am / (am + mb);
+  f = f < 0.15f ? 0.15f : f > 0.85f ? 0.85f : f;
+  int x0 = bx + 34, x1 = bx + bw - 34, y = by + bh / 2, xm = x0 + (int)(f * (x1 - x0));
+  thickLine(x0, y, x1, y, 4);
+  for (int x : {x0, xm, x1}) thickLine(x, y - 9, x, y + 9, 3);
+  t7Tag(x0, y + 34, "A", true);
+  t7Tag(xm, y + 34, "M", true);
+  t7Tag(x1, y + 34, "B", true);
+}
+
+static T7Tri t7TriIn(int bx, int by, int bw, int bh) {
+  int ix = bx + 34, iy = by + 24, iw = bw - 68, ih = bh - 56;
+  T7Tri t = {{ix + iw * 42 / 100, ix, ix + iw}, {iy, iy + ih, iy + ih}};
+  return t;
+}
+
+static void t7FigThales(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  T7Tri t = t7TriIn(bx, by, bw, bh);
+  float ad = fg.v[0] > 0 ? fg.v[0] : 1, db = fg.v[1] > 0 ? fg.v[1] : 1;
+  float f = ad / (ad + db);
+  f = f < 0.2f ? 0.2f : f > 0.8f ? 0.8f : f;
+  for (int i = 0; i < 3; i++) thickLine(t.X[i], t.Y[i], t.X[(i + 1) % 3], t.Y[(i + 1) % 3], 3);
+  int dx = t.X[0] + (int)(f * (t.X[1] - t.X[0])), dy = t.Y[0] + (int)(f * (t.Y[1] - t.Y[0]));
+  int ex = t.X[0] + (int)(f * (t.X[2] - t.X[0])), ey = t.Y[0] + (int)(f * (t.Y[2] - t.Y[0]));
+  thickLine(dx, dy, ex, ey, 3);
+  t7Tag(t.X[0], t.Y[0] - 8, "A", true);
+  t7Tag(t.X[1] - 14, t.Y[1] + 24, "B", true);
+  t7Tag(t.X[2] + 14, t.Y[2] + 24, "C", true);
+  t7Tag(dx - 18, dy + 8, "D", true);
+  t7Tag(ex + 18, ey + 8, "E", true);
+}
+
+static void t7FigX(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  float oa = fg.v[0] > 0 ? fg.v[0] : 2, ob = fg.v[1] > 0 ? fg.v[1] : 1, oc = fg.v[2] > 0 ? fg.v[2] : 2, od = fg.v[3] > 0 ? fg.v[3] : 1;
+  float ux = cosf(0.55f), uy = -sinf(0.55f), wx = cosf(0.5f), wy = sinf(0.5f);  // line AB goes up to the right, line CD down to the right
+  // Drawn to a readable shape, not to scale: only the ratio OA/OB (= OC/OD) is kept, within 0.45..2.2, so that AC stays parallel to BD
+  // and no point sits on top of another when the lengths are far apart (OB = 15 and OD = 3).
+  float k = oa / ob;
+  k = k < 0.45f ? 0.45f : k > 2.2f ? 2.2f : k;
+  oa = 2.4f * k / (1 + k), ob = 2.4f / (1 + k), oc = 0.8f * oa, od = 0.8f * ob;
+  float mx = max(max(oa, ob), max(oc, od));
+  float sx = (bw / 2 - 36) / (mx * 1.0f), sy = (bh / 2 - 28) / (mx * 0.6f);
+  float s = min(sx, sy);
+  int cx = bx + bw / 2, cy = by + bh / 2;
+  auto P = [&](float len, float dx, float dy, int &x, int &y) { x = cx + (int)(len * s * dx), y = cy + (int)(len * s * dy); };
+  int ax, ay, qx, qy, cxx, cyy, dxx, dyy;
+  P(oa, ux, uy, ax, ay);
+  P(-ob, ux, uy, qx, qy);
+  P(oc, wx, wy, cxx, cyy);
+  P(-od, wx, wy, dxx, dyy);
+  thickLine(ax, ay, qx, qy, 3);
+  thickLine(cxx, cyy, dxx, dyy, 3);
+  t7Dashed(ax, ay, cxx, cyy);
+  t7Dashed(qx, qy, dxx, dyy);
+  t7Tag(ax + 4, ay - 10, "A", true);
+  t7Tag(qx - 6, qy + 28, "B", true);
+  t7Tag(cxx + 4, cyy + 28, "C", true);
+  t7Tag(dxx - 6, dyy - 10, "D", true);
+  t7Tag(cx - 4, cy - 12, "O", true);
+}
+
+static void t7FigBisector(const t7::Figure &fg, int bx, int by, int bw, int bh) {
+  float ab = fg.v[0] > 0 ? fg.v[0] : 3, ac = fg.v[1] > 0 ? fg.v[1] : 4;
+  float L = (ab + ac) * 0.62f;  // a base that always closes the triangle
+  float x = (ab * ab - ac * ac + L * L) / (2 * L), h2 = ab * ab - x * x;
+  float h = h2 > 0 ? sqrtf(h2) : ab * 0.5f;
+  int ix = bx + 34, iy = by + 24, iw = bw - 68, ih = bh - 56;
+  float sc = min(iw / L, ih / h);
+  int Bx = ix + (int)((iw - L * sc) / 2), By = iy + ih, Cx = Bx + (int)(L * sc), Cy = By;
+  int Ax = Bx + (int)(x * sc), Ay = By - (int)(h * sc);
+  float f = ab / (ab + ac);
+  int Dx = Bx + (int)(f * (Cx - Bx)), Dy = By;
+  thickLine(Ax, Ay, Bx, By, 3);
+  thickLine(Bx, By, Cx, Cy, 3);
+  thickLine(Cx, Cy, Ax, Ay, 3);
+  t7Dashed(Ax, Ay, Dx, Dy);
+  t7Tag(Ax, Ay - 8, "A", true);
+  t7Tag(Bx - 14, By + 24, "B", true);
+  t7Tag(Cx + 14, Cy + 24, "C", true);
+  t7Tag(Dx, Dy + 26, "D", true);
+}
+
+static void t7FigSimilar(int bx, int by, int bw, int bh) {
+  static const float T[3][2] = {{0.30f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}};  // a scalene triangle, apex over the left third
+  bool wide = bw >= bh * 2;
+  int pad = 30;
+  int w1 = wide ? (bw - 3 * pad) * 58 / 100 : (bw - 3 * pad) * 58 / 100;
+  int w2 = w1 * 55 / 100;
+  int h1 = min(bh - 56, w1 * 85 / 100), h2 = h1 * 55 / 100;
+  int x1 = bx + pad, y1 = by + 24 + (bh - 56 - h1), x2 = x1 + w1 + pad, y2 = by + 24 + (bh - 56 - h2);
+  const char *n1 = "ABC", *n2 = "DEF";
+  for (int k = 0; k < 2; k++) {
+    int x = k ? x2 : x1, y = k ? y2 : y1, w = k ? w2 : w1, h = k ? h2 : h1;
+    int X[3], Y[3];
+    for (int i = 0; i < 3; i++) X[i] = x + (int)(T[i][0] * w), Y[i] = y + (int)(T[i][1] * h);
+    for (int i = 0; i < 3; i++) thickLine(X[i], Y[i], X[(i + 1) % 3], Y[(i + 1) % 3], 3);
+    const char *nm = k ? n2 : n1;
+    char s[2] = {0, 0};
+    s[0] = nm[0], t7Tag(X[0], Y[0] - 8, s, true);
+    s[0] = nm[1], t7Tag(X[1] - 14, Y[1] + 24, s, true);
+    s[0] = nm[2], t7Tag(X[2] + 14, Y[2] + 24, s, true);
+  }
+}
+
 static void t7Figure(const t7::Figure &fg, int bx, int by, int bw, int bh) {
   switch (fg.kind) {
     case t7::FIG_RIGHT_TRIANGLE: return t7FigRight(fg, false, bx, by, bw, bh);
@@ -392,6 +699,19 @@ static void t7Figure(const t7::Figure &fg, int bx, int by, int bw, int bh) {
     case t7::FIG_TRAPEZOID_ISOSCELES: return t7FigTrapezoid(bx, by, bw, bh, true);
     case t7::FIG_MIDLINE: return t7FigMidline(bx, by, bw, bh);
     case t7::FIG_MEDIANS: return t7FigMedians(bx, by, bw, bh);
+    case t7::FIG_CIRCLE_ARC: return t7FigCircleArc(fg, bx, by, bw, bh);
+    case t7::FIG_CHORD: return t7FigChord(fg, bx, by, bw, bh);
+    case t7::FIG_INSCRIBED: return t7FigInscribed(fg, bx, by, bw, bh);
+    case t7::FIG_CYCLIC: return t7FigCyclic(fg, bx, by, bw, bh);
+    case t7::FIG_TANGENT: return t7FigTangent(fg, bx, by, bw, bh);
+    case t7::FIG_REGULAR: return t7FigRegular(fg, bx, by, bw, bh);
+    case t7::FIG_ANNULUS: return t7FigAnnulus(fg, bx, by, bw, bh);
+    case t7::FIG_SECTOR: return t7FigSector(fg, bx, by, bw, bh);
+    case t7::FIG_SEGMENT: return t7FigSegment(fg, bx, by, bw, bh);
+    case t7::FIG_THALES: return t7FigThales(fg, bx, by, bw, bh);
+    case t7::FIG_XFIG: return t7FigX(fg, bx, by, bw, bh);
+    case t7::FIG_BISECTOR: return t7FigBisector(fg, bx, by, bw, bh);
+    case t7::FIG_SIMILAR: return t7FigSimilar(bx, by, bw, bh);
     case t7::FIG_NONE: return;
     default: return;
   }
@@ -411,10 +731,15 @@ enum : int {
   T7_SUBJECT0 = 30,
   T7_LESSON0 = 40,
   T7_PREV = 50,
+  T7_UNIT0 = 70,   // 70..: the unit buttons (the units of the textbook: 4, 5, 6, 7)
   T7_RESET = 60,   // clear the lesson's progress, start from the summary (a second tap confirms)
 };
 
 static const t7::Lesson &t7L() { return t7::lesson(gs->t7Lesson); }
+// A lesson's unit of the textbook, from its number ("5.2" is in Unit 5).
+static int t7UnitOf(int lessonIndex) { return t7::lessonNumber(t7::lesson(lessonIndex).slot)[0] - '0'; }
+static const int T7_UNIT_NUMBERS[] = {4, 5, 6, 7};  // in the textbook's order
+static int t7UnitTx(int unit) { return unit == 4 ? t7::TX_UNIT_4 : unit == 5 ? t7::TX_UNIT_5 : unit == 6 ? t7::TX_UNIT_6 : t7::TX_UNIT_7; }
 static const t7::LessonText &t7Words(const t7::Lesson &l) { return t7::lessonText(t7Lang(), l.slot); }
 static const char *t7Name(const t7::Lesson &l) { return t7Words(l).name; }
 
@@ -507,15 +832,15 @@ static void t7StartPractice() {
 }
 
 static void tutor7Open() {
-  if (gs->t7Screen == T7_RESULT) gs->t7Screen = T7_LESSONS;
+  if (gs->t7Screen == T7_RESULT) gs->t7Screen = T7_LESSONS;  // (t7Unit is the lesson's: it was set when the lesson was chosen)
   gs->t7ResetArmed = false;
   gs->gFocusId = -1;
 }
 
 static void tutor7Peek(String &s) {
   t7Relang();  // as the screen will show it
-  static const char *NAMES[] = {"classes", "subjects", "lessons", "lesson", "page", "question", "clue", "wrong", "solution", "result"};
-  s += String("tutor7 ") + NAMES[constrain(gs->t7Screen, 0, 9)] + " lang " + LANGS[t7Lang()].code;
+  static const char *NAMES[] = {"classes", "subjects", "lessons", "lesson", "page", "question", "clue", "wrong", "solution", "result", "units"};
+  s += String("tutor7 ") + NAMES[constrain(gs->t7Screen, 0, 10)] + " lang " + LANGS[t7Lang()].code;
   if (gs->t7Screen == T7_PAGE) s += String(" ") + (gs->t7Part ? "example " : "summary ") + (gs->t7Page + 1);
   if (gs->t7Screen >= T7_QUESTION && gs->t7Screen <= T7_SOLUTION) {
     const t7::Exercise &ex = gs->t7Ex;
@@ -554,7 +879,8 @@ static void actTutor7(int id) {
     switch (sc) {
       case T7_CLASSES: gs->gGame = -1; break;
       case T7_SUBJECTS: sc = T7_CLASSES; break;
-      case T7_LESSONS: sc = T7_SUBJECTS; break;
+      case T7_UNITS: sc = T7_SUBJECTS; break;
+      case T7_LESSONS: sc = T7_UNITS; break;
       case T7_LESSON: sc = T7_LESSONS; break;
       default: sc = T7_LESSON; break;  // a page, the practice, the result: the lesson
     }
@@ -565,10 +891,13 @@ static void actTutor7(int id) {
       if (id == T7_CLASS0) sc = T7_SUBJECTS;
       break;
     case T7_SUBJECTS:
-      if (id == T7_SUBJECT0) sc = T7_LESSONS;
+      if (id == T7_SUBJECT0) sc = T7_UNITS;
+      break;
+    case T7_UNITS:
+      if (id >= T7_UNIT0 && id < T7_UNIT0 + 4) gs->t7Unit = T7_UNIT_NUMBERS[id - T7_UNIT0], sc = T7_LESSONS;
       break;
     case T7_LESSONS:
-      if (id >= T7_LESSON0 && id < T7_LESSON0 + t7::LESSON_COUNT) gs->t7Lesson = id - T7_LESSON0, sc = T7_LESSON;
+      if (id >= T7_LESSON0 && id < T7_LESSON0 + t7::LESSON_COUNT) gs->t7Lesson = id - T7_LESSON0, gs->t7Unit = t7UnitOf(gs->t7Lesson), sc = T7_LESSON;
       break;
     case T7_LESSON:
       if (id == T7_PART0 || id == T7_PART0 + 1) {
@@ -625,7 +954,7 @@ static void actTutor7(int id) {
       break;
     case T7_RESULT:
       if (id == ID_AGAIN) return t7StartPractice(), render(true);
-      if (id == T7_LIST_BTN) sc = T7_LESSONS;
+      if (id == T7_LIST_BTN) gs->t7Unit = t7UnitOf(gs->t7Lesson), sc = T7_LESSONS;
       break;
   }
   render(false);
@@ -812,11 +1141,24 @@ static void drawTutor7() {
       std::vector<String> labels;
       std::vector<int> ids;
       for (int i = 0; i < t7::LESSON_COUNT; i++) {
+        if (t7UnitOf(i) != gs->t7Unit) continue;  // this unit's lessons
         int best = gameProgress().tutor7Best[t7::lesson(i).slot];
         labels.push_back(String(t7::lessonNumber(t7::lesson(i).slot)) + " " + t7Name(t7::lesson(i)) + (best ? String(" (") + best + "/" + t7::lesson(i).nSteps + ")" : String("")));
         ids.push_back(T7_LESSON0 + i);
       }
       return drawT7Menu(t7Words(t7::lesson(0)).subject, labels, ids, T(S_G_T7_PICK_LESSON));
+    }
+    case T7_UNITS: {  // the textbook's units, with how many of their lessons have been practised
+      std::vector<String> labels;
+      std::vector<int> ids;
+      for (int u = 0; u < 4; u++) {
+        int done = 0, all = 0;
+        for (int i = 0; i < t7::LESSON_COUNT; i++)
+          if (t7UnitOf(i) == T7_UNIT_NUMBERS[u]) all++, done += gameProgress().tutor7Best[t7::lesson(i).slot] > 0;
+        labels.push_back(String(t7::tx(t7Lang(), t7UnitTx(T7_UNIT_NUMBERS[u]))) + (done ? String(" (") + done + "/" + all + ")" : String("")));
+        ids.push_back(T7_UNIT0 + u);
+      }
+      return drawT7Menu(T(S_G_T7_MATHS_GEOMETRY), labels, ids, T(S_G_T7_PICK_UNIT));
     }
     case T7_LESSON: {
       gHeader(t7Name(t7L()));

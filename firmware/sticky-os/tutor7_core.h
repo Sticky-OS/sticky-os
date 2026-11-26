@@ -76,6 +76,30 @@ enum Kind : uint8_t {
   K_AREA,             // areas of the parallelogram, triangle, rhombus, trapezoid, right triangle
   K_PERIMETER,        // perimeters
   K_HEIGHT_FROM_AREA, // a height from the area
+  // Unit 5, the circle (tutor7_u5.cpp). Lengths of circles are in multiples of pi: the option "12π cm" is the number 12 with unit "π cm".
+  K_ARC_CENTRAL,      // arcs and central angles: minor and major arc, the arcs round the circle
+  K_CHORD_DISTANCE,   // a chord, its distance from the centre and the radius (d² + (c/2)² = r²)
+  K_INSCRIBED,        // an inscribed angle and its arc
+  K_CYCLIC_QUAD,      // the angles of a quadrilateral inscribed in a circle
+  K_TANGENT_LENGTH,   // the tangent segment from an outside point (right angle at the point of tangency)
+  K_CIRCUMSCRIBED,    // a quadrilateral round a circle: the sums of opposite sides are equal
+  K_INCIRCLE_AREA,    // a triangle's area from its semiperimeter and the radius of the circle inside it
+  K_REGULAR_POLYGON,  // a regular polygon's central angle, its angle, its number of sides
+  K_CIRCUMFERENCE,    // the length of a circle
+  K_DISC_AREA,        // the area of a disc
+  K_ARC_SECTOR,       // the length of an arc, the area of a sector
+  K_ANNULUS,          // the area of a ring between two circles
+  // Unit 6, similarity (tutor7_u6.cpp)
+  K_RATIO,            // the ratio of two segments (units!)
+  K_DIVIDE_SEGMENT,   // a point dividing a segment in a given ratio; parts proportional to numbers
+  K_THALES,           // Thales's theorem in a triangle: a segment from the proportion
+  K_THALES_X,         // Thales's theorem in the X figure (two crossing lines, two parallels)
+  K_THALES_CONVERSE,  // are these lines parallel? (a choice: yes / no, with the reason)
+  K_BISECTOR,         // the angle bisector theorem
+  K_SIM_SIDE,         // similar triangles: a side from the ratio
+  K_SIM_CRITERION,    // are two triangles similar, and by which criterion? (a choice)
+  K_SIM_PERIMETER_AREA, // perimeter and area of similar triangles (k and k squared)
+  K_TFA,              // the fundamental theorem of similarity: DE parallel to BC, a side of the small triangle
   K_COUNT
 };
 
@@ -87,12 +111,30 @@ enum FigureKind : uint8_t {
   FIG_RIGHT_TRIANGLE, FIG_TRIANGLE, FIG_SQUARE_DIAGONAL, FIG_EQUILATERAL_HEIGHT, FIG_RIGHT_NAMED,
   // Unit 4: drawn with the vertices named, the numbers are in the question
   FIG_NONE, FIG_QUAD, FIG_PARALLELOGRAM, FIG_RECTANGLE, FIG_RHOMBUS, FIG_TRAPEZOID, FIG_TRAPEZOID_ISOSCELES, FIG_MIDLINE, FIG_MEDIANS,
+  // Unit 5, the circle: drawn to scale from v[] (the numbers asked about are in the question, the figure shows the names)
+  FIG_CIRCLE_ARC,  // centre O, points A and B, the chord AB, the arc: v[0] = the central angle AOB in degrees (the minor arc, 10..170)
+  FIG_CHORD,       // centre O, chord AB, M its midpoint, OM: v[0] = radius, v[1] = OM, in the same unit (0 < v[1] < v[0])
+  FIG_INSCRIBED,   // an inscribed angle BAC: v[0] = the arc BC not containing A, in degrees (20..340)
+  FIG_CYCLIC,      // quadrilateral ABCD inscribed: v[0..3] = the arcs AB, BC, CD, DA in degrees (they add up to 360)
+  FIG_TANGENT,     // outside point A, tangents AC and AD, the radii OC and OD: v[0] = radius, v[1] = OA (same unit, v[1] > v[0])
+  FIG_REGULAR,     // a regular polygon inscribed, with its centre: v[0] = the number of sides (3..12)
+  FIG_ANNULUS,     // two concentric circles: v[0] = R, v[1] = r (R > r)
+  FIG_SECTOR,      // a sector: v[0] = its angle in degrees (10..350)
+  // Unit 6, similarity
+  FIG_SEGMENT,     // segment AB with a point M on it: v[0] = AM, v[1] = MB (same unit)
+  FIG_THALES,      // triangle ABC with D on AB, E on AC and DE parallel to BC: v[0] = AD, v[1] = DB (E divides AC in the same ratio)
+  FIG_XFIG,        // lines AB and CD cross at O, AC parallel to BD: v[0..3] = OA, OB, OC, OD (OA/OB = OC/OD)
+  FIG_BISECTOR,    // triangle ABC with the bisector AD, D on BC: v[0] = AB, v[1] = AC (D divides BC in the ratio AB : AC)
+  FIG_SIMILAR,     // two triangles ABC and DEF, the second a smaller copy turned a little: no numbers
   FIG_COUNT
 };
 struct Figure {
   FigureKind kind;
-  int32_t v[4];  // the givens; what they mean depends on the kind (see u4Expect)
+  int32_t v[6];  // the givens; what they mean depends on the kind (see u4Expect, u5Expect, u6Expect)
 };
+
+// The kinds of each unit, for the dispatch in generate() and verify().
+static const Kind K_U4_FIRST = K_Q_FOURTH_ANGLE, K_U5_FIRST = K_ARC_CENTRAL, K_U6_FIRST = K_RATIO;
 
 static const int MAX_OPTIONS = 4;
 static const int MAX_SLIPS = 8;

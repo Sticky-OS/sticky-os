@@ -247,6 +247,7 @@ S(S_G_T7_INTRO, "Your tutor for school: summaries, examples and practice. Choose
 S(S_G_T7_GRADE7, "Grade 7")  // the class button, and the subject menu's header
 S(S_G_T7_PICK_SUBJECT, "Choose a subject. More subjects will be added over time.")  // the subject menu, 12pt, up to 3 lines
 S(S_G_T7_MATHS_GEOMETRY, "Math - Geometry")  // the subject button
+S(S_G_T7_PICK_UNIT, "Choose a unit of the textbook.")  // the unit list, 12pt above the buttons, up to 3 lines
 S(S_G_T7_PICK_LESSON, "Choose a lesson.")  // the lesson list (not shown when the list is long)
 S(S_G_T7_PART_SUMMARY, "1. Lesson summary")  // a lesson's three buttons (12pt, ~440 px)
 S(S_G_T7_PART_EXAMPLES, "2. Worked examples")

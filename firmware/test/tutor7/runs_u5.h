@@ -1,0 +1,12 @@
+// Unit 5's kinds, one line per kind and level the lessons use (included in tutor7_test.cpp's list of runs).
+      {K_ARC_CENTRAL, 1, "arc, easy"},         {K_ARC_CENTRAL, 2, "arc, harder"},
+      {K_CHORD_DISTANCE, 1, "chord, integers"}, {K_CHORD_DISTANCE, 2, "chord, radicals"},
+      {K_INSCRIBED, 1, "inscribed, easy"},      {K_INSCRIBED, 2, "inscribed, harder"},
+      {K_CYCLIC_QUAD, 1, "cyclic, easy"},       {K_CYCLIC_QUAD, 2, "cyclic, harder"},
+      {K_TANGENT_LENGTH, 1, "tangent, integers"}, {K_TANGENT_LENGTH, 2, "tangent, radicals"},
+      {K_CIRCUMSCRIBED, 1, "circumscribed"},    {K_INCIRCLE_AREA, 1, "incircle area"},
+      {K_REGULAR_POLYGON, 1, "regular, 1"},     {K_REGULAR_POLYGON, 2, "regular, 2"}, {K_REGULAR_POLYGON, 3, "regular, 3"},
+      {K_CIRCUMFERENCE, 1, "circumference, 1"}, {K_CIRCUMFERENCE, 2, "circumference, 2"},
+      {K_DISC_AREA, 1, "disc, 1"},              {K_DISC_AREA, 2, "disc, 2"},
+      {K_ARC_SECTOR, 1, "arc and sector, 1"},   {K_ARC_SECTOR, 2, "arc and sector, 2"},
+      {K_ANNULUS, 1, "annulus"},

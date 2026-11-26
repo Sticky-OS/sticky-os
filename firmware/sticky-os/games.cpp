@@ -163,7 +163,7 @@ void gamesBegin() {
     else if (k == "nonogram") sscanf(v.c_str(), "%ld %d %d %d %d", &p.nonDay, &p.nonStreak, &p.nonBest[0], &p.nonBest[1], &p.nonSize);
     else if (k == "tutor7") {
       int from = 0;
-      for (int i = 0; i < 16 && from < (int)v.length(); i++) {
+      for (int i = 0; i < 32 && from < (int)v.length(); i++) {
         int next = v.indexOf(' ', from);
         p.tutor7Best[i] = constrain((int)v.substring(from, next < 0 ? v.length() : next).toInt(), 0, 99);
         if (next < 0) break;
@@ -247,7 +247,7 @@ void gamesSave() {
   f.printf("\ndailyDay %ld\ndailyStreak %d\nquizPlayed %d\nquizBest %d\nstories %d\nxo %d %d %d %d\n", p.dailyDay, p.dailyStreak,
            p.quizPlayed, p.quizBest, p.stories, p.xoWins, p.xoDraws, p.xoLosses, p.xoLevel);
   f.print("tutor7");
-  for (int i = 0; i < 16; i++) f.printf(" %d", p.tutor7Best[i]);
+  for (int i = 0; i < 32; i++) f.printf(" %d", p.tutor7Best[i]);
   f.print("\n");
   f.printf("sol %d %d %d\nmines %d %d %d %d %d %d %d %d\nfour %d %d %d %d\nchess %d %d %d %d\n", p.solPlayed, p.solWon, p.solBest,
            p.minesWon[0], p.minesWon[1], p.minesWon[2], p.minesLost, p.minesLevel, p.minesBest[0], p.minesBest[1], p.minesBest[2],

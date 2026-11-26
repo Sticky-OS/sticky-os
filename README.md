@@ -61,7 +61,7 @@ The board itself: **<https://www.seeedstudio.com/sticky/>** (Seeed Studio)
 | Books | An e-reader for the books on a microSD card: EPUB, MOBI and AZW3 without DRM, FB2, PDF (as text), plain text and HTML; a library with each book's page (cover, description, chapters, progress), justified serif pages in seven sizes, contents, bookmarks and reading statistics |
 | Bus | The next buses at one or two stops in Great Britain, counting down, and the timetable for the rest of today and tomorrow (swipe up): London's live from TfL (no key), elsewhere from NextBuses (a free TransportAPI key). Hidden until a stop is set |
 | Recipes | Say or type a dish; the AI writes the recipe (needs an OpenAI key) |
-| Games | 2048, Memory, Maths Quest, Daily (Daily maths, a Sudoku of the day at three levels and a Nonogram of the day at two sizes), Quiz, Adventure, X and O, Tutor (7th grade geometry lessons, in Romanian and English), Solitaire (Klondike, draw 1 or 3), Mines (three sizes), Four in a Row and Chess (both against the board, at three levels) |
+| Games | 2048, Memory, Maths Quest, Daily (Daily maths, a Sudoku of the day at three levels and a Nonogram of the day at two sizes), Quiz, Adventure, X and O, Tutor (7th grade geometry lessons, units 4 to 7 of the textbook, in Romanian and English), Solitaire (Klondike, draw 1 or 3), Mines (three sizes), Four in a Row and Chess (both against the board, at three levels) |
 | Claude | Your weekly Claude Code usage, from your own MQTT broker |
 | Settings | Language, rotation, sound, sleep, WiFi, which apps show, software update |
 | About | The project's website (with a QR code), source and videos; then firmware, memory, network, battery, sensors |
