@@ -358,7 +358,7 @@ static void sdkTools(int x, int y, int w, int h, int gap, int perRow) {
   int bw = (w - (perRow - 1) * gap) / perRow;
   const GFXfont *f = &FreeSansBold12pt7b;
   for (StrId id : {S_SUDOKU_ERASE, S_SUDOKU_PENCIL, S_SUDOKU_UNDO, S_SUDOKU_HINT})
-    if (textW(f, T(id)) > bw - 20) f = &FreeSansBold9pt7b;
+    if (textW(f, T(id)) > bw - 14) f = &FreeSansBold9pt7b;
   struct Tool {
     StrId label;
     int id;
@@ -368,10 +368,12 @@ static void sdkTools(int x, int y, int w, int h, int gap, int perRow) {
     if (tools[k].id == SK_UNDO && !dailyS->undoN) {  // nothing to undo: a thin outline, the word in regular type, no target
       canvas->drawRoundRect(tx, ty, bw, h, min(h / 2, 20), INK);
       const GFXfont *rf = f == &FreeSansBold12pt7b ? &FreeSans12pt7b : &FreeSans9pt7b;
-      textCentre(tx + bw / 2, ty + h / 2 + 8, rf, fitted(rf, T(S_SUDOKU_UNDO), bw - 24).c_str());
+      textCentre(tx + bw / 2, ty + h / 2 + 8, rf, fitted(rf, T(S_SUDOKU_UNDO), bw - 14).c_str());
       continue;
     }
-    gButton(tx, ty, bw, h, T(tools[k].label), tools[k].id == SK_PENCIL && dailyS->pencil, tools[k].id, f);
+    // Four across upright leave ~107 px: the words get all but 7 px a side (gButton keeps 12).
+    pillButton(tx, ty, bw, h, fitted(f, T(tools[k].label), bw - 14).c_str(), tools[k].id == SK_PENCIL && dailyS->pencil, f);
+    gTarget(tx, ty, bw, h, tools[k].id);
   }
 }
 
@@ -424,7 +426,7 @@ static void drawSudokuPlay() {
     int py = y0 + side + 12;
     if (s.done) return sdkSolvedPanel(W / 2, py, W - 40);
     for (int k = 1; k <= 9; k++) sdkDigitKey(x0 + (k - 1) * c + 2, py, c - 4, 70, k);
-    sdkTools(x0, py + 82, side, 54, 10, 4);
+    sdkTools(x0, py + 82, side, 54, 6, 4);
     gCentred(W / 2, py + 82 + 54 + 26, &FreeSans9pt7b, sdkSay(), W - 24, 20, 2);
   } else {  // the board on the left; beside it Back and Levels, the level and the time, the pad, what's happening
     sdkDrawBoard();

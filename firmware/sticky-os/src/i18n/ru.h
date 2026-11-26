@@ -954,7 +954,7 @@
 {S_SUDOKU_ERASE, "Стереть"},
 {S_SUDOKU_PENCIL, "Карандаш"},
 {S_SUDOKU_UNDO, "Отмена"},
-{S_SUDOKU_HINT, "Подсказка"},
+{S_SUDOKU_HINT, "Помощь"},
 {S_SUDOKU_HOW, "Нажми на клетку, потом на цифру."},
 {S_SUDOKU_HOW_PENCIL, "Карандаш: цифры пишутся мелко, как заметки."},
 {S_SUDOKU_GIVEN, "Эта цифра дана: её не изменить."},
