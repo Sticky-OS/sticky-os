@@ -124,6 +124,16 @@ with a suffix (`v1.1.0-rc1`) is published as a pre-release: boards ask for
 its release (`v1.1.0-rc1` < `v1.1.0`), as in semver. Tags must match
 `vMAJOR.MINOR.PATCH` with an optional `-suffix` of letters, digits and dots.
 
+Or from GitHub, without git: **Actions → Release → Run workflow**. Choose
+a *Bump* (minor, patch or major, counted from the last release) or type a
+*Version*. Then choose the commit (`main`), a *Title* (the headline after
+"Sticky OS 1.13: ") and the *Notes*. The notes are one line, with ` | `
+between items; each item becomes a bullet. Leave them empty to list the
+commits merged since the last release. Turn on *Pre-release* to add
+`-rc1`. The run checks that the commit is on `main` and that its Build
+passed, then writes the annotated tag, builds it and publishes it, as for a
+pushed tag.
+
 **On the board** (`ota.cpp`; not `update.cpp`, which a case-insensitive disk
 confuses with the core's `Update.h`): the network task asks
 `api.github.com/repos/Sticky-OS/sticky-os/releases/latest` 2 minutes after a
