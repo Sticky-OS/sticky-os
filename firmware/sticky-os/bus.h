@@ -62,15 +62,16 @@ BusSource busSource(const char *code);  // 490...: TfL; anything else: NextBuses
 // empty array is a good reply: no bus due in the next half hour or so.
 bool busParseTfl(const char *json, BusBoard &b);
 
-// TransportAPI's bus/stop/<code>/live.json reply (group=no): its "name" or
+// TransportAPI's bus/stop_timetables/<code>.json reply (live=true): its "name" or
 // "stop_name", "indicator", and departures.all with line_name, direction,
 // date, aimed_departure_time and, when live, expected_departure_date and
-// expected_departure_time. Its dates and times are the UK's local time;
+// expected_departure_time; cancelled buses (status.cancellation.value) are
+// left out. Its dates and times are the UK's local time;
 // `local` turns one into a time_t (busUkTime on the board).
 typedef time_t (*BusLocalTime)(int year, int month, int day, int hour, int minute);
 bool busParseNextBuses(const char *json, BusLocalTime local, BusBoard &b);
 
-// A NextBuses timetable.json reply (the same shape as live.json), added to
+// A stop_timetables reply without live=true (the same shape), added to
 // `out` (from out.from on, the soonest kept, two the same once). False when
 // it isn't such a reply. `added`: how many were new.
 bool busAddNextBuses(const char *json, BusLocalTime local, BusLater &out, int *added = nullptr);

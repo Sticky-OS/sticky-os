@@ -584,6 +584,11 @@ static int busGet(const String &url, String &body, size_t max, bool tapi) {
     http.addHeader("X-App-Id", cfg::str("bus.tapi_id"));
     http.addHeader("X-App-Key", cfg::str("bus.tapi_key"));
   }
+  // TransportAPI moved its bus/stop/<code>/live.json and timetable.json to
+  // bus/stop_timetables/<code>.json with a 301 (November 2026): follow one
+  // if it moves again, rather than show "answered 301".
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  http.setRedirectLimit(3);
   int status = http.GET();
   if (status == 200 && !netReadBody(http, body, max)) status = NET_ERR_BAD_BODY;
   http.end();
@@ -597,7 +602,7 @@ bool fetchBus(BusBoard &b, String &error) {
   if (!tfl && busNeedsKey(b.code)) return error = T(S_BUS_NEEDS_KEY), false;
   const char *who = tfl ? "TfL" : "TransportAPI";
   String url = tfl ? String("https://api.tfl.gov.uk/StopPoint/") + b.code + "/Arrivals"
-                   : String("https://transportapi.com/v3/uk/bus/stop/") + b.code + "/live.json?group=no&nextbuses=yes&limit=" + BUS_MAX_DEPS;
+                   : String("https://transportapi.com/v3/uk/bus/stop_timetables/") + b.code + ".json?group=false&live=true&limit=" + (BUS_MAX_DEPS + 4);
   String body;
   int status = busGet(url, body, 49152, !tfl);
   if (status != 200) {
@@ -669,10 +674,15 @@ bool fetchBusLater(BusLater &out, const BusBoard &live, String &error) {
     struct tm f;
     localtime_r(&from, &f);
     long day = (f.tm_year + 1900) * 10000L + (f.tm_mon + 1) * 100 + f.tm_mday;
-    char q[64];
-    snprintf(q, sizeof q, "date=%04d-%02d-%02d&time=%02d:%02d", f.tm_year + 1900, f.tm_mon + 1, f.tm_mday, f.tm_hour, f.tm_min);
+    // The 30 soonest from `from` on, up to 24 hours ahead (the most it
+    // gives); `from` in UTC, its + written %2B so it stays a +.
+    struct tm u;
+    gmtime_r(&from, &u);
+    char q[128];  // room for any int, so GCC's format-truncation check is satisfied
+    snprintf(q, sizeof q, "datetime=%04d-%02d-%02dT%02d:%02d:00%%2B00:00&to_offset=PT24:00:00", u.tm_year + 1900, u.tm_mon + 1, u.tm_mday,
+             u.tm_hour, u.tm_min);
     body = "";
-    int status = busGet(String("https://transportapi.com/v3/uk/bus/stop/") + out.code + "/timetable.json?group=no&limit=30&" + q, body, 65536, true);
+    int status = busGet(String("https://transportapi.com/v3/uk/bus/stop_timetables/") + out.code + ".json?group=false&limit=30&" + q, body, 65536, true);
     busRequestCounted();
     if (status != 200) {
       Serial.printf("bus: NextBuses' timetable for %s: %d\n", out.code, status);

@@ -308,10 +308,22 @@ static bool ymd(const char *s, int &y, int &mo, int &d) {
   return strlen(s) >= 10 && s[4] == '-' && s[7] == '-' && digits(s, 4, y) && digits(s + 5, 2, mo) && digits(s + 8, 2, d);
 }
 
-// One departure of a NextBuses reply: false when it has no route or no usable time.
+// Whether a stop_timetables departure is cancelled: its
+// "status":{"cancellation":{"value":true}}.
+static bool cancelled(const char *json, long o) {
+  long st = member(json, o, "status");
+  if (st < 0 || json[st] != '{') return false;
+  long c = member(json, st, "cancellation");
+  if (c < 0 || json[c] != '{') return false;
+  long v = member(json, c, "value");
+  return v >= 0 && !strncmp(json + v, "true", 4);
+}
+
+// One departure of a NextBuses reply: false when it has no route or no
+// usable time, or is cancelled.
 static bool nextBusesDep(const char *json, long o, BusLocalTime local, BusDep &d) {
   d = {};
-  if (json[o] != '{') return false;
+  if (json[o] != '{' || cancelled(json, o)) return false;
   char date[16] = "", time[8] = "", liveDate[16] = "", liveTime[8] = "";
   if (!stringMember(json, o, "line_name", d.line, sizeof d.line)) stringMember(json, o, "line", d.line, sizeof d.line);
   if (!d.line[0]) return false;
