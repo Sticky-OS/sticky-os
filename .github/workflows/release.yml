@@ -8,24 +8,138 @@ name: Release
 # private_seed.h don't exist in CI, so nothing private is compiled in.
 # The build job can only read the repository; the publish job, which only
 # uploads what the build made, is the one that can write.
+#
+# Or by hand: Actions > Release > Run workflow. Pick a bump (patch, minor,
+# major: from the last release) or type a version, the commit (main), the
+# notes (one line; " | " between items, each becomes a bullet; empty: GitHub
+# lists the pull requests since the last release) and whether it's a
+# pre-release. The tag job checks the commit is on main and its Build passed,
+# makes the annotated tag (its message is the notes, as with a pushed tag)
+# and pushes it; this same run then builds and publishes it. (A tag pushed
+# with the workflow's token starts no new run, so it can't be left to the
+# push trigger.)
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Next version, from the last release (ignored when Version is set)'
+        type: choice
+        options: [minor, patch, major]
+        default: minor
+      version:
+        description: 'Or this exact version, e.g. v1.13.0 (empty: use Bump)'
+        type: string
+        required: false
+      ref:
+        description: 'The commit or branch to release (must be on main)'
+        type: string
+        default: main
+      title:
+        description: 'The headline, after "Sticky OS 1.13: " (e.g. a Hint button for Sudoku)'
+        type: string
+        required: true
+      notes:
+        description: 'What changed, one line; " | " between items (empty: the merged pull requests)'
+        type: string
+        required: false
+      prerelease:
+        description: 'A pre-release (boards never install it): adds -rc1 when the version has no suffix'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  build:
+  # Run by hand only: work out the version, check the commit, make and push the tag.
+  tag:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to push the tag
+      actions: read     # to see the commit's Build run
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+      - id: tag
+        name: Make the tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUMP: ${{ inputs.bump }}
+          VERSION: ${{ inputs.version }}
+          REF: ${{ inputs.ref }}
+          TITLE: ${{ inputs.title }}
+          NOTES: ${{ inputs.notes }}
+          PRE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          git fetch --force --tags origin
+          SHA=$(git rev-parse --verify "origin/$REF^{commit}" 2>/dev/null || git rev-parse --verify "$REF^{commit}")
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "$REF ($SHA) isn't on main"; exit 1; }
+          LAST=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -n "$VERSION" ]; then
+            V="$VERSION"
+            [[ "$V" == v* ]] || V="v$V"
+          else
+            IFS=. read -r MA MI PA <<< "${LAST#v}"
+            case "$BUMP" in
+              major) V="v$((MA + 1)).0.0" ;;
+              minor) V="v$MA.$((MI + 1)).0" ;;
+              *)     V="v$MA.$MI.$((PA + 1))" ;;
+            esac
+          fi
+          if [ "$PRE" = true ] && [[ "$V" != *-* ]]; then V="$V-rc1"; fi
+          [[ "$V" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "$V is not vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/$V" >/dev/null; then echo "$V exists already"; exit 1; fi
+          # The commit's Build (the firmware, its tests and the site) must have passed.
+          OK=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow Build --commit "$SHA" --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
+          [ "$OK" -gt 0 ] || { echo "Build hasn't passed on $SHA; wait for it, or fix it first"; exit 1; }
+          SHORT="${V#v}"
+          SHORT="${SHORT%.0}"
+          {
+            echo "Sticky OS $SHORT: $TITLE"
+            echo
+            if [ -n "$NOTES" ]; then
+              printf '%s\n' "$NOTES" | sed 's/ *| */\n/g' | sed 's/^ *//; s/ *$//; /^$/d; s/^/- /'
+            else
+              git log --format='- %s' "${LAST:+$LAST..}$SHA" --first-parent | head -30
+            fi
+            echo
+            echo "Independent, open-source firmware for the Seeed reTerminal Sticky. Not made by or affiliated with Seeed Studio."
+          } > message.txt
+          cat message.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$V" "$SHA" -F message.txt
+          git push origin "refs/tags/$V"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Tagged $V at $SHA (last release $LAST)" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: tag
+    # A pushed tag skips the tag job; run then, or when the tag job made one.
+    if: ${{ !cancelled() && (needs.tag.result == 'success' || (github.event_name == 'push' && needs.tag.result == 'skipped')) }}
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.tag.outputs.version || github.ref_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          ref: refs/tags/${{ needs.tag.outputs.version || github.ref_name }}
       - name: Check the tag is a version
         run: |
-          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "tag $GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE"; exit 1; }
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "tag $VERSION is not vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE"; exit 1; }
       - uses: arduino/setup-arduino-cli@81d310742121c928ea9c8bbd407b4217b432ae02 # v2.0.0
       - name: Install the ESP32 core and libraries
         run: |
@@ -33,7 +147,7 @@ jobs:
           arduino-cli core install esp32:esp32@3.3.11 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli lib install "Adafruit BusIO@1.17.4" "Adafruit GFX Library@1.12.6" "PubSubClient@2.8"
       - name: Build
-        run: STICKY_VERSION="$GITHUB_REF_NAME" ./upload.sh build
+        run: STICKY_VERSION="$VERSION" ./upload.sh build
       - name: Make the release files
         run: |
           set -euo pipefail
@@ -56,7 +170,7 @@ jobs:
         run: |
           # The owner's seed headers never exist here; if one ever did, stop.
           ! [ -e firmware/sticky-os/private_seed.h ] && ! [ -e firmware/sticky-os/secrets.h ]
-          strings dist/sticky-os.bin | grep -q "^$GITHUB_REF_NAME$" || { echo "the version string isn't in the image"; exit 1; }
+          strings dist/sticky-os.bin | grep -q "^$VERSION$" || { echo "the version string isn't in the image"; exit 1; }
           # No OpenAI-style API key in the image. (No PEM check: mbedtls carries
           # the "BEGIN ... PRIVATE KEY" markers itself.)
           if strings dist/sticky-os.bin | grep -Eq 'sk-[A-Za-z0-9_-]{20,}'; then echo "the image holds an API key"; exit 1; fi
@@ -64,10 +178,10 @@ jobs:
         run: |
           set -euo pipefail
           # The notes: the annotated tag's message, or GitHub's generated ones.
-          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
-          if [ "$(git cat-file -t "$GITHUB_REF_NAME")" = tag ]; then
+          git fetch --force origin "refs/tags/$VERSION:refs/tags/$VERSION"
+          if [ "$(git cat-file -t "$VERSION")" = tag ]; then
             # subject and body, without a signature; the board shows the first lines
-            git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP SIGNATURE-----/,$d; /-----BEGIN SSH SIGNATURE-----/,$d' > dist/notes.md
+            git tag -l --format='%(contents)' "$VERSION" | sed '/-----BEGIN PGP SIGNATURE-----/,$d; /-----BEGIN SSH SIGNATURE-----/,$d' > dist/notes.md
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -77,10 +191,13 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: build
+    needs: [tag, build]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      VERSION: ${{ needs.tag.outputs.version || github.ref_name }}
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -93,7 +210,7 @@ jobs:
           set -euo pipefail
           if [ -s dist/notes.md ]; then NOTES=(--notes-file dist/notes.md); else NOTES=(--generate-notes); fi
           KIND=()
-          if [[ "$GITHUB_REF_NAME" == *-* ]]; then KIND=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "Sticky OS $GITHUB_REF_NAME" \
+          if [[ "$VERSION" == *-* ]]; then KIND=(--prerelease); fi
+          gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --title "Sticky OS $VERSION" \
             "${NOTES[@]}" "${KIND[@]}" --verify-tag \
             dist/sticky-os.bin dist/sticky-os.bin.sha256 dist/sticky-os-full.bin dist/sticky-os-full.bin.sha256
