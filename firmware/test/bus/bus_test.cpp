@@ -1,8 +1,10 @@
 // The Bus app's parsers (bus.h): stop codes, TfL's arrivals, NextBuses'
 // departures. fixtures/tfl-arrivals.json is a real TfL reply (24 Nov 2026,
 // Lady Somerset Road, stop GY). fixtures/nextbuses-live.json is written by
-// hand in the shape of TransportAPI's bus/stop/<code>/live.json, with the
-// Accrington stop's timetable that day: no TransportAPI key was at hand.
+// hand in the shape of TransportAPI's bus/stop_timetables/<code>.json (the
+// example in its OpenAPI description, docs.transportapi.com), with the
+// Accrington stop's timetable that day and one cancelled bus: no
+// TransportAPI key was at hand.
 #include "bus.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,6 +136,14 @@ static void nextbuses() {
   CHECK(!strcmp(b.dep[1].dest, "Clayton-le-Moors & Caf\xc3\xa9"));
   CHECK(!strcmp(b.dep[2].dest, "Bacup") && b.dep[2].at == londonTime(2026, 11, 24, 21, 8));
   CHECK(b.dep[3].at == londonTime(2026, 11, 25, 0, 8));                       // after midnight: the next day's date
+  for (int i = 0; i < b.n; i++) CHECK(b.dep[i].at != londonTime(2026, 11, 24, 20, 35));  // the cancelled 6 isn't shown
+  // Cancelled: left out, whatever else it says; not cancelled: kept.
+  CHECK(busParseNextBuses("{\"departures\":{\"all\":[{\"line_name\":\"1\",\"date\":\"2026-11-24\",\"aimed_departure_time\":\"10:00\","
+                          "\"status\":{\"cancellation\":{\"value\":true,\"reason\":null}}},"
+                          "{\"line_name\":\"2\",\"date\":\"2026-11-24\",\"aimed_departure_time\":\"10:05\","
+                          "\"status\":{\"cancellation\":{\"value\":false}}}]}}",
+                          londonTime, b) &&
+        b.n == 1 && !strcmp(b.dep[0].line, "2"));
 
   BusBoard e = {};
   CHECK(busParseNextBuses("{\"name\":\"X\",\"departures\":{\"all\":[]}}", londonTime, e) && e.ok && e.n == 0 && !strcmp(e.name, "X"));
@@ -195,7 +205,7 @@ static void tflTimetable() {
   CHECK(l.n > 0 && l.dep[0].at >= l.from && l.n < 238);
   CHECK(!busAddTflTimetable("{\"message\":\"nope\"}", 2026, 11, 24, 2, "", londonTime, l));
 
-  // NextBuses' timetable.json: added after what's there, each once.
+  // NextBuses' timetable (stop_timetables without live): added after what's there, each once.
   std::string nb = readFile("fixtures/nextbuses-live.json");
   l = {};
   int added = 0;
