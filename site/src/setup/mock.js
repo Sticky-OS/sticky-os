@@ -26,7 +26,7 @@ const KEYS = [
   // wifi.networks is secret: "keys" lists its SSIDs (ssids), never a value.
   { key: 'wifi.networks', type: 'wifi_list', secret: true, max_items: 5 },
   { key: 'device.language', type: 'string', secret: false, default: 'en', max_len: 5,
-    options: ['en', 'es', 'pt', 'fr', 'de', 'it', 'ru', 'tr', 'pl', 'ro'] },
+    options: ['en', 'es', 'pt', 'fr', 'de', 'it', 'ru', 'tr', 'pl', 'ro', 'uk'] },
   { key: 'device.name', type: 'string', secret: false, max_len: 24 },
   { key: 'device.timezone', type: 'string', secret: false, default: 'UTC0', max_len: 64 },
   { key: 'weather.locate', type: 'bool', secret: false, default: true },

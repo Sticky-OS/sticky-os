@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum Lang : uint8_t { L_EN, L_ES, L_PT, L_FR, L_DE, L_IT, L_RU, L_TR, L_PL, L_RO, LANG_COUNT };
+enum Lang : uint8_t { L_EN, L_ES, L_PT, L_FR, L_DE, L_IT, L_RU, L_TR, L_PL, L_RO, L_UK, LANG_COUNT };
 
 enum StrId : uint16_t {
 #define S(id, en) id,
@@ -52,7 +52,7 @@ String TF(StrId id, ...);               // T as a printf format
 String TP(StrId id, long n);            // the plural form for n, formatted with n ("%ld"): "3 minute"
 String TItem(StrId list, int index);    // one item of a '|' list: day and month names
 // strftime with the board's day and month names: %A %a weekday, %B month
-// (as in a date: "13 noiembrie", Russian and Polish in the genitive), %b
+// (as in a date: "13 noiembrie", Russian, Polish and Ukrainian in the genitive), %b
 // short month, %e the day without padding; the rest as strftime.
 size_t tStrftime(char *out, size_t size, const char *format, const struct tm *tm);
 String tDate(StrId format, const struct tm *tm);  // the same, from a format in the table

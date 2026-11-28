@@ -27,7 +27,7 @@ before and after. Write "not firmware" otherwise. -->
 - [ ] It builds (`./upload.sh build`) and the test suites pass
 - [ ] New or changed behaviour has a test, or I said above why it can't
 - [ ] I tried it on a board, in portrait and landscape if the screen changed, and attached screenshots
-- [ ] New text goes through `S()` in all ten languages (`firmware/test/i18n/run.sh` passes)
+- [ ] New text goes through `S()` in all eleven languages (`firmware/test/i18n/run.sh` passes)
 - [ ] Big buffers and task stacks are in PSRAM; the internal RAM change is reported above
 - [ ] README or docs/guide.md updated if something a user sees or does changed
 - [ ] No WiFi passwords, keys, tokens, names, addresses or other private values in the diff or the screenshots

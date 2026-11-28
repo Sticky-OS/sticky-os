@@ -288,6 +288,16 @@ static void testAdvance() {
   printf("fonts: %d fonts, %d strings each, %d drawn and measured\n", (int)allFonts().size(), (int)samples.size(), compared);
 }
 
+// Text from outside (textFold): the Ukrainian letters the fonts have stay, and
+// ґ, which they haven't, becomes г rather than nothing.
+static void testFold() {
+  CHECK(extIndex(0x404) >= 0 && extIndex(0x406) >= 0 && extIndex(0x407) >= 0 && extIndex(0x454) >= 0 && extIndex(0x456) >= 0 && extIndex(0x457) >= 0,
+        "Є І Ї є і ї are in the tables");
+  CHECK(extIndex(0x490) < 0 && extIndex(0x491) < 0, "Ґ ґ aren't: the fold below is for them");
+  CHECK(textFold("Їжак і Єва: м’ята, ґанок, Ґудзик") == "Їжак і Єва: м’ята, ганок, Гудзик", "%s", textFold("Їжак і Єва: м’ята, ґанок, Ґудзик").c_str());
+  CHECK(utf8Upper("є і ї ґ", false) == "Є І Ї Ґ", "%s", utf8Upper("є і ї ґ", false).c_str());
+}
+
 static void testPng(const char *folder) {
   GfxFrame page(37, 5);  // a width that isn't whole bytes
   page.fillRect(1, 1, 35, 3);
@@ -307,6 +317,7 @@ int main(int argc, char **argv) {
   testTable();
   testMeasures();
   testAdvance();
+  testFold();
   testPng(argc > 1 ? argv[1] : "fixtures");
   if (failures) return printf("fonts: %d checks failed\n", failures), 1;
   printf("fonts: ok\n");

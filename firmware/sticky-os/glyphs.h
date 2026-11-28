@@ -44,5 +44,5 @@ String utf8Upper(const String &s, bool turkish);
 
 // Text from the internet or the AI as the screen can show it: what the
 // fonts have stays, the rest is folded (curly quotes, dashes, fractions...)
-// or dropped; controls become spaces.
+// or dropped; controls become spaces. Ukrainian ґ, which the fonts lack, becomes г.
 String textFold(const String &s);

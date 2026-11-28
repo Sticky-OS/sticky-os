@@ -23,7 +23,7 @@ firmware.
 - **E-reader**: EPUB, MOBI, AZW3 (without DRM), FB2, PDF (as text) and plain text from a microSD card
 - **E-paper photo frame**: photos in four greys, sent from the browser or read from microSD
 - **Clock, timer, quote of the day, recipes, and games**: 2048, Solitaire, Mines, Chess and more, and a daily Sudoku, the same puzzle on every board
-- **Ten languages**; no account and no cloud; updates over WiFi that roll back if they fail
+- **Eleven languages**; no account and no cloud; updates over WiFi that roll back if they fail
 
 It runs on the reTerminal Sticky (3.97", 800 x 480, ESP32-S3) only, not on
 Seeed's 7.5" reTerminal E1001 or E1002.
@@ -70,12 +70,12 @@ Everything is described in the [guide](docs/guide.md).
 
 ## Languages
 
-The board speaks ten languages: English, Español, Português, Français,
-Deutsch, Italiano, Русский, Türkçe, Polski and Română. Pick one in the setup
+The board speaks eleven languages: English, Español, Português, Français,
+Deutsch, Italiano, Русский, Türkçe, Polski, Română and Українська. Pick one in the setup
 app (its first step) or on the board in **Settings → Language**. It changes
 every word on the screens, the day and month names, the decimal comma, the
 on-screen keyboard (a page of the language's accented letters, or the
-Russian layout with a globe key for the Latin one), and the language the AI
+Russian or Ukrainian layout with a globe key for the Latin one), and the language the AI
 answers in (notes, recipes, Quiz and Adventure) and listens for (speech to
 text gets the language as a hint).
 
@@ -84,7 +84,8 @@ recipes, quotes and the AI's answers in any of these languages, Latin or
 Cyrillic. The fonts are Adafruit GFX's FreeSans and FreeSerif with a second
 table of 340 letters each (Latin-1, Latin Extended-A, Romanian's ș ț,
 Cyrillic, some punctuation), so a character outside them (Chinese, Arabic,
-emoji) still becomes an ASCII stand-in or nothing.
+emoji) still becomes an ASCII stand-in or nothing; Ukrainian ґ, which the fonts
+lack, shows as г.
 
 Still in English for now: the setup app, the built-in quiz questions, the
 built-in adventure story and the offline quotes. Adding a language, or a

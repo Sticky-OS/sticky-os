@@ -164,13 +164,13 @@ test('keys: the Sticky key list, grouped; secrets never come back', async () => 
   for (const k of keys) assert.ok(KEY_INFO[k.key]?.label, `no label for ${k.key}`);
 });
 
-test('language: the first step, the board\'s ten choices by their own names, checked by the board', async () => {
+test('language: the first step, the board\'s eleven choices by their own names, checked by the board', async () => {
   const { transport, client } = rig();
   await transport.connect();
   const c = client();
   const { keys } = await c.request('keys');
   const k = keys.find((x) => x.key === 'device.language');
-  assert.deepEqual(k.options, ['en', 'es', 'pt', 'fr', 'de', 'it', 'ru', 'tr', 'pl', 'ro']);
+  assert.deepEqual(k.options, ['en', 'es', 'pt', 'fr', 'de', 'it', 'ru', 'tr', 'pl', 'ro', 'uk']);
   assert.equal(k.value, 'en', 'English until chosen');
   assert.equal(ESSENTIALS[0], 'device.language', 'the overview asks before WiFi');
   assert.equal(groupOf('device.language'), 'language');
@@ -178,8 +178,10 @@ test('language: the first step, the board\'s ten choices by their own names, che
   assert.equal(KEY_INFO['device.language'].type, 'lang');
   for (const o of k.options) assert.ok(LANGUAGES[o] && languageName(o) !== o, `a name for ${o}`);
   assert.equal(languageName('ro'), 'Română');
+  assert.equal(languageName('uk'), 'Українська');
   assert.equal(languageName('xx'), 'xx');
   assert.equal(browserLanguage(['ro-RO', 'en-GB']), 'ro');
+  assert.equal(browserLanguage(['uk-UA', 'ru-RU']), 'uk');
   assert.equal(browserLanguage(['ja-JP', 'de-AT']), 'de');
   assert.equal(browserLanguage(['ja-JP']), 'en');
   assert.equal((await c.request('set', { key: 'device.language', value: 'ro' })).ok, true);

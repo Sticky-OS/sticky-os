@@ -118,9 +118,9 @@ tasks and photos stay.
 ## Languages
 
 English, Español, Português, Français, Deutsch, Italiano, Русский, Türkçe,
-Polski, Română. Choose one in the setup app (the first step on its
+Polski, Română, Українська. Choose one in the setup app (the first step on its
 overview, *Language*, before WiFi) or on the board: **Settings → Language**,
-a list of the ten by their own names; the choice takes effect at once (no
+a list of the eleven by their own names; the choice takes effect at once (no
 restart) and is the same setting the setup app edits (`device.language`).
 
 What changes:
@@ -140,7 +140,7 @@ What changes:
 Text that comes from elsewhere shows with its own letters: calendar
 events, notes, recipes, quotes and AI answers in any Latin or Cyrillic
 language. Characters the fonts don't have (Chinese, Arabic, emoji) become
-an ASCII look-alike or are left out.
+an ASCII look-alike or are left out; Ukrainian ґ shows as г.
 
 Still English in this version: the setup app's own pages, the built-in quiz
 questions and adventure story, the offline quotes and the Recipes example.
@@ -317,8 +317,9 @@ Controls inside an app:
   two, e.g. `ăâ`) opens a page of them: ă â î ș ț „ ” in Romanian, ä ö ü ß
   in German, ç ğ ı ö ş ü in Turkish (where shift makes i İ), and so on;
   `abc` goes back. In Russian the letters are the ЙЦУКЕН layout (with ъ and
-  ё) and a globe key switches to the Latin letters and back; a password
-  starts on the Latin ones. `?123`
+  ё), in Ukrainian its own ЙЦУКЕН (with і, ї, є and the apostrophe ’; no ґ,
+  which the fonts haven't got), and a globe key switches to the Latin letters
+  and back; a password starts on the Latin ones. `?123`
   for digits and `@ # & - + ( ) / : ? ! ' " ; % *`, then `=\<` for
   `[ ] { } < > ^ ~ | \ $ _ =` and the backquote, backspace, space and
   Done (OK does the same). For a password it shows dots (*Show* reveals

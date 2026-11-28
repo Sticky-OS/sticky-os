@@ -71,9 +71,9 @@ without touching the board:
 | `daily date <YYYYMMDD>`, `daily date off` | test builds only (a `dev-*` version): today's date for the daily puzzles (Daily maths, Sudoku, Nonogram), to check that two boards agree and that a streak rolls over at midnight; `off` goes back to the clock |
 | `game type <words>` | Quiz or Adventure on screen: the words as if typed for *Your own theme* / *Your own idea* |
 | `game slide <0-3>`, `game pick <id>` | 2048: slide left, right, up, down; press what has that id (a card, an answer, a choice, a level, a square; 900 Back, 901 New game, 902 Again, 903 Games, 904 Next, 905 Cancel, 906 the built-in quiz or story, 907 Practice, 908 Play, 909 Try again; Tutor: 25 the class, 30 the subject, 70 to 73 the units (4, 5, 6, 7), 40 to 59 the lessons (by place in the list of all units), 20 / 21 / 22 a lesson's summary, examples and exercises, 0 to 3 an exercise's answers, 10 its clues; Solitaire: pile x 30 + a card's place in it from the bottom (piles 0 the stock, 1 the waste, 2 to 5 the foundations, 6 to 12 the columns), pile x 30 + 29 the pile itself (29 turns the stock), 400 Undo, 410 / 411 deal draw 1 / draw 3; Mines: 0 up a square (row x columns + column, held upright), 200 Dig, 201 Flag, 210 to 212 a new small, medium or large board; Four in a Row: 0 to 6 a column, 10 to 12 the level; Chess: 100 + a square (a1 = 0 to h8 = 63, so e2 is 112), 30 to 33 promote to a queen, rook, bishop or knight, 10 to 12 the level, 20 Undo, 21 Resign, 40 Menu, and 1000 + from x 64 + to plays that move at once (e2e4 is 1796); the Daily screen: 10 Daily maths, 11 Sudoku, 12 Nonogram; Sudoku: 0 to 80 a square (row x 9 + column), 101 to 109 the numbers, 110 Erase, 111 Pencil, 112 Undo, 113 Hint, 120 to 122 a level on the levels card, 130 Levels; Nonogram: 0 up a square (row x side + column: 0 to 63 at 8 x 8, 0 to 99 at 10 x 10), 200 Fill, 201 Cross, 210 / 211 the 8 x 8 / 10 x 10 on the sizes card, 230 Size; `game peek` lists the ids on screen) |
-| `lang <code>` | Settings → Language: `en`, `es`, `pt`, `fr`, `de`, `it`, `ru`, `tr`, `pl`, `ro` (kept, as the setting) |
+| `lang <code>` | Settings → Language: `en`, `es`, `pt`, `fr`, `de`, `it`, `ru`, `tr`, `pl`, `ro`, `uk` (kept, as the setting) |
 | `settings language` | Settings, on its Language page |
-| `keyboard`, `keyboard accents` | Notes' keyboard; `accents`: on its page of accented letters (in Russian: the Latin letters) |
+| `keyboard`, `keyboard accents` | Notes' keyboard; `accents`: on its page of accented letters (in Russian and Ukrainian: the Latin letters) |
 | `listen show`, `listen think`, `listen off` | the voice card on its own over the current screen, for screenshots: *Listening...* (the microphone), *Thinking...* (the speech bubble), or gone. Recording shows the first by itself; the board reads no serial while it records, so a `shot` waits for the end |
 | `airelay <host> <port>`, `airelay off` | until the next restart, the AI's requests (notes, recipes and the games) go to `https://host:port` without checking its certificate and without the OpenAI key: a fake server on a computer can answer (`/v1/audio/transcriptions` with `{"text":...}`, `/v1/responses` with an `output_text`; the request's `text.format.name` says what's wanted: `recipe`, `quiz` or `adventure`). Never saved |
 | `book`, `book list`, `book open <n>` | Books: the app (the book left open, else the library); the books on the card, one `BOOK <n> <status> <percent> <format> "<title>" "<author>" <path>` line each, then `END`; open book n of that list (the first time, it waits while the book is got ready and says how long it took); `book start <n>` opens it as a tap does, the loop going on (the progress screen shows) |
@@ -137,7 +137,7 @@ before and after. Big buffers and task stacks go in PSRAM, images go in flash
 
 **Also:**
 
-- New text goes through `S()` with all ten languages (see [Languages](#languages)).
+- New text goes through `S()` with all eleven languages (see [Languages](#languages)).
 - `src/sticky_drivers/` holds Seeed's screen and touch drivers. Keep them as
   close to Seeed's as you can, but changing them is fine when the change works
   on a board: say in the pull request how you tested it (the timings from the
@@ -264,7 +264,7 @@ in English, use it with `T()`, and add the translations you can; leave the
 others, they fall back to English. Keep the placeholders (`%s`, `%d`...) in
 the same order in every language; a list (`S_DAYS`) keeps its number of
 items; a plural string has the forms its language needs (`one|other`, or
-`one|few|many` in Russian, Polish and Romanian), each with `%ld`.
+`one|few|many` in Russian, Ukrainian, Polish and Romanian), each with `%ld`.
 
 **A new language:** add it to `Lang` in `i18n.h`, `LANGS` in `i18n_tables.cpp`
 (its code, its own name, its English name for the AI, the decimal comma and

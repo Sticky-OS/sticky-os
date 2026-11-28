@@ -326,7 +326,7 @@ struct Keyboard {
   String label, hint;     // the line above the field, and what an empty field says
   String note;            // a line from the microphone: listening, or why it failed
   int layer = 0;          // 0 letters, 1 digits and symbols, 2 more symbols, 3 the language's accented letters
-  bool alt = false;       // Russian: the Latin letters instead of the Cyrillic ones (the globe key)
+  bool alt = false;       // Russian, Ukrainian: the Latin letters instead of the Cyrillic ones (the globe key)
   int shift = 0;          // 0 off, 1 the next letter, 2 caps lock
   uint32_t shiftAt = 0;   // the last tap on shift, for a double tap
   int maxLen = 120;
@@ -1593,10 +1593,12 @@ static int keyboardHeight() { return KB_NOTE_H + 4 * keyRowPitch() + 2; }
 
 // The letters for the board's language: three rows, and the accented letters
 // of its own page (the key left of "." opens it; its label is the first two).
-// Russian has its own letters, and a globe key for the Latin ones.
+// Russian and Ukrainian have their own letters, and a globe key for the Latin ones.
 static const KbLetters KB_LATIN = {{"qwertyuiop", "asdfghjkl", "zxcvbnm"}, ""};
 static const KbLetters KB_GERMAN = {{"qwertzuiop", "asdfghjkl", "yxcvbnm"}, "äöüß"};
 static const KbLetters KB_CYRILLIC = {{"йцукенгшщзхъ", "фывапролджэ", "ячсмитьбюё"}, ""};
+// Ukrainian: its ЙЦУКЕН, and the apostrophe (м’ята, п’ять) where Russian has ё. No ґ: the fonts haven't got it.
+static const KbLetters KB_UKRAINIAN = {{"йцукенгшщзхї", "фівапролджє", "ячсмитьбю’"}, ""};
 static const char *const KB_ACCENTS[LANG_COUNT] = {
     "",                     // English
     "áéíóúñü¿¡",            // Spanish
@@ -1608,10 +1610,15 @@ static const char *const KB_ACCENTS[LANG_COUNT] = {
     "çğıöşü",               // Turkish
     "ąćęłńóśźż",            // Polish
     "ăâîșț„”",              // Romanian
+    "",                     // Ukrainian: its own letters
 };
-static bool kbCyrillic(const Keyboard &kb) { return i18nLang() == L_RU && !kb.alt; }
+static bool kbOwnAlphabet() { return i18nLang() == L_RU || i18nLang() == L_UK; }  // Cyrillic, and the globe key
+static bool kbCyrillic(const Keyboard &kb) { return kbOwnAlphabet() && !kb.alt; }
 static const char *kbAccents() { return i18nLang() == L_DE ? KB_GERMAN.accents : KB_ACCENTS[i18nLang()]; }
-static const char *const *kbLetterRows(const Keyboard &kb) { return (kbCyrillic(kb) ? KB_CYRILLIC : i18nLang() == L_DE ? KB_GERMAN : KB_LATIN).rows; }
+static const char *const *kbLetterRows(const Keyboard &kb) {
+  if (kbCyrillic(kb)) return (i18nLang() == L_UK ? KB_UKRAINIAN : KB_CYRILLIC).rows;
+  return (i18nLang() == L_DE ? KB_GERMAN : KB_LATIN).rows;
+}
 
 // A row's characters as code points; returns how many.
 static int kbRow(const char *row, uint16_t *out, int max) {
@@ -1622,7 +1629,7 @@ static int kbRow(const char *row, uint16_t *out, int max) {
 
 // Where every key is for the layer on show; keysY is the top of the first row.
 // The three rows of characters share a grid as wide as the longest row (ten
-// keys for QWERTY, twelve for Russian), each row centred, shift and delete
+// keys for QWERTY, twelve for Russian and Ukrainian), each row centred, shift and delete
 // at the ends of the third. Then the bottom row, in twentieths of the width:
 // ?123, the microphone, ",", space, the accents or globe key (when the
 // language has one), "." and Done. Between the layers every printable ASCII
@@ -1664,7 +1671,7 @@ static int keyboardKeys(const Keyboard &kb, int keysY, KeyBox *out) {
   add(2, 0, side, H2, kb.layer == 1 || kb.layer == 2 ? K_MORE : K_SHIFT);
   for (int i = 0; i < len[2]; i++) add(2, cols - len[2] + 2 * i, cols - len[2] + 2 * i + 2, H2, rows[2][i]);
   add(2, H2 - side, H2, H2, K_BACK);
-  int extra = i18nLang() == L_RU ? K_GLOBE : *kbAccents() ? K_ACCENTS : 0;
+  int extra = kbOwnAlphabet() ? K_GLOBE : *kbAccents() ? K_ACCENTS : 0;
   add(3, 0, 3, 20, K_LAYER);
   add(3, 3, 5, 20, kb.masked ? '_' : K_MIC);  // no dictating a password
   add(3, 5, 7, 20, ',');
@@ -1703,7 +1710,7 @@ static void keyboardBegin(Keyboard &kb, const String &text, const char *label, c
 // For a password: dots, a Show key, no capitals unless asked for.
 static void keyboardSecret(Keyboard &kb) {
   kb.masked = true;
-  kb.alt = true;  // a password: the Latin letters first, also in Russian
+  kb.alt = true;  // a password: the Latin letters first, also in Russian and Ukrainian
   kb.reveal = false;
   kb.shift = 0;
 }
@@ -6497,11 +6504,11 @@ static void devCommands() {
     } else if (line == "settings language") {  // Settings, its Language page
       openApp(APP_SETTINGS);
       settingsOpenPage(SP_LANGUAGE);
-    } else if (line == "keyboard" || line == "keyboard accents") {  // Notes' keyboard (and its page of accented letters, or the Latin letters in Russian)
+    } else if (line == "keyboard" || line == "keyboard accents") {  // Notes' keyboard (and its page of accented letters, or the Latin letters in Russian and Ukrainian)
       openApp(APP_NOTES);
       typeNote();
       if (line.endsWith("accents")) {
-        if (i18nLang() == L_RU) noteKb.alt = true;
+        if (kbOwnAlphabet()) noteKb.alt = true;
         else noteKb.layer = 3;
         render(false);
       }
