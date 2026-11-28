@@ -112,6 +112,7 @@ uint32_t cpUpper(uint32_t cp, bool turkish) {
   if (cp == 0x219 || cp == 0x21B) return cp - 1;                      // ș ț
   if (cp >= 0x430 && cp <= 0x44F) return cp - 0x20;                  // а..я
   if (cp >= 0x450 && cp <= 0x45F) return cp - 0x50;                  // ѐ..џ
+  if (cp == 0x491) return 0x490;                                      // ґ
   return cp;
 }
 
@@ -134,6 +135,7 @@ String textFold(const String &s) {
     else if (cp >= 0x20 && cp < 0x7F) out += (char)cp;
     else if (cp == 0xAD) continue;  // a soft hyphen: invisible
     else if (extIndex(cp) >= 0) utf8Append(out, cp);
+    else if (cp == 0x490 || cp == 0x491) utf8Append(out, cp == 0x490 ? 0x413 : 0x433);  // Ukrainian Ґ ґ: Г г, which the fonts have
     else if (const char *f = foldCodePoint(cp, two)) out += f;
   }
   return out;

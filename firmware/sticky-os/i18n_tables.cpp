@@ -17,6 +17,7 @@ const LangInfo LANGS[LANG_COUNT] = {
     {"tr", "Türkçe", "Turkish", true, PL_ONE_OTHER},
     {"pl", "Polski", "Polish", true, PL_POLISH},
     {"ro", "Română", "Romanian", true, PL_ROMANIAN},
+    {"uk", "Українська", "Ukrainian", true, PL_SLAVIC_RU},
 };
 
 namespace {
@@ -73,10 +74,13 @@ constexpr Tr PL_[] = {
 constexpr Tr RO_[] = {
 #include "src/i18n/ro.h"
 };
+constexpr Tr UK_[] = {
+#include "src/i18n/uk.h"
+};
 
 constexpr Table ES = build(ES_), PT = build(PT_), FR = build(FR_), DE = build(DE_), IT = build(IT_), RU = build(RU_),
-                TR = build(TR_), PL = build(PL_), RO = build(RO_);
-constexpr const Table *TABLES[LANG_COUNT] = {&EN, &ES, &PT, &FR, &DE, &IT, &RU, &TR, &PL, &RO};
+                TR = build(TR_), PL = build(PL_), RO = build(RO_), UK = build(UK_);
+constexpr const Table *TABLES[LANG_COUNT] = {&EN, &ES, &PT, &FR, &DE, &IT, &RU, &TR, &PL, &RO, &UK};
 }  // namespace
 
 const char *i18nRaw(int lang, int id) {

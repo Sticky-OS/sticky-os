@@ -15,7 +15,7 @@ notification one frame (`provframe.h`), encrypted and authenticated (LE
 Secure Connections, passkey shown on the screen).
 
 A key with a fixed set of values lists them as `options`: `device.language`
-(the board's language) has `["en","es","pt","fr","de","it","ru","tr","pl","ro"]`,
+(the board's language) has `["en","es","pt","fr","de","it","ru","tr","pl","ro","uk"]`,
 and `set` refuses anything else (`device.language: not a valid value`). An
 older board has no `device.language`; the setup app then shows no
 Language step.

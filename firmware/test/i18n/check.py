@@ -21,8 +21,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, '..', '..', 'sticky-os')
 I18N = os.path.join(SRC, 'src', 'i18n')
 TUTOR = os.path.join(SRC, 'src', 'tutor')
-LANGS = ['es', 'pt', 'fr', 'de', 'it', 'ru', 'tr', 'pl', 'ro']
-PLURAL_FORMS = {'ru': 3, 'pl': 3, 'ro': 3}  # the rest: 2 (one|other)
+LANGS = ['es', 'pt', 'fr', 'de', 'it', 'ru', 'tr', 'pl', 'ro', 'uk']
+PLURAL_FORMS = {'ru': 3, 'pl': 3, 'ro': 3, 'uk': 3}  # the rest: 2 (one|other)
 LISTS = {'S_DAYS': 7, 'S_DAYS_SHORT': 7, 'S_DAYS_INITIAL': 7, 'S_MONTHS': 12, 'S_MONTHS_SHORT': 12}
 
 def c_string(body):

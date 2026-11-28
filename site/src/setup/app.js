@@ -559,7 +559,7 @@ export const GROUPS = [
 // advanced: shown under a collapsed "Advanced" in its group.
 export const KEY_INFO = {
   'wifi.networks':     { label: 'Networks' },
-  'device.language':   { label: 'Language', type: 'lang', group: 'language', help: 'English, Spanish, Portuguese, French, German, Italian, Russian, Turkish, Polish or Romanian. Also in Settings → Language on the board.' },
+  'device.language':   { label: 'Language', type: 'lang', group: 'language', help: 'English, Spanish, Portuguese, French, German, Italian, Russian, Turkish, Polish, Romanian or Ukrainian. Also in Settings → Language on the board.' },
   'device.name':       { label: 'Name', placeholder: 'e.g. Kitchen', help: 'Helps you tell boards apart.' },
   'device.timezone':   { label: 'Time zone', type: 'tz', help: 'The board gets the time from the internet. This sets the local time it shows.' },
   'weather.locate':    { label: 'Find my town automatically', help: 'Once after each start, the board asks ip-api.com which town its internet address is in. Off: it always uses the place below.' },
@@ -600,7 +600,7 @@ export const ESSENTIALS = ['device.language', 'wifi.networks', 'device.timezone'
 // device.language's choices, as each calls itself (the board's i18n.h LANGS).
 export const LANGUAGES = {
   en: 'English', es: 'Español', pt: 'Português', fr: 'Français', de: 'Deutsch',
-  it: 'Italiano', ru: 'Русский', tr: 'Türkçe', pl: 'Polski', ro: 'Română',
+  it: 'Italiano', ru: 'Русский', tr: 'Türkçe', pl: 'Polski', ro: 'Română', uk: 'Українська',
 };
 export function languageName(code) { return LANGUAGES[code] || code; }
 // The browser's language, if the board has it: what the overview suggests.
